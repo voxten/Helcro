@@ -10,13 +10,19 @@ const styles = StyleSheet.create({
     modalContainer: {
         width: 300,
         padding: 20,
-        backgroundColor: 'white',
+        backgroundColor: '#eee',
         borderRadius: 10,
         alignItems: 'center',
     },
     header: {
         fontSize: 20,
         marginBottom: 10,
+    },
+    container: {
+        flex: 1,
+        backgroundColor: '#eee',
+        paddingHorizontal: 20,
+        paddingTop: 40
     },
     button: {
         padding: 15,
@@ -34,11 +40,13 @@ const styles = StyleSheet.create({
         maxHeight: 200,
     },
     input: {
-        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         padding: 10,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#ccc',
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        elevation: 3,
         marginBottom: 10,
     },
     buttonContainer: {
@@ -62,44 +70,18 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontSize: 16,
     },
-    nameInput: {
-        width: '80%',
-        padding: 10,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        textAlign: 'center',
+    submitButton: {
+        backgroundColor: "brown",
+        padding: 15,
+        borderRadius: 10,
+        alignItems: "center",
+        marginVertical: 20
     },
-    nameBox: {
-        marginTop: 10,
-        width: '100%',
-        alignItems: 'center',
-    },
-    separator: {
+    submitButtonText: {
+        color: "white",
         fontSize: 18,
-        marginHorizontal: 5,
+        fontWeight: "bold"
     },
-    timeInput: {
-        width: 50,
-        padding: 10,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        textAlign: 'center',
-    },
-    timeInputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    timeBox: {
-        marginTop: 10,
-        width: '100%',
-        alignItems: 'center',
-    },
-    timeText: {
-        fontSize: 16,
-        marginBottom: 5,
-    }
 });
 
 export default styles;

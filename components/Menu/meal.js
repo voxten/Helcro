@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import styles from "../../styles/MealStyles";
+import styles from "../../styles/MainStyles";
 
 export default function Meal({ onClose }) {
   const [isCreatingProduct, setIsCreatingProduct] = useState(false); // Kontroluje, czy tworzymy nowy produkt
