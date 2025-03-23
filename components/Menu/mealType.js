@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import styles from "../../styles/MealStyles";
+import mainStyles from "../../styles/MainStyles";
+import styles from "./MealStyles"
 
 export default function MealType({ onClose }) {
   const [selectedMeal, setSelectedMeal] = useState(null);  // Przechowuje wybrany posiłek
@@ -19,8 +20,8 @@ export default function MealType({ onClose }) {
   };
 
   const buttonStyle = (meal) => ({
-    ...styles.button,
-    backgroundColor: selectedMeal === meal ? '#8e44ad' : '#ddd',
+    ...mainStyles.button,
+    backgroundColor: selectedMeal === meal ? 'brown' : '#ddd',
   });
 
   const handleTimeChange = (type, value) => {
@@ -35,12 +36,12 @@ export default function MealType({ onClose }) {
   };
 
   return (
-    <View style={styles.overlay}>
-      <View style={styles.modalContainer}>
-        <Text style={styles.header}>Wybierz typ posiłku</Text>
+    <View style={mainStyles.overlay}>
+      <View style={mainStyles.modalContainer}>
+        <Text style={mainStyles.header}>Wybierz typ posiłku</Text>
 
         {/* ScrollView dla przycisków */}
-        <ScrollView style={styles.buttonScrollContainer}>
+        <ScrollView style={mainStyles.buttonScrollContainer}>
           {['Śniadanie', 'Drugie Śniadanie', 'Obiad', 'Podwieczorek', 'Kolacja', 'Inne'].map((meal) => (
             <TouchableOpacity
               key={meal}
@@ -48,7 +49,7 @@ export default function MealType({ onClose }) {
               onPress={() => handleMealClick(meal)}
               disabled={selectedMeal && selectedMeal !== meal}
             >
-              <Text style={styles.buttonText}>{meal}</Text>
+              <Text style={mainStyles.buttonText}>{meal}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -81,9 +82,9 @@ export default function MealType({ onClose }) {
 
         {/* Pole do wpisania nazwy posiłku (tylko przy "Inne") */}
         {selectedMeal === 'Inne' && (
-          <View style={styles.nameBox}>
+          <View style={mainStyles.nameBox}>
             <TextInput
-              style={styles.nameInput}
+              style={mainStyles.nameInput}
               value={mealName}
               onChangeText={setMealName}
               placeholder="Wpisz nazwę posiłku"
@@ -92,17 +93,18 @@ export default function MealType({ onClose }) {
         )}
 
         {/* Przycisk "Dalej" i "Zamknij" */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Zamknij</Text>
-          </TouchableOpacity>
+        <View style={styles.buttons}>
           <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-            disabled={!mealTime.hours || !mealTime.minutes || (selectedMeal === 'Inne' && !mealName)}
+              style={styles.submitButton}
+              onPress={onClose}
+              disabled={!mealTime.hours || !mealTime.minutes || (selectedMeal === 'Inne' && !mealName)}
           >
-            <Text style={styles.closeButtonText}>Dalej</Text>
+            <Text style={styles.submitButtonText}>Next</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
+
         </View>
       </View>
     </View>
