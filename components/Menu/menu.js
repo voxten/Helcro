@@ -23,8 +23,6 @@ export default function Menu() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Hellcro</Text>
-
       {/* Sekcja wartości odżywczych */}
       <View style={styles.nutritionContainer}>
         <Text style={styles.nutritionText}>Kcal: 0 | Białko: 0g | Tłuszcz: 0g | Węglowodany: 0g</Text>
