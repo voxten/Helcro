@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
+import {View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity} from 'react-native';
 import api from '../../utils/api';
+import mainStyles from "../../../styles/MainStyles"
+import Icon from "react-native-vector-icons/FontAwesome5";
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -25,7 +27,7 @@ const RegisterScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Registration</Text>
       <TextInput
-        style={styles.input}
+        style={mainStyles.input}
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
@@ -33,21 +35,23 @@ const RegisterScreen = ({ navigation }) => {
         autoCapitalize="none"
       />
       <TextInput
-        style={styles.input}
+        style={mainStyles.input}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
       <TextInput
-        style={styles.input}
+        style={mainStyles.input}
         placeholder="Confirm password"
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry
       />
-      <Button title="Register" onPress={handleRegister} />
-      
+      <TouchableOpacity style={styles.button} onPress={() => handleRegister()}>
+        <Icon name="key" size={20} color="white" style={styles.icon} />
+        <Text style={styles.buttonText}>Register</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -69,6 +73,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 16,
     paddingHorizontal: 8,
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "brown",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    marginTop: 15,
+    borderRadius: 8,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
 

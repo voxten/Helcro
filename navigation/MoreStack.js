@@ -10,11 +10,10 @@ const Stack = createStackNavigator();
 export default function MoreStack() {
     return (
         <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "white" }, headerTintColor: "black" }}>
-            <Stack.Screen name="More Home" component={MoreScreen} />
+            <Stack.Screen name="More" component={MoreScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Dietary Goals" component={DietaryGoalsScreen} />
             <Stack.Screen name="Weight History" component={WeightHistoryScreen} />
         </Stack.Navigator>
-
     );
 }
