@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         borderRadius: 5,
         flex: 1,
-        marginRight: 5,
+        marginLeft: 5,
         alignItems: "center",
     },
     submitButtonText: {
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         borderRadius: 5,
         flex: 1,
-        marginLeft: 5,
+        marginRight: 5,
         alignItems: "center",
     },
     closeButtonText: {

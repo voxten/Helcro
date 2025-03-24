@@ -64,14 +64,14 @@ export default function WeightHistoryScreen() {
         <View style={styles.container}>
             <LineChart
                 data={weightHistory}
-                width={350}
-                height={220}
+                width={400}
+                height={250}
                 chartConfig={{
-                    backgroundColor: "#eee",
-                    backgroundGradientFrom: "black",
-                    backgroundGradientTo: "black",
-                    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    backgroundGradientFrom: "#eee",
+                    backgroundGradientTo: "#eee",
+                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+
                 }}
                 bezier
                 fromZero={true}
@@ -130,12 +130,11 @@ export default function WeightHistoryScreen() {
                             keyboardType="numeric"
                         />
                         <View style={styles.buttons}>
-                            <TouchableOpacity style={styles.submitButton} onPress={handleAddWeight}>
-                                <Text style={styles.submitButtonText}>Submit</Text>
-                            </TouchableOpacity>
-
                             <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
                                 <Text style={styles.closeButtonText}>Close</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.submitButton} onPress={handleAddWeight}>
+                                <Text style={styles.submitButtonText}>Submit</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -151,7 +150,7 @@ const styles = StyleSheet.create({
         justifyContent: "flex-start",
         alignItems: "center",
         backgroundColor: "#f4f4f4",
-        paddingVertical: 20,
+        paddingBottom: 20,
     },
     addButton: {
         flexDirection: "row",
@@ -212,7 +211,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         borderRadius: 5,
         flex: 1,
-        marginRight: 5,
+        marginLeft: 5,
         alignItems: "center",
     },
     submitButtonText: {
@@ -225,7 +224,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         borderRadius: 5,
         flex: 1,
-        marginLeft: 5,
+        marginRight: 5,
         alignItems: "center",
     },
     closeButtonText: {

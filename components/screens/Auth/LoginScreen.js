@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
+import {View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity} from 'react-native';
 //import { signInWithGoogle } from '../../utils/googleSignIn';
 import api from '../../utils/api';
 //import { useAuth } from '../../context/AuthContext';
+import mainStyles from "../../../styles/MainStyles"
+import Icon from "react-native-vector-icons/FontAwesome5";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -38,7 +40,7 @@ const LoginScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
       <TextInput
-        style={styles.input}
+        style={mainStyles.input}
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
@@ -46,13 +48,17 @@ const LoginScreen = ({ navigation }) => {
         autoCapitalize="none"
       />
       <TextInput
-        style={styles.input}
+        style={mainStyles.input}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
-      <Button title="Log in" onPress={handleLogin} />
+
+      <TouchableOpacity style={styles.button} onPress={() => handleLogin()}>
+        <Icon name="key" size={20} color="white" style={styles.icon} />
+        <Text style={styles.buttonText}>Log In</Text>
+      </TouchableOpacity>
       {/*<Button title="Zaloguj się przez Google" onPress={onGoogleLogin} />*/}
       
     </View>
@@ -70,12 +76,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    marginBottom: 16,
-    paddingHorizontal: 8,
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "brown",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    marginTop: 15,
+    borderRadius: 8,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
 
