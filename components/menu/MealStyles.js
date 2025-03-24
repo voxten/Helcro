@@ -23,6 +23,24 @@ const styles = StyleSheet.create({
         marginLeft: 5,
         alignItems: "center",
     },
+    button: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "brown",
+        paddingVertical: 15,
+        paddingHorizontal: 20,
+        marginTop: 15,
+        borderRadius: 8,
+    },
+    icon: {
+        marginRight: 10,
+    },
+    buttonText: {
+        color: "white",
+        fontSize: 18,
+        fontWeight: "bold",
+    },
     submitButtonText: {
         color: 'white',
         fontSize: 16,

@@ -4,6 +4,7 @@ import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MealType from "./mealType"; // Import MealType
 import styles from "../../styles/MainStyles";
+import Icon from "react-native-vector-icons/FontAwesome6";
 
 export default function Menu() {
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -62,8 +63,9 @@ export default function Menu() {
             </ScrollView>
 
             {/* Add Meal Button */}
-            <TouchableOpacity style={styles.submitButton} onPress={() => setShowMealType(true)}>
-                <Text style={styles.submitButtonText}>Add Meal</Text>
+            <TouchableOpacity style={localStyles.button} onPress={() => setShowMealType(true)}>
+                <Icon name="bowl-food" size={20} color="white" style={localStyles.icon} />
+                <Text style={localStyles.buttonText}>Add Meal</Text>
             </TouchableOpacity>
 
             {/* Modal for MealType */}
@@ -100,5 +102,36 @@ const localStyles = StyleSheet.create({
     },
     dateText: { fontSize: 18, marginHorizontal: 10, color: 'brown' },
     mealList: { flex: 1 },
-    mealText: { fontSize: 16, textAlign: 'center', marginTop: 20, color: 'gray' }
+    mealText: { fontSize: 16, textAlign: 'center', marginTop: 20, color: 'gray' },
+    submitButton: {
+        backgroundColor: "#156dc9",
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 5,
+        flex: 1,
+        marginLeft: 5,
+        alignItems: "center",
+    },
+    button: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "brown",
+        paddingVertical: 15,
+        paddingHorizontal: 20,
+        marginVertical: 15,
+        borderRadius: 8,
+    },
+    icon: {
+        marginRight: 10,
+    },
+    buttonText: {
+        color: "white",
+        fontSize: 18,
+        fontWeight: "bold",
+    },
+    submitButtonText: {
+        color: 'white',
+        fontSize: 16,
+    },
 });

@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     backgroundColor: "brown",
     paddingVertical: 15,
     paddingHorizontal: 20,
-    marginTop: 15,
+    marginBottom: 15,
     borderRadius: 8,
   },
   icon: {
