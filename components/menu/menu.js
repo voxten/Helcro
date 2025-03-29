@@ -4,15 +4,18 @@ import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MealType from "./mealType"; // Import MealType
 import styles from "../../styles/MainStyles";
+
 import Icon from "react-native-vector-icons/FontAwesome6";
+import Meal from "./meal";
 
 export default function Menu() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showCalendar, setShowCalendar] = useState(false);
     const [showMealType, setShowMealType] = useState(false);
+    const [showMeal, setShowMeal] = useState(false);
 
     const formatDate = (date) => {
-        return date.toLocaleDateString("pl-PL", { weekday: 'long', day: 'numeric', month: 'long' });
+        return date.toLocaleDateString("en-GB", { weekday: 'long', day: 'numeric', month: 'long' });
     };
 
     const changeDay = (days) => {
@@ -75,8 +78,20 @@ export default function Menu() {
                 transparent={true}
                 onRequestClose={() => setShowMealType(false)}
             >
-                <MealType onClose={() => setShowMealType(false)} />
+                <MealType onClose={() => setShowMealType(false)} onSubmit={() => { setShowMealType(false); setShowMeal(true); }} />
+
             </Modal>
+
+            {/* Modal for Meal */}
+            <Modal
+                visible={showMeal}
+                animationType="fade"
+                transparent={true}
+                onRequestClose={() => setShowMeal(false)}
+            >
+                <Meal onClose={() => setShowMeal(false)} />
+            </Modal>
+            
         </View>
     );
 }
