@@ -89,6 +89,21 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 5,
     },
+    modalContainer: {
+        flex: 1, // Sprawia, że kontener modalny wypełnia całą dostępną przestrzeń
+        justifyContent: 'flex-start', // Ustawia elementy w kontenerze od góry
+        alignItems: 'center', // Centrowanie zawartości kontenera
+        paddingHorizontal: 20, // Dodaj trochę przestrzeni po bokach
+      },
+      disabledButton: {
+        backgroundColor: '#ddd',
+        opacity: 0.5,
+      },
+      buttonScrollContainer: {
+        width: '100%',
+        maxHeight: 300,
+    },
+
 });
 
 export default styles;

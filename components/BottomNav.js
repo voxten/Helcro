@@ -1,7 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
-import { View, Text } from "react-native";
 import FontIcon from "react-native-vector-icons/FontAwesome";
 import CommunityIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import Font5Icon from "react-native-vector-icons/FontAwesome5";
@@ -9,8 +8,8 @@ import Meal from "./menu/meal";
 import Menu from "./menu/menu";
 import MoreStack from "../navigation/MoreStack";
 import AuthNavigator from "../navigation/AuthNavigator";
+import RecipesStack from "../navigation/RecipesStack";
 
-const RecipesScreen = () => <View><Text>Recipes Screen</Text></View>;
 
 // Create bottom tab navigator
 const Tab = createBottomTabNavigator();
@@ -45,7 +44,7 @@ export default function BottomNav() {
                 />
                 <Tab.Screen
                     name="Recipes"
-                    component={RecipesScreen}
+                    component={RecipesStack} // <--- Zmienione z RecipesList na RecipesStack
                     options={{
                         tabBarIcon: ({ color }) => <FontIcon name="book" size={20} color={color} />,
                     }}
