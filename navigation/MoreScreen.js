@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Icon2 from "react-native-vector-icons/FontAwesome5";
-
+import Icon3 from "react-native-vector-icons/AntDesign"
 export default function MoreScreen({ navigation }) {
     return (
         <View style={styles.container}>
@@ -28,6 +28,14 @@ export default function MoreScreen({ navigation }) {
             >
                 <Icon name="history" size={20} color="white" style={styles.icon} />
                 <Text style={styles.buttonText}>Weight History</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate("Logout")}
+            >
+                <Icon3 name="logout" size={20} color="white" style={styles.icon} />
+                <Text style={styles.buttonText}>Logout</Text>
             </TouchableOpacity>
         </View>
     );

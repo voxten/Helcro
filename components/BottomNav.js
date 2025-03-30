@@ -9,7 +9,7 @@ import Menu from "./menu/menu";
 import MoreStack from "../navigation/MoreStack";
 import AuthNavigator from "../navigation/AuthNavigator";
 import RecipesStack from "../navigation/RecipesStack";
-
+import { useAuth } from '../components/context/AuthContext';
 
 // Create bottom tab navigator
 const Tab = createBottomTabNavigator();

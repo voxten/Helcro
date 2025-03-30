@@ -1,11 +1,16 @@
-import dotenv from 'dotenv';
-import express from 'express';
-import mysql from 'mysql2';
-import axios from 'axios';
+const dotenv = require('dotenv');
+const express = require('express');
+const mysql = require('mysql2');
+const axios = require('axios');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+
 
 dotenv.config();
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 // Create MySQL connection
 const db = mysql.createConnection({
@@ -15,6 +20,7 @@ const db = mysql.createConnection({
     database: process.env.DB_NAME
 });
 
+
 db.connect(err => {
     if (err) {
         console.error('Database connection failed:', err);
@@ -22,7 +28,109 @@ db.connect(err => {
     }
     console.log('Connected to MySQL');
 });
+// ===== DODANE NOWE ENDPOINTY ===== //
 
+// Rejestracja użytkownika
+app.post('/api/auth/register', async (req, res) => {
+    
+    const { NazwaUzytkownika, Email, Haslo, Wzrost, Waga, Plec } = req.body;
+
+    try {
+        // Sprawdź czy użytkownik już istnieje
+        db.query('SELECT * FROM Uzytkownik WHERE Email = ? OR NazwaUzytkownika = ?', 
+            [Email, NazwaUzytkownika], 
+            async (err, results) => {
+                if (err) throw err;
+                
+                if (results.length > 0) {
+                    return res.status(400).json({ error: 'Użytkownik już istnieje' });
+                }
+
+                // Hashowanie hasła
+                const hashedPassword = await bcrypt.hash(Haslo, 10);
+
+                // Dodanie nowego użytkownika
+                db.query('INSERT INTO Uzytkownik SET ?', 
+                    { NazwaUzytkownika, Email, Haslo: hashedPassword, Wzrost, Waga, Plec },
+                    (err, result) => {
+                        if (err) throw err;
+                        res.status(201).json({ message: 'Rejestracja zakończona pomyślnie', userId: result.insertId });
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        res.status(500).json({ error: 'Błąd serwera' });
+    }
+});
+
+// Logowanie użytkownika
+app.post('/api/auth/login', async (req, res) => {
+    const { Email, Haslo } = req.body;
+
+    try {
+        db.query('SELECT * FROM Uzytkownik WHERE Email = ?', [Email], async (err, results) => {
+            if (err) throw err;
+            
+            if (results.length === 0) {
+                return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
+            }
+
+            const user = results[0];
+            const isMatch = await bcrypt.compare(Haslo, user.Haslo);
+
+            if (!isMatch) {
+                return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
+            }
+
+            // Generowanie tokena JWT
+            const token = jwt.sign(
+                { id: user.id_Uzytkownika },
+                process.env.JWT_SECRET,
+                { expiresIn: '1h' }
+            );
+
+            res.json({ 
+                message: 'Zalogowano pomyślnie',
+                token,
+                user: {
+                    id: user.id_Uzytkownika,
+                    NazwaUzytkownika: user.NazwaUzytkownika,
+                    Email: user.Email
+                }
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Błąd serwera' });
+    }
+});
+
+// Middleware do weryfikacji tokena
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) return res.sendStatus(401);
+    
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+}
+
+// Przykładowy chroniony endpoint
+app.get('/api/user/profile', authenticateToken, (req, res) => {
+    db.query('SELECT id_Uzytkownika, NazwaUzytkownika, Email, Wzrost, Waga, Plec FROM Uzytkownik WHERE id_Uzytkownika = ?', 
+        [req.user.id], 
+        (err, results) => {
+            if (err) throw err;
+            res.json(results[0]);
+        }
+    );
+});
+
+// ===== KONIEC NOWYCH ENDPOINTÓW ===== //
 // Sample endpoint to get data
 app.get('/users', (req, res) => {
     db.query('SELECT * FROM uzytkownik', (err, results) => {

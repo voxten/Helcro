@@ -1,56 +1,139 @@
 import React, { useState } from 'react';
-import {View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity} from 'react-native';
-import api from '../../utils/api';
-import mainStyles from "../../../styles/MainStyles"
+import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import api from '../../utils/api'; // Importujemy nasz nowy plik api
 import Icon from "react-native-vector-icons/FontAwesome5";
 
 const RegisterScreen = ({ navigation }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [form, setForm] = useState({
+    NazwaUzytkownika: '',
+    Email: '',
+    Haslo: '',
+    PotwierdzHaslo: '',
+    Wzrost: '',
+    Waga: '',
+    Plec: 'M'
+  });
+
+  const handleChange = (name, value) => {
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleRegister = async () => {
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+    // Walidacja
+    if (form.Haslo !== form.PotwierdzHaslo) {
+      Alert.alert('Błąd', 'Hasła nie są identyczne');
       return;
     }
+
+    if (!form.NazwaUzytkownika || !form.Email || !form.Haslo) {
+      Alert.alert('Błąd', 'Wypełnij wszystkie wymagane pola');
+      return;
+    }
+
     try {
-      await api.post('/register', { email, password });
-      Alert.alert('Success', 'Registration completed. Please check your email for verification.');
-      navigation.navigate('Login');
+      const response = await api.post('/api/auth/register', {
+        NazwaUzytkownika: form.NazwaUzytkownika,
+        Email: form.Email,
+        Haslo: form.Haslo,
+        Wzrost: form.Wzrost ? parseFloat(form.Wzrost) : null,
+        Waga: form.Wzrost ? parseFloat(form.Waga) : null,
+        Plec: form.Plec
+      });
+
+      Alert.alert('Sukces', 'Konto zostało utworzone pomyślnie');
+      
     } catch (error) {
-      Alert.alert('Error', error.response?.data || 'Registration failed');
+      console.error('Błąd rejestracji:', error);
+      let errorMessage = 'Wystąpił błąd podczas rejestracji';
+      
+      if (error.response) {
+        if (error.response.data.error.includes('Email')) {
+          errorMessage = 'Podany email jest już zajęty';
+        } else if (error.response.data.error.includes('NazwaUzytkownika')) {
+          errorMessage = 'Podana nazwa użytkownika jest już zajęta';
+        }
+      } else if (error.message.includes('Network Error')) {
+        errorMessage = 'Brak połączenia z serwerem. Sprawdź swoje połączenie internetowe';
+      }
+
+      Alert.alert('Błąd', errorMessage);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Registration</Text>
+      <Text style={styles.title}>Rejestracja</Text>
+      
       <TextInput
-        style={mainStyles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
+        style={styles.input}
+        placeholder="Nazwa użytkownika *"
+        value={form.NazwaUzytkownika}
+        onChangeText={(text) => handleChange('NazwaUzytkownika', text)}
+        autoCapitalize="none"
+      />
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Email *"
+        value={form.Email}
+        onChangeText={(text) => handleChange('Email', text)}
         keyboardType="email-address"
         autoCapitalize="none"
       />
+      
       <TextInput
-        style={mainStyles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
+        style={styles.input}
+        placeholder="Hasło *"
+        value={form.Haslo}
+        onChangeText={(text) => handleChange('Haslo', text)}
         secureTextEntry
       />
+      
       <TextInput
-        style={mainStyles.input}
-        placeholder="Confirm password"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
+        style={styles.input}
+        placeholder="Potwierdź hasło *"
+        value={form.PotwierdzHaslo}
+        onChangeText={(text) => handleChange('PotwierdzHaslo', text)}
         secureTextEntry
       />
-      <TouchableOpacity style={styles.button} onPress={() => handleRegister()}>
-        <Icon name="key" size={20} color="white" style={styles.icon} />
-        <Text style={styles.buttonText}>Register</Text>
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Wzrost (cm)"
+        value={form.Wzrost}
+        onChangeText={(text) => handleChange('Wzrost', text)}
+        keyboardType="numeric"
+      />
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Waga (kg)"
+        value={form.Waga}
+        onChangeText={(text) => handleChange('Waga', text)}
+        keyboardType="numeric"
+      />
+      
+      <View style={styles.radioGroup}>
+        <Text style={styles.radioLabel}>Płeć:</Text>
+        {['M', 'K', 'Inne'].map((gender) => (
+          <TouchableOpacity
+            key={gender}
+            style={[
+              styles.radioButton,
+              form.Plec === gender && styles.radioButtonSelected
+            ]}
+            onPress={() => handleChange('Plec', gender)}
+          >
+            <Text style={styles.radioText}>
+              {gender === 'M' ? 'Mężczyzna' : gender === 'K' ? 'Kobieta' : 'Inne'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <TouchableOpacity style={styles.button} onPress={handleRegister}>
+        <Icon name="user-plus" size={20} color="white" style={styles.icon} />
+        <Text style={styles.buttonText}>Zarejestruj się</Text>
       </TouchableOpacity>
     </View>
   );
@@ -68,11 +151,40 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   input: {
-    height: 40,
-    borderColor: '#ccc',
+    height: 50,
     borderWidth: 1,
-    marginBottom: 16,
-    paddingHorizontal: 8,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    backgroundColor: '#fff',
+  },
+  radioGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    flexWrap: 'wrap',
+  },
+  radioLabel: {
+    marginRight: 10,
+    fontSize: 16,
+  },
+  radioButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginRight: 10,
+    marginBottom: 10,
+    backgroundColor: '#fff',
+  },
+  radioButtonSelected: {
+    backgroundColor: '#e3f2fd',
+    borderColor: '#2196F3',
+  },
+  radioText: {
+    fontSize: 16,
   },
   button: {
     flexDirection: "row",
@@ -81,7 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: "brown",
     paddingVertical: 15,
     paddingHorizontal: 20,
-    marginTop: 15,
+    marginBottom: 15,
     borderRadius: 8,
   },
   icon: {

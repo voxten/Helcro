@@ -23,3 +23,6 @@
 
 
 
+
+
+ go into components/utils/api.js and change baseURL

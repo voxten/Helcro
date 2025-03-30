@@ -4,7 +4,7 @@ import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MealType from "./mealType"; // Import MealType
 import styles from "../../styles/MainStyles";
-
+import { useAuth } from '../context/AuthContext';
 import Icon from "react-native-vector-icons/FontAwesome6";
 import Meal from "./meal";
 
@@ -13,7 +13,7 @@ export default function Menu() {
     const [showCalendar, setShowCalendar] = useState(false);
     const [showMealType, setShowMealType] = useState(false);
     const [showMeal, setShowMeal] = useState(false);
-
+    const { user } = useAuth();
     const formatDate = (date) => {
         return date.toLocaleDateString("en-GB", { weekday: 'long', day: 'numeric', month: 'long' });
     };
@@ -27,9 +27,16 @@ export default function Menu() {
     };
 
     return (
+        
         <View style={localStyles.container}>
             {/* Nutrition Values Section */}
+            <Text style={styles.welcomeText}>
+                Hello, {user?.NazwaUzytkownika || 'Guest'}!
+                
+            </Text>
+            
             <View style={localStyles.nutritionContainer}>
+               
                 <Text style={localStyles.nutritionText}>Kcal: 0 | Protein: 0g | Fat: 0g | Carbs: 0g</Text>
                 <TouchableOpacity onPress={() => setShowCalendar(true)}>
                     <AntDesign name="calendar" size={24} color="brown" />

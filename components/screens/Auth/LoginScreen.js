@@ -1,66 +1,103 @@
 import React, { useState } from 'react';
-import {View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity} from 'react-native';
-//import { signInWithGoogle } from '../../utils/googleSignIn';
-import api from '../../utils/api';
-//import { useAuth } from '../../context/AuthContext';
-import mainStyles from "../../../styles/MainStyles"
+import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome5";
+import api from '../../utils/api';
+import mainStyles from "../../../styles/MainStyles";
 
 const LoginScreen = ({ navigation }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
- // const { handleGoogleLogin } = useGoogleAuth();
- // const { login } = useAuth();
+  const [form, setForm] = useState({
+    Email: '',
+    Haslo: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (name, value) => {
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleLogin = async () => {
+    if (!form.Email || !form.Haslo) {
+      Alert.alert('Błąd', 'Wprowadź email i hasło');
+      return;
+    }
+
+    setLoading(true);
+    
     try {
-      const response = await api.post('/login', { email, password });
-      login(response.data.token); // Zaloguj użytkownika
+      const response = await api.post('/api/auth/login', {
+        Email: form.Email,
+        Haslo: form.Haslo
+      });
+
+      // Zapisz token w AsyncStorage lub kontekście
+      // navigation.navigate('Home'); // Przekieruj po zalogowaniu
+      Alert.alert('Sukces', 'Zalogowano pomyślnie');
+      
     } catch (error) {
-      Alert.alert('Error', 'Invalid email or password');
+      console.error('Błąd logowania:', error.response?.data);
+      
+      let errorMessage = 'Nieprawidłowy email lub hasło';
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'Nieprawidłowe dane logowania';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Błąd serwera';
+        }
+      } else if (error.message.includes('Network Error')) {
+        errorMessage = 'Brak połączenia z serwerem';
+      }
+
+      Alert.alert('Błąd', errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
- /*
- const onGoogleLogin = async () => {
-    const accessToken = await handleGoogleLogin();
-    if (accessToken) {
-      // Wyślij token do backendu
-      const response = await fetch('http://your-backend-url/api/auth/google-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken }),
-      });
-      const data = await response.json();
-      console.log(data); // Zaloguj użytkownika
-    }
-  };
-*/
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Text style={styles.title}>Logowanie</Text>
+      
       <TextInput
         style={mainStyles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
+        placeholder="Email *"
+        value={form.Email}
+        onChangeText={(text) => handleChange('Email', text)}
         keyboardType="email-address"
         autoCapitalize="none"
       />
+      
       <TextInput
         style={mainStyles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
+        placeholder="Hasło *"
+        value={form.Haslo}
+        onChangeText={(text) => handleChange('Haslo', text)}
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.button} onPress={() => handleLogin()}>
+      <TouchableOpacity 
+        style={styles.button} 
+        onPress={handleLogin}
+        disabled={loading}
+      >
         <Icon name="key" size={20} color="white" style={styles.icon} />
-        <Text style={styles.buttonText}>Log In</Text>
+        <Text style={styles.buttonText}>
+          {loading ? 'Logowanie...' : 'Zaloguj się'}
+        </Text>
       </TouchableOpacity>
-      {/*<Button title="Zaloguj się przez Google" onPress={onGoogleLogin} />*/}
-      
+
+      <TouchableOpacity 
+        style={styles.secondaryButton}
+        onPress={() => navigation.navigate('Register')}
+      >
+        <Text style={styles.secondaryButtonText}>Nie masz konta? Zarejestruj się</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.secondaryButton}
+        onPress={() => navigation.navigate('ForgotPassword')}
+      >
+        <Text style={styles.secondaryButtonText}>Zapomniałeś hasła?</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -93,6 +130,14 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+  },
+   secondaryButton: {
+    padding: 10,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    marginTop: 10,
   },
 });
 
