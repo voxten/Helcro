@@ -10,7 +10,7 @@ const recipes = [
         "Spaghetti Bolognese",
         "A classic Italian pasta dish.",
         [{ name: "Pasta", amount: "200g" }, { name: "Tomato Sauce", amount: "100ml" }, { name: "Ground Beef", amount: "150g" }],
-        require("./images/spaghetti.jpg"),
+        "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
         ["Italian", "Pasta"],
         4,
         1,
@@ -25,7 +25,7 @@ const recipes = [
         "Chicken Salad",
         "A fresh and healthy chicken salad.",
         [{ name: "Chicken", amount: "150g" }, { name: "Lettuce", amount: "1 head" }, { name: "Tomato", amount: "2" }, { name: "Cucumber", amount: "1" }],
-        require("./images/salad.jpg"),
+        "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
         ["Healthy", "Salad"],
         5,
         2,
@@ -40,91 +40,7 @@ const recipes = [
         "Vegetable Stir Fry",
         "A quick and easy vegetable stir fry.",
         [{ name: "Bell peppers", amount: "4" }, { name: "Broccoli", amount: "2" }, { name: "Carrots", amount: "4" }, { name: "Soy Sauce", amount: "100ml" }],
-        require("./images/StirFry.jpg"),
-        ["Healthy", "Vegan"],
-        4.5,
-        3,
-        [
-            "Pokrój paprykę w kwadraty, marchewkę w słupki, a pora w plasterki. Podziel brokuły na równej wielkości różyczki.",
-            "Sos: Zetrzyj czosnek i imbir do miski. Dodaj miód, sok z limonki, Sos sojowy Kikkoman i ketchup. Dokładnie wymieszaj.",
-            "Rozgrzej odrobinę oleju na patelni i dodaj marchewkę. Smaż przez około 1 minutę. Dodaj paprykę i brokuły. Smaż przez 3-5 minut. Dodaj sos i dokładnie wymieszaj. Smaż przez kolejne 1-2 minuty."
-        ]
-    ),
-    new Recipe(
-        "Vegetable Stir Fry",
-        "A quick and easy vegetable stir fry.",
-        [{ name: "Bell peppers", amount: "4" }, { name: "Broccoli", amount: "2" }, { name: "Carrots", amount: "4" }, { name: "Soy Sauce", amount: "100ml" }],
-        require("./images/StirFry.jpg"),
-        ["Healthy", "Vegan"],
-        4.5,
-        3,
-        [
-            "Pokrój paprykę w kwadraty, marchewkę w słupki, a pora w plasterki. Podziel brokuły na równej wielkości różyczki.",
-            "Sos: Zetrzyj czosnek i imbir do miski. Dodaj miód, sok z limonki, Sos sojowy Kikkoman i ketchup. Dokładnie wymieszaj.",
-            "Rozgrzej odrobinę oleju na patelni i dodaj marchewkę. Smaż przez około 1 minutę. Dodaj paprykę i brokuły. Smaż przez 3-5 minut. Dodaj sos i dokładnie wymieszaj. Smaż przez kolejne 1-2 minuty."
-        ]
-    ),
-    new Recipe(
-        "Vegetable Stir Fry",
-        "A quick and easy vegetable stir fry.",
-        [{ name: "Bell peppers", amount: "4" }, { name: "Broccoli", amount: "2" }, { name: "Carrots", amount: "4" }, { name: "Soy Sauce", amount: "100ml" }],
-        require("./images/StirFry.jpg"),
-        ["Healthy", "Vegan"],
-        4.5,
-        5,
-        [
-            "Pokrój paprykę w kwadraty, marchewkę w słupki, a pora w plasterki. Podziel brokuły na równej wielkości różyczki.",
-            "Sos: Zetrzyj czosnek i imbir do miski. Dodaj miód, sok z limonki, Sos sojowy Kikkoman i ketchup. Dokładnie wymieszaj.",
-            "Rozgrzej odrobinę oleju na patelni i dodaj marchewkę. Smaż przez około 1 minutę. Dodaj paprykę i brokuły. Smaż przez 3-5 minut. Dodaj sos i dokładnie wymieszaj. Smaż przez kolejne 1-2 minuty."
-        ]
-    ),
-    new Recipe(
-        "Vegetable Stir Fry",
-        "A quick and easy vegetable stir fry.",
-        [{ name: "Bell peppers", amount: "4" }, { name: "Broccoli", amount: "2" }, { name: "Carrots", amount: "4" }, { name: "Soy Sauce", amount: "100ml" }],
-        require("./images/StirFry.jpg"),
-        ["Healthy", "Vegan"],
-        4.5,
-        6,
-        [
-            "Pokrój paprykę w kwadraty, marchewkę w słupki, a pora w plasterki. Podziel brokuły na równej wielkości różyczki.",
-            "Sos: Zetrzyj czosnek i imbir do miski. Dodaj miód, sok z limonki, Sos sojowy Kikkoman i ketchup. Dokładnie wymieszaj.",
-            "Rozgrzej odrobinę oleju na patelni i dodaj marchewkę. Smaż przez około 1 minutę. Dodaj paprykę i brokuły. Smaż przez 3-5 minut. Dodaj sos i dokładnie wymieszaj. Smaż przez kolejne 1-2 minuty."
-        ]
-    ),
-    new Recipe(
-        "Vegetable Stir Fry",
-        "A quick and easy vegetable stir fry.",
-        [{ name: "Bell peppers", amount: "4" }, { name: "Broccoli", amount: "2" }, { name: "Carrots", amount: "4" }, { name: "Soy Sauce", amount: "100ml" }],
-        require("./images/StirFry.jpg"),
-        ["Healthy", "Vegan"],
-        4.5,
-        3,
-        [
-            "Pokrój paprykę w kwadraty, marchewkę w słupki, a pora w plasterki. Podziel brokuły na równej wielkości różyczki.",
-            "Sos: Zetrzyj czosnek i imbir do miski. Dodaj miód, sok z limonki, Sos sojowy Kikkoman i ketchup. Dokładnie wymieszaj.",
-            "Rozgrzej odrobinę oleju na patelni i dodaj marchewkę. Smaż przez około 1 minutę. Dodaj paprykę i brokuły. Smaż przez 3-5 minut. Dodaj sos i dokładnie wymieszaj. Smaż przez kolejne 1-2 minuty."
-        ]
-    ),
-    new Recipe(
-        "Vegetable Stir Fry",
-        "A quick and easy vegetable stir fry.",
-        [{ name: "Bell peppers", amount: "4" }, { name: "Broccoli", amount: "2" }, { name: "Carrots", amount: "4" }, { name: "Soy Sauce", amount: "100ml" }],
-        require("./images/StirFry.jpg"),
-        ["Healthy", "Vegan"],
-        4.5,
-        3,
-        [
-            "Pokrój paprykę w kwadraty, marchewkę w słupki, a pora w plasterki. Podziel brokuły na równej wielkości różyczki.",
-            "Sos: Zetrzyj czosnek i imbir do miski. Dodaj miód, sok z limonki, Sos sojowy Kikkoman i ketchup. Dokładnie wymieszaj.",
-            "Rozgrzej odrobinę oleju na patelni i dodaj marchewkę. Smaż przez około 1 minutę. Dodaj paprykę i brokuły. Smaż przez 3-5 minut. Dodaj sos i dokładnie wymieszaj. Smaż przez kolejne 1-2 minuty."
-        ]
-    ),
-    new Recipe(
-        "Vegetable Stir Fry",
-        "A quick and easy vegetable stir fry.",
-        [{ name: "Bell peppers", amount: "4" }, { name: "Broccoli", amount: "2" }, { name: "Carrots", amount: "4" }, { name: "Soy Sauce", amount: "100ml" }],
-        require("./images/StirFry.jpg"),
+        "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
         ["Healthy", "Vegan"],
         4.5,
         3,
