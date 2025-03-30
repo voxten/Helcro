@@ -13,7 +13,9 @@ import { useAuth } from '../components/context/AuthContext';
 const Tab = createBottomTabNavigator();
 
 export default function BottomNav() {
+    const { user } = useAuth();
     return (
+        
         <NavigationContainer>
             <Tab.Navigator
                 screenOptions={{
@@ -40,6 +42,7 @@ export default function BottomNav() {
                         tabBarIcon: ({ color }) => <FontIcon name="book" size={20} color={color} />,
                     }}
                 />
+                 {user && (
                 <Tab.Screen
                     name="More"
                     component={MoreStack}
@@ -47,6 +50,8 @@ export default function BottomNav() {
                         tabBarIcon: ({ color }) => <FontIcon name="bars" size={20} color={color} />,
                     }}
                 />
+            )}
+                {!user && (
                 <Tab.Screen
                     name="Auth"
                     component={AuthNavigator}
@@ -54,6 +59,7 @@ export default function BottomNav() {
                         tabBarIcon: ({ color }) => <Font5Icon name="key" size={20} color={color} />,
                     }}
                 />
+            )}
             </Tab.Navigator>
         </NavigationContainer>
     );

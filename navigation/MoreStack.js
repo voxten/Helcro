@@ -4,7 +4,7 @@ import MoreScreen from "./MoreScreen";
 import ProfileScreen from "../components/profile/ProfileScreen";
 import DietaryGoalsScreen from "../components/profile/DietaryGoalsScreen";
 import WeightHistoryScreen from "../components/profile/WeightHistoryScreen";
-
+import LogoutScreen from "../components/screens/auth/LogoutScreen";
 const Stack = createStackNavigator();
 
 export default function MoreStack() {
@@ -14,6 +14,7 @@ export default function MoreStack() {
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Dietary Goals" component={DietaryGoalsScreen} />
             <Stack.Screen name="Weight History" component={WeightHistoryScreen} />
+            <Stack.Screen name="Logout" component={LogoutScreen} />
         </Stack.Navigator>
     );
 }
