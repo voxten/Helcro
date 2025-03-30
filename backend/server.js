@@ -11,6 +11,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+require('dotenv').config();
+
 // Create MySQL connection
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
