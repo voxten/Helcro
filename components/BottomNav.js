@@ -7,7 +7,7 @@ import Menu from "./menu/Menu";
 import MoreStack from "../navigation/MoreStack";
 import AuthNavigator from "../navigation/AuthNavigator";
 import RecipesStack from "../navigation/RecipesStack";
-
+import { useAuth } from '../components/context/AuthContext';
 
 // Create bottom tab navigator
 const Tab = createBottomTabNavigator();
