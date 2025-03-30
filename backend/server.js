@@ -6,11 +6,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 
-
 dotenv.config();
 const app = express();
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
 // Create MySQL connection
 const db = mysql.createConnection({
@@ -157,7 +156,7 @@ app.get('/receptury', (req, res) => {
         res.json(results);
     });
 });
-/* Wykonaj raz na początku
+/*
 async function fetchAndInsertProducts(page) {
     try {
         const response = await axios.get(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=&page=${page}&json=true`);
@@ -165,11 +164,11 @@ async function fetchAndInsertProducts(page) {
 
         if (products && products.length > 0) {
             products.forEach(product => {
-                const { product_name, nutriments } = product;
+                const { product_name, nutriments, image_front_url } = product;
                 if (!nutriments) return; // Skip if no nutrition data
 
-                const query = `INSERT INTO products (product_name, proteins, fats, carbohydrates, sugars, fibers, salt, calories)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+                const query = `INSERT INTO products (product_name, proteins, fats, carbohydrates, sugars, fibers, salt, calories, image)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
                 db.query(query, [
                     product_name || "Unknown",
@@ -179,7 +178,9 @@ async function fetchAndInsertProducts(page) {
                     nutriments.sugars_100g || 0,
                     nutriments.fiber_100g || 0,
                     nutriments.salt_100g || 0, // Ensure this is in grams
-                    nutriments["energy-kcal_100g"] || 0 // Correct calories field
+                    nutriments["energy-kcal_100g"] || 0, // Correct calories field,
+                    image_front_url || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg"
+
                 ], (err, result) => {
                     if (err) {
                         console.error("Error inserting product into database:", err);
@@ -204,9 +205,8 @@ async function fetchAndInsertMultiplePages(startPage , endPage ) {
 }
 
 fetchAndInsertMultiplePages(10, 20);//Od strony do Strony
-*/
-/*
+
 fetchAndInsertProducts(1);
 */
 
-app.listen(3000, () => console.log('Server running on port 3000'));
+app.listen(3000, "0.0.0.0", () => console.log('Server running on port 3000'));

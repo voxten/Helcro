@@ -18,13 +18,44 @@ const styles2 = StyleSheet.create({
         marginBottom: 10,
         color: "#333",
     },
+    gridRow: {
+        justifyContent: "space-between",
+        marginBottom: 15,
+    },
+    gridWrapper: {
+        width: "48%", // Keeps grid items close together
+        marginBottom: 10, // Less spacing in the grid
+        alignItems: "center",
+    },
+
+    /** LIST VIEW STYLES */
+    listContainer: {
+        paddingVertical: 10,
+        paddingHorizontal: 5,
+    },
+    listWrapper: {
+        marginRight: 15, // Adds space between horizontal items
+    },
+    recipeWrapper: {
+        width: 160, // Ensures uniform size for both grid & list
+        marginBottom: 15,
+        alignItems: "center",
+    },
+    /** LIST VIEW STYLES */
+    horizontalList: {
+        paddingVertical: 10,
+        paddingHorizontal: 5,
+    },
+
+    /** RECIPE CARD */
     recipeCard: {
         backgroundColor: "white",
         borderRadius: 10,
         padding: 10,
-        marginRight: 10,
+        width: 160, // Fixed width
+        height: 220, // Fixed height
         alignItems: "center",
-        width: 150,
+        justifyContent: "space-between",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -32,15 +63,17 @@ const styles2 = StyleSheet.create({
         elevation: 3,
     },
     recipeImage: {
-        width: 120,
-        height: 120,
+        width: 140, // Fixed width for consistency
+        height: 120, // Fixed height for uniformity
         borderRadius: 10,
         marginBottom: 5,
+        resizeMode: "cover", // Ensures images scale properly
     },
     recipeName: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: "bold",
         textAlign: "center",
+        maxWidth: 140,
     },
     recipeRating: {
         fontSize: 14,
@@ -76,28 +109,59 @@ const styles2 = StyleSheet.create({
         alignItems: "center",
         backgroundColor: "rgba(0,0,0,0.5)"
     },
-    
     modalContent: {
         width: "80%",
         backgroundColor: "#fff",
         padding: 20,
         borderRadius: 10
     },
-    
     modalItem: {
         padding: 10,
         fontSize: 16,
         borderBottomWidth: 1,
         borderBottomColor: "#ddd"
     },
-    
+    modalButton: {
+        padding: 10,
+        fontSize: 16,
+        borderBottomColor: "#ddd"
+    },
+    closeButton: {
+        backgroundColor: "brown",
+        borderRadius: 5,
+        padding: 10,
+        marginRight: 5,
+        alignItems: "center",
+    },
+    closeButtonText: {
+        color: 'white',
+        fontSize: 16,
+    },
+
     clearCategory: {
         textAlign: "center",
         color: "#ff0000",
         marginTop: 10,
         fontWeight: "bold"
-    }
-    
+    },
+    button: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "brown",
+        paddingVertical: 15,
+        paddingHorizontal: 20,
+        marginVertical: 15,
+        borderRadius: 8,
+    },
+    icon: {
+        marginRight: 20,
+    },
+    buttonText: {
+        color: "white",
+        fontSize: 18,
+        fontWeight: "bold",
+    },
 });
 
 export default styles2;

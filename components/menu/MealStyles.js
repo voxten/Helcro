@@ -68,26 +68,36 @@ const styles = StyleSheet.create({
         width: "100%",
         marginTop: 10,
     },
-    timeInput: {
-        width: 50,
-        padding: 10,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        textAlign: 'center',
-    },
-    timeInputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
     timeBox: {
-        marginTop: 10,
-        width: '100%',
-        alignItems: 'center',
+        marginTop: 20,
+        width: "100%",
+        padding: 15,
+        borderRadius: 10,
+        backgroundColor: "#f7f7f7",
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3, // For Android shadow
     },
     timeText: {
-        fontSize: 16,
-        marginBottom: 5,
+        fontSize: 18,
+        fontWeight: "600",
+        color: "#333",
+        marginBottom: 10,
+    },
+    timePickerButton: {
+        backgroundColor: "brown",
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        borderRadius: 8,
+        alignItems: "center",
+    },
+    timePickerText: {
+        fontSize: 18,
+        color: "#fff",
+        fontWeight: "bold",
     },
     modalContainer: {
         flex: 1, // Sprawia, że kontener modalny wypełnia całą dostępną przestrzeń

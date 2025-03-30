@@ -2,11 +2,11 @@ import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import MealType from "./mealType"; // Import MealType
+import MealType from "./MealType"; // Import MealType
 import styles from "../../styles/MainStyles";
 import { useAuth } from '../context/AuthContext';
 import Icon from "react-native-vector-icons/FontAwesome6";
-import Meal from "./meal";
+import Meal from "./Meal";
 
 export default function Menu() {
     const [selectedDate, setSelectedDate] = useState(new Date());

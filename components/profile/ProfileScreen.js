@@ -14,7 +14,7 @@ export default function ProfileScreen() {
 
     const handleUpdateProfile = () => {
         // Implement update profile logic here
-        console.log("Profile updated");
+        console.log("profile updated");
     };
 
     return (
