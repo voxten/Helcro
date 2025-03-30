@@ -3,6 +3,9 @@ import { View, Text, TouchableOpacity, TextInput, FlatList, Image, StyleSheet } 
 import axios from "axios";
 import styles from "../../styles/MainStyles";
 import styles2 from "./MealStyles";
+import { API_BASE_URL } from '@env';
+
+const apiUrl = `${API_BASE_URL}`;
 
 export default function Meal({ onClose }) {
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
@@ -21,7 +24,7 @@ export default function Meal({ onClose }) {
   const [isChoosingProduct, setIsChoosingProduct] = useState(false);
 
   useEffect(() => {
-    axios.get("http://192.168.1.32:3000/products")
+    axios.get(apiUrl + "/products")
         .then(response => {
           setDatabaseProducts(response.data);
           setFilteredProducts(response.data); // Initialize filtered list

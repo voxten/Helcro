@@ -1,9 +1,8 @@
 // utils/api.js
 import axios from 'axios';
+import { API_BASE_URL } from '@env';
 
-
-const baseURL = 'http://twojeip:3000'; 
-// const baseURL = 'http://192.168.x.x:3000'; // (Wpisz tutaj ip komputera)
+const baseURL = `${API_BASE_URL}`;
 
 const api = axios.create({
   baseURL,

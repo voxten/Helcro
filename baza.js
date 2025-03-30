@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList } from "react-native";
 import axios from "axios";
+import { API_BASE_URL } from '@env';
+
+const apiUrl = `${API_BASE_URL}`;
 
 export default function Baza() {
     const [users, setUsers] = useState([]);
@@ -9,18 +12,19 @@ export default function Baza() {
     const [recipeName, setRecipeName] = useState("");
 
     useEffect(() => {
-        axios.get("http://localhost/users")//wpisz adres ip komputera jak korzystasz z expo go, albo localhost jesli z emulatora
+        axios.get(apiUrl + "/users")//wpisz adres ip komputera jak korzystasz z expo go, albo localhost jesli z emulatora
             .then(response => setUsers(response.data))
             .catch(error => console.error("Error fetching data:", error.response.data));
     }, []);
+
     useEffect(() => {
-        axios.get("http://localhost/products")//wpisz adres ip komputera jak korzystasz z expo go, albo localhost jesli z emulatora
+        axios.get(apiUrl + "/products")//wpisz adres ip komputera jak korzystasz z expo go, albo localhost jesli z emulatora
             .then(response => setProducts(response.data))
             .catch(error => console.error("Error fetching data:", error.response.data));
     }, []);
     useEffect(() => {
         const recepturaId = 1; // Pass dynamically if needed
-        axios.get(`http://localhost/receptury`) 
+        axios.get(apiUrl + `/receptury`)
             .then(response => {
                 if (response.data && response.data.length > 0) {
                     setRecipeName(response.data[0].NazwaReceptury); // Set recipe name
@@ -29,7 +33,7 @@ export default function Baza() {
             })
             .catch(error => console.error("Error fetching data:", error.response.data));
     }, []);
-    
+
     return (
         <View>
             <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>
