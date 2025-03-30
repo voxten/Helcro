@@ -1,7 +1,7 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import RecipesList from "../components/Recipes/RacipesList";
-import RecipeDetail from "../components/Recipes/RecipeDetail"; // Importujemy ekran RecipeDetail
+import RecipesList from "../components/recipes/RecipesList";
+import RecipeDetail from "../components/recipes/RecipeDetail"; // Importujemy ekran RecipeDetail
 
 const Stack = createStackNavigator();
 

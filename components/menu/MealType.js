@@ -69,20 +69,25 @@ export default function MealType({ onClose, onSubmit }) {
         )}
 
         {isMealTimeVisible && selectedMeal && (
-          <View style={styles.timeBox}>
-            <Text style={styles.timeText}>Select Time</Text>
-            <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.timePickerButton}>
-              <Text style={styles.timePickerText}>{mealTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-            </TouchableOpacity>
-            {showTimePicker && (
-              <DateTimePicker
-                value={mealTime}
-                mode="time"
-                display="spinner"
-                onChange={handleTimeChange}
-              />
-            )}
-          </View>
+            <View style={styles.timeBox}>
+              <Text style={styles.timeText}>Select Time</Text>
+              <TouchableOpacity
+                  onPress={() => setShowTimePicker(true)}
+                  style={styles.timePickerButton}
+              >
+                <Text style={styles.timePickerText}>
+                  {mealTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </Text>
+              </TouchableOpacity>
+              {showTimePicker && (
+                  <DateTimePicker
+                      value={mealTime}
+                      mode="time"
+                      display="spinner"
+                      onChange={handleTimeChange}
+                  />
+              )}
+            </View>
         )}
 
         <View style={styles.buttons}>
