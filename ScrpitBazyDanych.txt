@@ -56,6 +56,7 @@ CREATE TABLE products (
     fibers DECIMAL(10,2),
     salt DECIMAL(10,2),
     calories DECIMAL(10,2),
+    image VARCHAR(255),
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

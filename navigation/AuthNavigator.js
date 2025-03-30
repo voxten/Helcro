@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import LoginScreen from '../components/screens/Auth/LoginScreen';
-import RegisterScreen from '../components/screens/Auth/RegisterScreen';
-import ForgotPasswordScreen from '../components/screens/Auth/ForgotPasswordScreen';
+import LoginScreen from '../components/screens/auth/LoginScreen';
+import RegisterScreen from '../components/screens/auth/RegisterScreen';
+import ForgotPasswordScreen from '../components/screens/auth/ForgotPasswordScreen';
 import Icon from "react-native-vector-icons/FontAwesome5";
 
 const App = () => {

@@ -1,9 +1,9 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import MoreScreen from "./MoreScreen";
-import ProfileScreen from "../components/Profile/ProfileScreen";
-import DietaryGoalsScreen from "../components/Profile/DietaryGoalsScreen";
-import WeightHistoryScreen from "../components/Profile/WeightHistoryScreen";
+import ProfileScreen from "../components/profile/ProfileScreen";
+import DietaryGoalsScreen from "../components/profile/DietaryGoalsScreen";
+import WeightHistoryScreen from "../components/profile/WeightHistoryScreen";
 
 const Stack = createStackNavigator();
 
