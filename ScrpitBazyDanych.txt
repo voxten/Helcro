@@ -1,0 +1,93 @@
+Stworzcie baze danych w php my admin pod nazwa HELCRO oraz do backend dodajcie plik .env z zawartoscia:DB_HOST='localhost'
+DB_USER='root'
+DB_PASS=''
+DB_NAME='HELCRO'
+
+
+Tworzenie tabel:
+CREATE TABLE Uzytkownik (
+    id_Uzytkownika INT PRIMARY KEY AUTO_INCREMENT,
+    NazwaUzytkownika VARCHAR(255) NOT NULL UNIQUE,
+    Email VARCHAR(255) NOT NULL UNIQUE,
+    Haslo VARCHAR(255) NOT NULL,
+    Wzrost FLOAT,
+    Waga FLOAT,
+    Plec ENUM('M', 'K', 'Inne')
+);
+
+CREATE TABLE Cele (
+    Uzytkownik_id_Uzytkownika INT PRIMARY KEY,
+    DziennieKalorie INT NOT NULL,
+    DziennieBialko FLOAT NOT NULL,
+    DziennieTluszcze FLOAT NOT NULL,
+    DziennieWeglowodany FLOAT NOT NULL,
+    FOREIGN KEY (Uzytkownik_id_Uzytkownika) REFERENCES Uzytkownik(id_Uzytkownika) ON DELETE CASCADE
+);
+
+CREATE TABLE DziennikSpozycia (
+    idDziennikSpozycia INT PRIMARY KEY AUTO_INCREMENT,
+    Uzytkownik_id_Uzytkownika INT NOT NULL,
+    data_dziennika DATE NOT NULL,
+    FOREIGN KEY (Uzytkownik_id_Uzytkownika) REFERENCES Uzytkownik(id_Uzytkownika) ON DELETE CASCADE
+);
+
+CREATE TABLE Posilki (
+    id_posilki INT PRIMARY KEY AUTO_INCREMENT,
+    NazwaPosilku VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE DziennikSpozycia_has_Posilki (
+    DziennikSpozycia_Uzytkownik_id_Uzytkownika INT NOT NULL,
+    DziennikSpozycia_idDziennikSpozycia INT NOT NULL,
+    Posilki_id_posilki INT NOT NULL,
+    PRIMARY KEY (DziennikSpozycia_Uzytkownik_id_Uzytkownika, DziennikSpozycia_idDziennikSpozycia, Posilki_id_posilki),
+    FOREIGN KEY (DziennikSpozycia_Uzytkownik_id_Uzytkownika) REFERENCES Uzytkownik(id_Uzytkownika) ON DELETE CASCADE,
+    FOREIGN KEY (DziennikSpozycia_idDziennikSpozycia) REFERENCES DziennikSpozycia(idDziennikSpozycia) ON DELETE CASCADE,
+    FOREIGN KEY (Posilki_id_posilki) REFERENCES Posilki(id_posilki) ON DELETE CASCADE
+);
+
+CREATE TABLE products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_name VARCHAR(255) NOT NULL,
+    proteins DECIMAL(10,2),
+    fats DECIMAL(10,2),
+    carbohydrates DECIMAL(10,2),
+    sugars DECIMAL(10,2),
+    fibers DECIMAL(10,2),
+    salt DECIMAL(10,2),
+    calories DECIMAL(10,2),
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Produkty_has_Posilki (
+    Produkty_idProduktu INT NOT NULL,
+    Posilki_id_posilki INT NOT NULL,
+    PRIMARY KEY (Produkty_idProduktu, Posilki_id_posilki),
+    FOREIGN KEY (Produkty_idProduktu) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (Posilki_id_posilki) REFERENCES Posilki(id_posilki) ON DELETE CASCADE
+);
+
+CREATE TABLE Receptury (
+    idReceptury INT PRIMARY KEY AUTO_INCREMENT,
+    Uzytkownik_id_Uzytkownika INT NOT NULL,
+    Nazwa VARCHAR(255) NOT NULL UNIQUE,
+    Opis TEXT,
+    FOREIGN KEY (Uzytkownik_id_Uzytkownika) REFERENCES Uzytkownik(id_Uzytkownika) ON DELETE CASCADE
+);
+
+CREATE TABLE Posilki_has_Receptury (
+    Posilki_id_posilki INT NOT NULL,
+    Receptury_idReceptury INT NOT NULL,
+    PRIMARY KEY (Posilki_id_posilki, Receptury_idReceptury),
+    FOREIGN KEY (Posilki_id_posilki) REFERENCES Posilki(id_posilki) ON DELETE CASCADE,
+    FOREIGN KEY (Receptury_idReceptury) REFERENCES Receptury(idReceptury) ON DELETE CASCADE
+);
+
+CREATE TABLE Receptury_has_Produkty (
+    Receptury_idReceptury INT NOT NULL,
+    Produkty_idProduktu INT NOT NULL,
+    Ilosc FLOAT NOT NULL,
+    PRIMARY KEY (Receptury_idReceptury, Produkty_idProduktu),
+    FOREIGN KEY (Receptury_idReceptury) REFERENCES Receptury(idReceptury) ON DELETE CASCADE,
+    FOREIGN KEY (Produkty_idProduktu) REFERENCES products(id) ON DELETE CASCADE
+);
