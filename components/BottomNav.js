@@ -9,6 +9,7 @@ import Meal from "./menu/meal";
 import Menu from "./menu/menu";
 import MoreStack from "../navigation/MoreStack";
 import AuthNavigator from "../navigation/AuthNavigator";
+import RecipesStack from "../navigation/RecipesStack";
 
 const RecipesScreen = () => <View><Text>Recipes Screen</Text></View>;
 
@@ -45,7 +46,7 @@ export default function BottomNav() {
                 />
                 <Tab.Screen
                     name="Recipes"
-                    component={RecipesScreen}
+                    component={RecipesStack} // <--- Zmienione z RecipesList na RecipesStack
                     options={{
                         tabBarIcon: ({ color }) => <FontIcon name="book" size={20} color={color} />,
                     }}
