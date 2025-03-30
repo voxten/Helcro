@@ -61,9 +61,17 @@ export default function Meal({ onClose }) {
   };
 
   const handleSelectProduct = (product) => {
-    setProducts([...products, { ...product, grams: 100 }]); // Default to 100g
+    setProducts([
+      ...products,
+      {
+        ...product,
+        grams: 100, // Default to 100g
+        originalValues: { ...product } // Store original values
+      }
+    ]);
     setIsChoosingProduct(false);
   };
+
 
   // Search function to filter products
   const handleSearch = (text) => {
@@ -103,11 +111,18 @@ export default function Meal({ onClose }) {
                     data={filteredProducts}
                     keyExtractor={(item) => item.id.toString()}
                     renderItem={({ item }) => (
-                        <TouchableOpacity style={styles.button} onPress={() => handleSelectProduct(item)}>
-                          {item.image && <Image source={{ uri: item.image }} style={{ width: 50, height: 50, marginRight: 10 }} />}
-                          <Text style={styles.buttonText}>
-                            {item.product_name} - {item.calories} kcal
-                          </Text>
+                        <TouchableOpacity onPress={() => handleSelectProduct(item)}>
+                          <View style={localStyles.productCard}>
+                            {item.image && (
+                                <Image source={{ uri: item.image }} style={localStyles.productImage} />
+                            )}
+                            <View style={localStyles.productInfo}>
+                              <Text style={localStyles.productName}>{item.product_name}</Text>
+                              <Text style={localStyles.productDetails}>
+                                {item.calories} kcal | {item.proteins}g protein | {item.fats}g fat | {item.carbohydrates}g carbs
+                              </Text>
+                            </View>
+                          </View>
                         </TouchableOpacity>
                     )}
                 />
@@ -155,13 +170,52 @@ export default function Meal({ onClose }) {
             <FlatList
                 data={products}
                 keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                     <View style={localStyles.productCard}>
-                      {item.image && (
-                          <Image source={{ uri: item.image }} style={localStyles.productImage} />
-                      )}
+                      {/* X Button to remove the product */}
+                      <TouchableOpacity
+                          style={localStyles.removeButton}
+                          onPress={() => {
+                            const updatedProducts = [...products];
+                            updatedProducts.splice(index, 1);
+                            setProducts(updatedProducts);
+                          }}
+                      >
+                        <Text style={localStyles.removeButtonText}>X</Text>
+                      </TouchableOpacity>
+
+                      {item.image && <Image source={{ uri: item.image }} style={localStyles.productImage} />}
+
                       <View style={localStyles.productInfo}>
                         <Text style={localStyles.productName}>{item.product_name}</Text>
+
+                        {/* Input for grams */}
+                        <View style={localStyles.gramsInputContainer}>
+                          <TextInput
+                              style={localStyles.gramsInput}
+                              placeholder="Grams"
+                              keyboardType="numeric"
+                              value={item.grams?.toString() || ""}
+                              onChangeText={(text) => {
+                                const grams = parseFloat(text) || 0;
+                                const updatedProducts = [...products];
+
+                                updatedProducts[index] = {
+                                  ...item,
+                                  grams,
+                                  calories: ((item.originalValues.calories / 100) * grams).toFixed(2),
+                                  proteins: ((item.originalValues.proteins / 100) * grams).toFixed(2),
+                                  fats: ((item.originalValues.fats / 100) * grams).toFixed(2),
+                                  carbohydrates: ((item.originalValues.carbohydrates / 100) * grams).toFixed(2),
+                                };
+
+                                setProducts(updatedProducts);
+                              }}
+                          />
+                          <Text style={localStyles.gramsLabel}>grams</Text>
+                        </View>
+
+                        {/* Nutritional details */}
                         <Text style={localStyles.productDetails}>
                           {item.calories} kcal | {item.proteins}g protein | {item.fats}g fat | {item.carbohydrates}g carbs
                         </Text>
@@ -169,6 +223,7 @@ export default function Meal({ onClose }) {
                     </View>
                 )}
             />
+
           </View>
           ) : (
                 <>
@@ -220,6 +275,22 @@ const localStyles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3, // For Android shadow
+    position: "relative",
+  },
+  removeButton: {
+    position: "absolute",
+    top: 5,
+    left: 5,
+    backgroundColor: "red",
+    width: 25,
+    height: 25,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  removeButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   productImage: {
     width: 50,
@@ -229,6 +300,7 @@ const localStyles = StyleSheet.create({
   },
   productInfo: {
     flex: 1,
+    marginLeft: 10, // Adjusted to avoid overlap with the "X" button
   },
   productName: {
     fontSize: 16,
@@ -238,6 +310,25 @@ const localStyles = StyleSheet.create({
   productDetails: {
     fontSize: 14,
     color: "#666",
+    marginTop: 5,
+  },
+  gramsInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 5,
+    width: 80,
+    marginRight: 5,
+    textAlign: "center",
+  },
+  gramsLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  gramsInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
   },
 });
 
