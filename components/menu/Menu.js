@@ -25,7 +25,7 @@ export default function Menu() {
             return newDate;
         });
     };
-
+    console.log('User data in Menu:', user);
     return (
         
         <View style={localStyles.container}>

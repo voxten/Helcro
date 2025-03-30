@@ -3,8 +3,9 @@ import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity } from 'reac
 import Icon from "react-native-vector-icons/FontAwesome5";
 import api from '../../utils/api';
 import mainStyles from "../../../styles/MainStyles";
-
+import { useAuth } from '../../context/AuthContext';
 const LoginScreen = ({ navigation }) => {
+  const { login } = useAuth();
   const [form, setForm] = useState({
     Email: '',
     Haslo: ''
@@ -16,19 +17,21 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
-    if (!form.Email || !form.Haslo) {
-      Alert.alert('Błąd', 'Wprowadź email i hasło');
-      return;
-    }
+  try {
+    const response = await api.post('/api/auth/login', {
+      Email: form.Email,
+      Haslo: form.Haslo
+    });
 
-    setLoading(true);
-    
-    try {
-      const response = await api.post('/api/auth/login', {
-        Email: form.Email,
-        Haslo: form.Haslo
-      });
+    console.log('Odpowiedź z serwera:', response.data); // Debug
 
+    // Poprawne wywołanie login() z odpowiednią kolejnością argumentów
+    login(response.data.token, {
+      id: response.data.user.id,
+      NazwaUzytkownika: response.data.user.NazwaUzytkownika,
+      Email: response.data.user.Email
+    });
+      console.log('Full API response:', response.data);
       // Zapisz token w AsyncStorage lub kontekście
       // navigation.navigate('Home'); // Przekieruj po zalogowaniu
       Alert.alert('Sukces', 'Zalogowano pomyślnie');
