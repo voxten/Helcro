@@ -7,7 +7,7 @@ import { API_BASE_URL } from '@env';
 
 const apiUrl = `${API_BASE_URL}`;
 
-export default function Meal({ onClose }) {
+export default function Meal({ onClose, onSave, existingProducts = [] }) {
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [products, setProducts] = useState([]);
   const [databaseProducts, setDatabaseProducts] = useState([]);
@@ -75,6 +75,12 @@ export default function Meal({ onClose }) {
     setIsChoosingProduct(false);
   };
 
+  const handleSave = () => {
+    if (onSave) {
+      onSave(products);
+    }
+    onClose();
+  };
 
   // Search function to filter products
   const handleSearch = (text) => {
@@ -251,7 +257,11 @@ export default function Meal({ onClose }) {
                 <TouchableOpacity style={styles.closeButton} onPress={onClose} disabled={isButtonsDisabled}>
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.closeButton} disabled={isButtonsDisabled}>
+                <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={handleSave}
+                    disabled={isButtonsDisabled}
+                >
                   <Text style={styles.closeButtonText}>Save</Text>
                 </TouchableOpacity>
               </View>
