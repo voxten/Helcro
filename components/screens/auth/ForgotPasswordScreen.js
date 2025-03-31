@@ -4,7 +4,7 @@ import api from '../../utils/api';
 import mainStyles from "../../../styles/MainStyles"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-const ForgotPasswordScreen = () => {
+const ForgotPasswordScreen = ({onBackPress, onRegisterPress}) => {
   const [email, setEmail] = useState('');
 
   const handleResetPassword = async () => {
@@ -31,7 +31,22 @@ const ForgotPasswordScreen = () => {
         <Icon name="lock-reset" size={25} color="white" style={styles.icon} />
         <Text style={styles.buttonText}>Send reset link</Text>
       </TouchableOpacity>
+
+
+      <TouchableOpacity onPress={onBackPress} style={styles.secondaryButton}>
+        
+          <Text style={styles.secondaryButtonTextt}>Back to Login</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          onPress={onRegisterPress}
+          style={styles.secondaryButton}
+        >
+          <Text style={styles.secondaryButtonText}>Don't have an account? Register now!</Text>
+        </TouchableOpacity>
     </View>
+
+    
   );
 };
 
@@ -63,6 +78,14 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  secondaryButton: {
+    padding: 10,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    marginTop: 10,
   },
 });
 
