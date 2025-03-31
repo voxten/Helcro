@@ -9,43 +9,36 @@ const App = () => {
     const [currentScreen, setCurrentScreen] = useState('Login');
 
     const renderScreen = () => {
-        switch (currentScreen) {
-            case 'Login':
-                return <LoginScreen />;
-            case 'Register':
-                return <RegisterScreen />;
-            case 'ForgotPassword':
-                return <ForgotPasswordScreen />;
-            default:
-                return <LoginScreen />;
+        switch(currentScreen) {
+            case 'register':
+                return (
+                    <RegisterScreen 
+                      onLoginPress={() => setCurrentScreen('login')}
+                      onRegisterSuccess={() => {
+                        Alert.alert('Success', 'Registration successful! You can now log in');
+                        setCurrentScreen('login');
+                      }}
+                    />
+                  );
+                  case 'forgotPassword':
+                    return (
+                      <ForgotPasswordScreen 
+                        onBackPress={() => setCurrentScreen('login')}
+                        onRegisterPress={() => setCurrentScreen('register')}
+                      />
+                    );
+                    default:
+              return (
+                <LoginScreen 
+                  onRegisterPress={() => setCurrentScreen('register')}
+                  onForgotPasswordPress={() => setCurrentScreen('forgotPassword')}
+                  onLoginSuccess={() => console.log('Login successful')}
+                />
+              );
         }
     };
 
-    return (
-        <View style={{ flex: 1 }}>
-            {renderScreen()}
-            <View style={styles.buttonContainer}>
-                {currentScreen !== 'Login' && (
-                    <TouchableOpacity style={styles.button} onPress={() => setCurrentScreen('Login')}>
-                        <Icon name="sign-in-alt" size={16} color="white" style={styles.icon} />
-                        <Text style={styles.buttonText}>Back to Login</Text>
-                    </TouchableOpacity>
-                )}
-                {currentScreen !== 'Register' && (
-                    <TouchableOpacity style={styles.button} onPress={() => setCurrentScreen('Register')}>
-                        <Icon name="user-plus" size={16} color="white" style={styles.icon} />
-                        <Text style={styles.buttonText}>Go to Register</Text>
-                    </TouchableOpacity>
-                )}
-                {currentScreen !== 'ForgotPassword' && (
-                    <TouchableOpacity style={styles.button} onPress={() => setCurrentScreen('ForgotPassword')}>
-                        <Icon name="lock" size={16} color="white" style={styles.icon} />
-                        <Text style={styles.buttonText}>Forgot Password?</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-        </View>
-    );
+    return renderScreen();
 };
 
 const styles = StyleSheet.create({

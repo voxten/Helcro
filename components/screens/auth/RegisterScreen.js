@@ -3,7 +3,7 @@ import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity } from 'reac
 import api from '../../utils/api'; // Importujemy nasz nowy plik api
 import Icon from "react-native-vector-icons/FontAwesome5";
 
-const RegisterScreen = ({ navigation }) => {
+const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
   const [form, setForm] = useState({
     NazwaUzytkownika: '',
     Email: '',
@@ -21,12 +21,12 @@ const RegisterScreen = ({ navigation }) => {
   const handleRegister = async () => {
     // Walidacja
     if (form.Haslo !== form.PotwierdzHaslo) {
-      Alert.alert('Błąd', 'Hasła nie są identyczne');
+      Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
     if (!form.NazwaUzytkownika || !form.Email || !form.Haslo) {
-      Alert.alert('Błąd', 'Wypełnij wszystkie wymagane pola');
+      Alert.alert('Error', 'Fill in all required fields');
       return;
     }
 
@@ -40,33 +40,33 @@ const RegisterScreen = ({ navigation }) => {
         Plec: form.Plec
       });
 
-      Alert.alert('Sukces', 'Konto zostało utworzone pomyślnie');
+      Alert.alert('Account has been successfully created');
       
     } catch (error) {
-      console.error('Błąd rejestracji:', error);
-      let errorMessage = 'Wystąpił błąd podczas rejestracji';
+      console.error('Registration error:', error);
+      let errorMessage = 'An error occurred during registration';
       
       if (error.response) {
         if (error.response.data.error.includes('Email')) {
-          errorMessage = 'Podany email jest już zajęty';
+          errorMessage = 'The provided email is already taken';
         } else if (error.response.data.error.includes('NazwaUzytkownika')) {
-          errorMessage = 'Podana nazwa użytkownika jest już zajęta';
+          errorMessage = 'The provided username is already taken';
         }
       } else if (error.message.includes('Network Error')) {
-        errorMessage = 'Brak połączenia z serwerem. Sprawdź swoje połączenie internetowe';
+        errorMessage = 'No connection to the server. Please check your internet connection.';
       }
 
-      Alert.alert('Błąd', errorMessage);
+      Alert.alert('Error', errorMessage);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Rejestracja</Text>
+      <Text style={styles.title}>Registration</Text>
       
       <TextInput
         style={styles.input}
-        placeholder="Nazwa użytkownika *"
+        placeholder="User name *"
         value={form.NazwaUzytkownika}
         onChangeText={(text) => handleChange('NazwaUzytkownika', text)}
         autoCapitalize="none"
@@ -83,7 +83,7 @@ const RegisterScreen = ({ navigation }) => {
       
       <TextInput
         style={styles.input}
-        placeholder="Hasło *"
+        placeholder="Password *"
         value={form.Haslo}
         onChangeText={(text) => handleChange('Haslo', text)}
         secureTextEntry
@@ -91,7 +91,7 @@ const RegisterScreen = ({ navigation }) => {
       
       <TextInput
         style={styles.input}
-        placeholder="Potwierdź hasło *"
+        placeholder="Confirm password *"
         value={form.PotwierdzHaslo}
         onChangeText={(text) => handleChange('PotwierdzHaslo', text)}
         secureTextEntry
@@ -99,7 +99,7 @@ const RegisterScreen = ({ navigation }) => {
       
       <TextInput
         style={styles.input}
-        placeholder="Wzrost (cm)"
+        placeholder="Height (cm)"
         value={form.Wzrost}
         onChangeText={(text) => handleChange('Wzrost', text)}
         keyboardType="numeric"
@@ -107,25 +107,25 @@ const RegisterScreen = ({ navigation }) => {
       
       <TextInput
         style={styles.input}
-        placeholder="Waga (kg)"
+        placeholder="Weight (kg)"
         value={form.Waga}
         onChangeText={(text) => handleChange('Waga', text)}
         keyboardType="numeric"
       />
       
       <View style={styles.radioGroup}>
-        <Text style={styles.radioLabel}>Płeć:</Text>
-        {['M', 'K', 'Inne'].map((gender) => (
-          <TouchableOpacity
-            key={gender}
-            style={[
-              styles.radioButton,
-              form.Plec === gender && styles.radioButtonSelected
-            ]}
-            onPress={() => handleChange('Plec', gender)}
-          >
-            <Text style={styles.radioText}>
-              {gender === 'M' ? 'Mężczyzna' : gender === 'K' ? 'Kobieta' : 'Inne'}
+        <Text style={styles.radioLabel}>Gender:</Text>
+        {['M', 'W'].map((gender) => (
+        <TouchableOpacity
+          key={gender}
+          style={[
+            styles.radioButton,
+            form.Plec === gender && styles.radioButtonSelected,
+          ]}
+          onPress={() => handleChange('Plec', gender)}
+        >
+          <Text style={styles.radioText}>
+            {gender === 'M' ? 'Men' : 'Women'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -133,7 +133,14 @@ const RegisterScreen = ({ navigation }) => {
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Icon name="user-plus" size={20} color="white" style={styles.icon} />
-        <Text style={styles.buttonText}>Zarejestruj się</Text>
+        <Text style={styles.buttonText}>Register</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        onPress={onLoginPress}
+        style={styles.secondaryButton}
+      >
+        <Text style={styles.secondaryButtonText}>Have an account? Log in</Text>
       </TouchableOpacity>
     </View>
   );
@@ -203,6 +210,14 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  secondaryButton: {
+    padding: 10,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    marginTop: 10,
   },
 });
 

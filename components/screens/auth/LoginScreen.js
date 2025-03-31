@@ -4,12 +4,14 @@ import Icon from "react-native-vector-icons/FontAwesome5";
 import api from '../../utils/api';
 import mainStyles from "../../../styles/MainStyles";
 import { useAuth } from '../../context/AuthContext';
-const LoginScreen = ({ navigation }) => {
+
+const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess }) => {
   const { login } = useAuth();
   const [form, setForm] = useState({
     Email: '',
     Haslo: ''
   });
+ 
   const [loading, setLoading] = useState(false);
 
   const handleChange = (name, value) => {
@@ -23,7 +25,7 @@ const LoginScreen = ({ navigation }) => {
       Haslo: form.Haslo
     });
 
-    console.log('Odpowiedź z serwera:', response.data); // Debug
+    console.log('Server response:', response.data); // Debug
 
     // Poprawne wywołanie login() z odpowiednią kolejnością argumentów
     login(response.data.token, {
@@ -34,23 +36,23 @@ const LoginScreen = ({ navigation }) => {
       console.log('Full API response:', response.data);
       // Zapisz token w AsyncStorage lub kontekście
       // navigation.navigate('Home'); // Przekieruj po zalogowaniu
-      Alert.alert('Sukces', 'Zalogowano pomyślnie');
+      Alert.alert('Logged in successfully');
       
     } catch (error) {
-      console.error('Błąd logowania:', error.response?.data);
+      console.error('Login error:', error.response?.data);
       
-      let errorMessage = 'Nieprawidłowy email lub hasło';
+      let errorMessage = 'Invalid email or password';
       if (error.response) {
         if (error.response.status === 401) {
-          errorMessage = 'Nieprawidłowe dane logowania';
+          errorMessage = 'Invalid login data';
         } else if (error.response.status === 500) {
-          errorMessage = 'Błąd serwera';
+          errorMessage = 'Server error';
         }
       } else if (error.message.includes('Network Error')) {
-        errorMessage = 'Brak połączenia z serwerem';
+        errorMessage = 'No connection to the server';
       }
 
-      Alert.alert('Błąd', errorMessage);
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -58,7 +60,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Logowanie</Text>
+      <Text style={styles.title}>Logging in</Text>
       
       <TextInput
         style={mainStyles.input}
@@ -71,7 +73,7 @@ const LoginScreen = ({ navigation }) => {
       
       <TextInput
         style={mainStyles.input}
-        placeholder="Hasło *"
+        placeholder="Password *"
         value={form.Haslo}
         onChangeText={(text) => handleChange('Haslo', text)}
         secureTextEntry
@@ -84,22 +86,20 @@ const LoginScreen = ({ navigation }) => {
       >
         <Icon name="key" size={20} color="white" style={styles.icon} />
         <Text style={styles.buttonText}>
-          {loading ? 'Logowanie...' : 'Zaloguj się'}
+          {loading ? 'Logging...' : 'Log in'}
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
+      <TouchableOpacity onPress={onRegisterPress}
         style={styles.secondaryButton}
-        onPress={() => navigation.navigate('Register')}
       >
-        <Text style={styles.secondaryButtonText}>Nie masz konta? Zarejestruj się</Text>
+        <Text style={styles.secondaryButtonText}>Dont have account? Register now!</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
+      <TouchableOpacity onPress={onForgotPasswordPress}
         style={styles.secondaryButton}
-        onPress={() => navigation.navigate('ForgotPassword')}
       >
-        <Text style={styles.secondaryButtonText}>Zapomniałeś hasła?</Text>
+        <Text style={styles.secondaryButtonText}>Forgot Password?</Text>
       </TouchableOpacity>
     </View>
   );
