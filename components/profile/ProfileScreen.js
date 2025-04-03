@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import {View, Text, TextInput, Image, TouchableOpacity} from "react-native";
 import styles from "./styles/ProfileStyles"
+import { useAuth } from "../context/AuthContext";
 
 export default function ProfileScreen() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [profilePic, setProfilePic] = useState(null); // Placeholder for profile picture
+    const { user } = useAuth();
 
     const handleDeleteAccount = () => {
         // Implement delete account logic here
@@ -25,6 +27,10 @@ export default function ProfileScreen() {
                     style={styles.profilePic}
                 />
             </View>
+            <Text style={styles.welcomeText}>
+                Welcome, {String(user.NazwaUzytkownika)}!
+            </Text>
+
             <TextInput
                 style={styles.input}
                 value={email}

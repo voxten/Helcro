@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal, Image } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal, Image, Slider } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MealType from "./MealType";
 import styles from "../../styles/MainStyles";
-import { useAuth } from '../context/AuthContext';
 import Icon from "react-native-vector-icons/FontAwesome6";
 import Meal from "./Meal";
 
@@ -15,7 +14,12 @@ export default function Menu() {
     const [showMeal, setShowMeal] = useState(false);
     const [meals, setMeals] = useState([]);
     const [expandedMeal, setExpandedMeal] = useState(null);
-    const { user } = useAuth();
+    const [targetNutrition, setTargetNutrition] = useState({
+        calories: 1500,
+        proteins: 100,
+        fats: 50,
+        carbohydrates: 200
+    });
 
     const formatDate = (date) => {
         return date.toLocaleDateString("en-GB", { weekday: 'long', day: 'numeric', month: 'long' });
@@ -59,6 +63,7 @@ export default function Menu() {
             setShowMeal(true);
         }
     };
+
     const handleAddProducts = (newProducts) => {
         if (meals.length > 0) {
             const updatedMeals = [...meals];
@@ -107,23 +112,38 @@ export default function Menu() {
         meals.flatMap(meal => meal.products)
     );
 
+
+    const NutritionSlider = ({ label, current, target }) => {
+        const percentage = Math.min((current / target) * 100, 100);
+        const sliderWidth = 85; // Slightly wider to accommodate text
+
+        return (
+            <View style={[localStyles.sliderContainer, { width: sliderWidth }]}>
+                <Text
+                    style={localStyles.sliderLabel}
+                    numberOfLines={1}  // Prevent text wrapping
+                    ellipsizeMode="tail"  // Add ... if text is too long
+                >
+                    {`${label}: ${current.toFixed(0)}/${target}`}
+                </Text>
+                <View style={localStyles.sliderTrack}>
+                    <View
+                        style={[
+                            localStyles.sliderFill,
+                            {
+                                width: `${percentage}%`,
+                                backgroundColor: percentage >= 100 ? '#ff4444' : '#4CAF50'
+                            }
+                        ]}
+                    />
+                </View>
+            </View>
+        );
+    };
+
     return (
         <View style={localStyles.container}>
-            <Text style={styles.welcomeText}>
-                Hello, {String(user?.NazwaUzytkownika || 'Guest')}!
-            </Text>
 
-            <View style={localStyles.nutritionContainer}>
-                <Text style={localStyles.nutritionText}>
-                    Kcal: {(totalNutrition.calories || 0).toFixed(0)} |
-                    Protein: {(totalNutrition.proteins || 0).toFixed(0)}g |
-                    Fat: {(totalNutrition.fats || 0).toFixed(0)}g |
-                    Carbs: {(totalNutrition.carbohydrates || 0).toFixed(0)}g
-                </Text>
-                <TouchableOpacity onPress={() => setShowCalendar(true)}>
-                    <AntDesign name="calendar" size={24} color="brown" />
-                </TouchableOpacity>
-            </View>
 
             <View style={localStyles.dateContainer}>
                 <TouchableOpacity onPress={() => changeDay(-1)}>
@@ -132,6 +152,9 @@ export default function Menu() {
                 <Text style={localStyles.dateText}>{formatDate(selectedDate)}</Text>
                 <TouchableOpacity onPress={() => changeDay(1)}>
                     <AntDesign name="right" size={20} color="brown" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowCalendar(true)}>
+                    <AntDesign name="calendar" size={24} color="brown" />
                 </TouchableOpacity>
             </View>
 
@@ -146,6 +169,31 @@ export default function Menu() {
                     }}
                 />
             )}
+
+            <View style={localStyles.nutritionContainer}>
+                <View style={localStyles.nutritionFooter}>
+                    <NutritionSlider
+                        label="Kcal"
+                        current={totalNutrition.calories || 0}
+                        target={targetNutrition.calories}
+                    />
+                    <NutritionSlider
+                        label="Protein"
+                        current={totalNutrition.proteins || 0}
+                        target={targetNutrition.proteins}
+                    />
+                    <NutritionSlider
+                        label="Fat"
+                        current={totalNutrition.fats || 0}
+                        target={targetNutrition.fats}
+                    />
+                    <NutritionSlider
+                        label="Carbs"
+                        current={totalNutrition.carbohydrates || 0}
+                        target={targetNutrition.carbohydrates}
+                    />
+                </View>
+            </View>
 
             <ScrollView style={localStyles.mealList}>
                 {meals.length === 0 ? (
@@ -261,18 +309,49 @@ export default function Menu() {
 }
 
 const localStyles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#eee', paddingHorizontal: 20, paddingTop: 40 },
-    header: { fontSize: 26, textAlign: 'center', color: 'brown', marginBottom: 20 },
-    nutritionContainer: {
+    container: {
+        flex: 1,
+        backgroundColor: '#eee',
+        paddingHorizontal: 20,
+        paddingTop: 40
+    },
+    header: {
+        fontSize: 26,
+        textAlign: 'center',
+        color: 'brown',
+        marginBottom: 20
+    },
+    nutritionFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        width: '100%',
         alignItems: 'center',
         padding: 10,
         backgroundColor: '#fff',
         borderRadius: 10,
+        marginBottom: 10,
         elevation: 3
     },
-    nutritionText: { fontSize: 16 },
+    sliderContainer: {
+        marginHorizontal: 2,
+    },
+    sliderLabel: {
+        fontSize: 12,
+        marginBottom: 4,
+        textAlign: 'center',
+        flexShrink: 1, // Allows text to shrink if needed
+        width: '100%', // Ensures text container takes full width
+    },
+    sliderTrack: {
+        height: 6,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    sliderFill: {
+        height: '100%',
+        borderRadius: 3,
+    },
     dateContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
