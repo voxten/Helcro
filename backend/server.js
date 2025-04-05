@@ -134,7 +134,7 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
 // ===== KONIEC NOWYCH ENDPOINTÓW ===== //
 // Sample endpoint to get data
 app.get('/users', (req, res) => {
-    db.query('SELECT * FROM uzytkownik', (err, results) => {
+    db.query('SELECT * FROM user', (err, results) => {
         if (err) {
             return res.status(500).json({ error: err });
         }
@@ -143,13 +143,14 @@ app.get('/users', (req, res) => {
 });
 
 app.get('/products', (req, res) => {
-    db.query('SELECT * FROM products', (err, results) => {
+    db.query('SELECT * FROM product', (err, results) => {
         if (err) {
             return res.status(500).json({ error: err });
         }
         res.json(results);
     });
 });
+/*
 app.get('/receptury', (req, res) => {
     db.query('SELECT r.Nazwa AS NazwaReceptury, p.id AS ProduktID, p.product_name AS products, rhp.Ilosc AS Ilosc FROM Receptury_has_Produkty rhp JOIN products p ON rhp.Produkty_idProduktu = p.id JOIN Receptury r ON rhp.Receptury_idReceptury = r.idReceptury  -- Corrected column name here WHERE rhp.Receptury_idReceptury = 1;', (err, results) => {
         if (err) {
@@ -158,6 +159,7 @@ app.get('/receptury', (req, res) => {
         res.json(results);
     });
 });
+*/
 /*
 async function fetchAndInsertProducts(page) {
     try {
@@ -169,7 +171,7 @@ async function fetchAndInsertProducts(page) {
                 const { product_name, nutriments, image_front_url } = product;
                 if (!nutriments) return; // Skip if no nutrition data
 
-                const query = `INSERT INTO products (product_name, proteins, fats, carbohydrates, sugars, fibers, salt, calories, image)
+                const query = `INSERT INTO product (product_name, proteins, fats, carbohydrates, sugars, fibers, salt, calories, image)
                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
                 db.query(query, [

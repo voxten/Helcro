@@ -5,49 +5,49 @@ DB_NAME='HELCRO'
 
 
 Tworzenie tabel:
-CREATE TABLE Uzytkownik (
-    id_Uzytkownika INT PRIMARY KEY AUTO_INCREMENT,
-    NazwaUzytkownika VARCHAR(255) NOT NULL UNIQUE,
+CREATE TABLE User (
+    UserId INT PRIMARY KEY AUTO_INCREMENT,
+    UserName VARCHAR(255) NOT NULL UNIQUE,
     Email VARCHAR(255) NOT NULL UNIQUE,
-    Haslo VARCHAR(255) NOT NULL,
-    Wzrost FLOAT,
-    Waga FLOAT,
-    Plec ENUM('M', 'K', 'Inne')
+    Password VARCHAR(255) NOT NULL,
+    Height FLOAT,
+    Weight FLOAT,
+    Gender ENUM('M', 'K', 'Inne')
 );
 
-CREATE TABLE Cele (
-    Uzytkownik_id_Uzytkownika INT PRIMARY KEY,
-    DziennieKalorie INT NOT NULL,
-    DziennieBialko FLOAT NOT NULL,
-    DziennieTluszcze FLOAT NOT NULL,
-    DziennieWeglowodany FLOAT NOT NULL,
-    FOREIGN KEY (Uzytkownik_id_Uzytkownika) REFERENCES Uzytkownik(id_Uzytkownika) ON DELETE CASCADE
+CREATE TABLE Goal (
+    UserId INT PRIMARY KEY,
+    DailyCalories INT NOT NULL,
+    DailyProteins FLOAT NOT NULL,
+    DailyFats FLOAT NOT NULL,
+    DailyCarbs FLOAT NOT NULL,
+    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE
 );
 
-CREATE TABLE DziennikSpozycia (
-    idDziennikSpozycia INT PRIMARY KEY AUTO_INCREMENT,
-    Uzytkownik_id_Uzytkownika INT NOT NULL,
-    data_dziennika DATE NOT NULL,
-    FOREIGN KEY (Uzytkownik_id_Uzytkownika) REFERENCES Uzytkownik(id_Uzytkownika) ON DELETE CASCADE
+CREATE TABLE IntakeLog (
+    IntakeLogId INT PRIMARY KEY AUTO_INCREMENT,
+    UserId INT NOT NULL,
+    LogDate DATE NOT NULL,
+    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE
 );
 
-CREATE TABLE Posilki (
-    id_posilki INT PRIMARY KEY AUTO_INCREMENT,
-    NazwaPosilku VARCHAR(255) NOT NULL UNIQUE
+CREATE TABLE Meal (
+    MealId INT PRIMARY KEY AUTO_INCREMENT,
+    MealName VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE DziennikSpozycia_has_Posilki (
-    DziennikSpozycia_Uzytkownik_id_Uzytkownika INT NOT NULL,
-    DziennikSpozycia_idDziennikSpozycia INT NOT NULL,
-    Posilki_id_posilki INT NOT NULL,
-    PRIMARY KEY (DziennikSpozycia_Uzytkownik_id_Uzytkownika, DziennikSpozycia_idDziennikSpozycia, Posilki_id_posilki),
-    FOREIGN KEY (DziennikSpozycia_Uzytkownik_id_Uzytkownika) REFERENCES Uzytkownik(id_Uzytkownika) ON DELETE CASCADE,
-    FOREIGN KEY (DziennikSpozycia_idDziennikSpozycia) REFERENCES DziennikSpozycia(idDziennikSpozycia) ON DELETE CASCADE,
-    FOREIGN KEY (Posilki_id_posilki) REFERENCES Posilki(id_posilki) ON DELETE CASCADE
+CREATE TABLE IntakeLog_has_Meal (
+    UserId INT NOT NULL,
+    IntakeLogId INT NOT NULL,
+    MealId INT NOT NULL,
+    PRIMARY KEY (UserId, IntakeLogId, MealId),
+    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE,
+    FOREIGN KEY (IntakeLogId) REFERENCES IntakeLog(IntakeLogId) ON DELETE CASCADE,
+    FOREIGN KEY (MealId) REFERENCES Meal(MealId) ON DELETE CASCADE
 );
 
-CREATE TABLE products (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE Product (
+    ProductId INT AUTO_INCREMENT PRIMARY KEY,
     product_name VARCHAR(255) NOT NULL,
     proteins DECIMAL(10,2),
     fats DECIMAL(10,2),
@@ -60,35 +60,48 @@ CREATE TABLE products (
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE Produkty_has_Posilki (
-    Produkty_idProduktu INT NOT NULL,
-    Posilki_id_posilki INT NOT NULL,
-    PRIMARY KEY (Produkty_idProduktu, Posilki_id_posilki),
-    FOREIGN KEY (Produkty_idProduktu) REFERENCES products(id) ON DELETE CASCADE,
-    FOREIGN KEY (Posilki_id_posilki) REFERENCES Posilki(id_posilki) ON DELETE CASCADE
+CREATE TABLE Meal_has_Product (
+    ProductId INT NOT NULL,
+    MealId INT NOT NULL,
+    PRIMARY KEY (ProductId, MealId),
+    FOREIGN KEY (ProductId) REFERENCES Product(ProductId) ON DELETE CASCADE,
+    FOREIGN KEY (MealId) REFERENCES Meal(MealId) ON DELETE CASCADE
 );
 
-CREATE TABLE Receptury (
-    idReceptury INT PRIMARY KEY AUTO_INCREMENT,
-    Uzytkownik_id_Uzytkownika INT NOT NULL,
-    Nazwa VARCHAR(255) NOT NULL UNIQUE,
-    Opis TEXT,
-    FOREIGN KEY (Uzytkownik_id_Uzytkownika) REFERENCES Uzytkownik(id_Uzytkownika) ON DELETE CASCADE
+CREATE TABLE Recipe (
+    RecipeId INT PRIMARY KEY AUTO_INCREMENT,
+    userId INT NOT NULL,
+    Name VARCHAR(255) NOT NULL UNIQUE,
+    Description TEXT,
+    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE
 );
 
-CREATE TABLE Posilki_has_Receptury (
-    Posilki_id_posilki INT NOT NULL,
-    Receptury_idReceptury INT NOT NULL,
-    PRIMARY KEY (Posilki_id_posilki, Receptury_idReceptury),
-    FOREIGN KEY (Posilki_id_posilki) REFERENCES Posilki(id_posilki) ON DELETE CASCADE,
-    FOREIGN KEY (Receptury_idReceptury) REFERENCES Receptury(idReceptury) ON DELETE CASCADE
+CREATE TABLE Meal_has_Recipe (
+    MealId INT NOT NULL,
+    RecipeId INT NOT NULL,
+    PRIMARY KEY (MealId, RecipeId),
+    FOREIGN KEY (MealId) REFERENCES Meal(MealId) ON DELETE CASCADE,
+    FOREIGN KEY (RecipeId) REFERENCES Recipe(RecipeId) ON DELETE CASCADE
 );
 
-CREATE TABLE Receptury_has_Produkty (
-    Receptury_idReceptury INT NOT NULL,
-    Produkty_idProduktu INT NOT NULL,
-    Ilosc FLOAT NOT NULL,
-    PRIMARY KEY (Receptury_idReceptury, Produkty_idProduktu),
-    FOREIGN KEY (Receptury_idReceptury) REFERENCES Receptury(idReceptury) ON DELETE CASCADE,
-    FOREIGN KEY (Produkty_idProduktu) REFERENCES products(id) ON DELETE CASCADE
+CREATE TABLE Recipe_has_Product (
+    RecipeId INT NOT NULL,
+    ProductId INT NOT NULL,
+    Amount FLOAT NOT NULL,
+    PRIMARY KEY (RecipeId, ProductId),
+    FOREIGN KEY (RecipeId) REFERENCES Recipe(RecipeId) ON DELETE CASCADE,
+    FOREIGN KEY (ProductId) REFERENCES Product(ProductId) ON DELETE CASCADE
+);
+
+CREATE TABLE Category (
+    CategoryId INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE Recipe_has_Category (
+    RecipeId INT NOT NULL,
+    CategoryId INT NOT NULL,
+    PRIMARY KEY (RecipeId, CategoryId),
+    FOREIGN KEY (RecipeId) REFERENCES Recipe(RecipeId) ON DELETE CASCADE,
+    FOREIGN KEY (CategoryId) REFERENCES Category(CategoryId) ON DELETE CASCADE
 );
