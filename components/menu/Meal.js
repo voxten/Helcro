@@ -118,7 +118,7 @@ export default function Meal({ onClose, onSave, existingProducts = [] }) {
                 />
                 <FlatList
                     data={filteredProducts}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={(item) => item.ProductId.toString()}
                     renderItem={({ item }) => (
                         <TouchableOpacity onPress={() => handleSelectProduct(item)}>
                           <View style={localStyles.productCard}>
