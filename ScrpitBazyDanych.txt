@@ -12,7 +12,9 @@ CREATE TABLE User (
     Password VARCHAR(255) NOT NULL,
     Height FLOAT,
     Weight FLOAT,
-    Gender ENUM('M', 'K', 'Inne')
+    Gender ENUM('M', 'K', 'Inne'),
+    reset_token TEXT,
+    reset_token_expires DATETIME
 );
 
 CREATE TABLE Goal (
