@@ -5,7 +5,7 @@ const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-
+const nodemailer = require('nodemailer');
 dotenv.config();
 const app = express();
 app.use(cors());
@@ -20,7 +20,16 @@ const db = mysql.createConnection({
     password: process.env.DB_PASS,
     database: process.env.DB_NAME
 });
-
+// Konfiguracja mailera
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
 
 db.connect(err => {
     if (err) {
@@ -129,6 +138,142 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
             res.json(results[0]);
         }
     );
+});
+
+  
+  // Endpoint do wysłania linku resetującego
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    const { email } = req.body;
+
+    // 1. Walidacja emaila
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: 'Proszę podać poprawny adres email' });
+    }
+
+    try {
+        // 2. Sprawdzenie czy użytkownik istnieje w bazie
+        db.query('SELECT id_Uzytkownika, Email FROM Uzytkownik WHERE Email = ?', [email], async (err, results) => {
+            if (err) {
+                console.error('Błąd bazy danych:', err);
+                return res.status(500).json({ message: 'Błąd serwera' });
+            }
+
+            if (results.length === 0) {
+                // Celowo zwracamy sukces, aby nie ujawniać czy email istnieje
+                return res.json({ message: 'Jeśli email istnieje w naszej bazie, wysłaliśmy link resetujący' });
+            }
+
+            const user = results[0];
+            
+            // 3. Generowanie tokena resetującego
+            const token = jwt.sign(
+                { userId: user.id_Uzytkownika }, 
+                process.env.JWT_SECRET, 
+                { expiresIn: '1h' }
+            );
+
+            // 4. Tworzenie linku resetującego
+            const resetUrl = `${process.env.API_BASE_URL}/reset-password?token=${token}`;
+
+            // 5. Konfiguracja i wysyłka emaila
+            const mailOptions = {
+                from: `"Support" <${process.env.SMTP_USER}>`,
+                to: email,
+                subject: 'Reset hasła - Twoja Aplikacja',
+                html: `
+                    <h2>Resetowanie hasła</h2>
+                    <p>Otrzymaliśmy prośbę o reset hasła dla tego emaila.</p>
+                    <p>Kliknij poniższy link aby zresetować hasło:</p>
+                    <a href="${resetUrl}" style="
+                        display: inline-block;
+                        padding: 10px 20px;
+                        background-color: #4CAF50;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        margin: 15px 0;
+                    ">Resetuj hasło</a>
+                    <p>Link będzie aktywny przez 1 godzinę.</p>
+                    <p>Jeśli to nie Ty wysłałeś tę prośbę, zignoruj tę wiadomość.</p>
+                `
+            };
+
+            // 6. Wysłanie emaila
+            transporter.sendMail(mailOptions, (error) => {
+                if (error) {
+                    console.error('Błąd wysyłania emaila:', error);
+                    return res.status(500).json({ message: 'Błąd podczas wysyłania emaila' });
+                }
+                
+                // 7. Zapis tokena w bazie (opcjonalne)
+                db.query(
+                    'UPDATE Uzytkownik SET reset_token = ?, reset_token_expires = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id_Uzytkownika = ?',
+                    [token, user.id_Uzytkownika],
+                    (err) => {
+                        if (err) {
+                            console.error('Błąd zapisu tokena:', err);
+                            // Kontynuuj pomimo błędu - token JWT jest już wystarczający
+                        }
+                        res.json({ message: 'Jeśli email istnieje w naszej bazie, wysłaliśmy link resetujący' });
+                    }
+                );
+            });
+        });
+    } catch (error) {
+        console.error('Błąd:', error);
+        res.status(500).json({ message: 'Wystąpił błąd serwera' });
+    }
+});
+  
+  // Endpoint do resetowania hasła
+ app.post('/api/auth/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    // 1. Walidacja hasła
+    if (!newPassword || newPassword.length < 8) {
+        return res.status(400).json({ message: 'Hasło musi mieć co najmniej 8 znaków' });
+    }
+
+    try {
+        // 2. Weryfikacja tokena JWT
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // 3. Sprawdzenie w bazie (opcjonalne - dodatkowe zabezpieczenie)
+        db.query(
+            'SELECT id_Uzytkownika FROM Uzytkownik WHERE id_Uzytkownika = ? AND reset_token = ? AND reset_token_expires > NOW()',
+            [decoded.userId, token],
+            async (err, results) => {
+                if (err) {
+                    console.error('Błąd bazy danych:', err);
+                    return res.status(500).json({ message: 'Błąd serwera' });
+                }
+
+                if (results.length === 0) {
+                    return res.status(400).json({ message: 'Nieprawidłowy lub przedawniony token' });
+                }
+
+                // 4. Hashowanie nowego hasła
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                
+                // 5. Aktualizacja hasła w bazie
+                db.query(
+                    'UPDATE Uzytkownik SET Haslo = ?, reset_token = NULL, reset_token_expires = NULL WHERE id_Uzytkownika = ?',
+                    [hashedPassword, decoded.userId],
+                    (err) => {
+                        if (err) {
+                            console.error('Błąd aktualizacji hasła:', err);
+                            return res.status(500).json({ message: 'Błąd podczas resetowania hasła' });
+                        }
+                        
+                        res.json({ message: 'Hasło zostało pomyślnie zresetowane' });
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        console.error('Błąd:', error);
+        res.status(400).json({ message: 'Nieprawidłowy lub przedawniony token' });
+    }
 });
 
 // ===== KONIEC NOWYCH ENDPOINTÓW ===== //
