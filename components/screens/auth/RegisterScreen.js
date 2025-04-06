@@ -5,13 +5,13 @@ import Icon from "react-native-vector-icons/FontAwesome5";
 
 const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
   const [form, setForm] = useState({
-    NazwaUzytkownika: '',
+    UserName: '',
     Email: '',
-    Haslo: '',
-    PotwierdzHaslo: '',
-    Wzrost: '',
-    Waga: '',
-    Plec: 'M'
+    Password: '',
+    PotwierdzPassword: '',
+    Height: '',
+    Weight: '',
+    Gender: 'M'
   });
 
   const handleChange = (name, value) => {
@@ -20,24 +20,24 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
 
   const handleRegister = async () => {
     // Walidacja
-    if (form.Haslo !== form.PotwierdzHaslo) {
+    if (form.Password !== form.PotwierdzPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
-    if (!form.NazwaUzytkownika || !form.Email || !form.Haslo) {
+    if (!form.UserName || !form.Email || !form.Password) {
       Alert.alert('Error', 'Fill in all required fields');
       return;
     }
 
     try {
       const response = await api.post('/api/auth/register', {
-        NazwaUzytkownika: form.NazwaUzytkownika,
+        UserName: form.UserName,
         Email: form.Email,
-        Haslo: form.Haslo,
-        Wzrost: form.Wzrost ? parseFloat(form.Wzrost) : null,
-        Waga: form.Wzrost ? parseFloat(form.Waga) : null,
-        Plec: form.Plec
+        Password: form.Password,
+        Height: form.Height ? parseFloat(form.Height) : null,
+        Weight: form.Height ? parseFloat(form.Weight) : null,
+        Gender: form.Gender
       });
 
       Alert.alert('Account has been successfully created');
@@ -49,7 +49,7 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
       if (error.response) {
         if (error.response.data.error.includes('Email')) {
           errorMessage = 'The provided email is already taken';
-        } else if (error.response.data.error.includes('NazwaUzytkownika')) {
+        } else if (error.response.data.error.includes('UserName')) {
           errorMessage = 'The provided username is already taken';
         }
       } else if (error.message.includes('Network Error')) {
@@ -67,8 +67,8 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
       <TextInput
         style={styles.input}
         placeholder="User name *"
-        value={form.NazwaUzytkownika}
-        onChangeText={(text) => handleChange('NazwaUzytkownika', text)}
+        value={form.UserName}
+        onChangeText={(text) => handleChange('UserName', text)}
         autoCapitalize="none"
       />
       
@@ -84,32 +84,32 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
       <TextInput
         style={styles.input}
         placeholder="Password *"
-        value={form.Haslo}
-        onChangeText={(text) => handleChange('Haslo', text)}
+        value={form.Password}
+        onChangeText={(text) => handleChange('Password', text)}
         secureTextEntry
       />
       
       <TextInput
         style={styles.input}
         placeholder="Confirm password *"
-        value={form.PotwierdzHaslo}
-        onChangeText={(text) => handleChange('PotwierdzHaslo', text)}
+        value={form.PotwierdzPassword}
+        onChangeText={(text) => handleChange('PotwierdzPassword', text)}
         secureTextEntry
       />
       
       <TextInput
         style={styles.input}
         placeholder="Height (cm)"
-        value={form.Wzrost}
-        onChangeText={(text) => handleChange('Wzrost', text)}
+        value={form.Height}
+        onChangeText={(text) => handleChange('Height', text)}
         keyboardType="numeric"
       />
       
       <TextInput
         style={styles.input}
         placeholder="Weight (kg)"
-        value={form.Waga}
-        onChangeText={(text) => handleChange('Waga', text)}
+        value={form.Weight}
+        onChangeText={(text) => handleChange('Weight', text)}
         keyboardType="numeric"
       />
       
@@ -120,9 +120,9 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
           key={gender}
           style={[
             styles.radioButton,
-            form.Plec === gender && styles.radioButtonSelected,
+            form.Gender === gender && styles.radioButtonSelected,
           ]}
-          onPress={() => handleChange('Plec', gender)}
+          onPress={() => handleChange('Gender', gender)}
         >
           <Text style={styles.radioText}>
             {gender === 'M' ? 'Men' : 'Women'}

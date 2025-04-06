@@ -28,7 +28,7 @@ export default function ProfileScreen() {
                 />
             </View>
             <Text style={styles.welcomeText}>
-                Welcome, {String(user.NazwaUzytkownika)}!
+                Welcome, {String(user.UserName)}!
             </Text>
 
             <TextInput

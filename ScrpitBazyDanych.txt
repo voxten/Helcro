@@ -72,7 +72,7 @@ CREATE TABLE Meal_has_Product (
 
 CREATE TABLE Recipe (
     RecipeId INT PRIMARY KEY AUTO_INCREMENT,
-    userId INT NOT NULL,
+    UserId INT NOT NULL,
     Name VARCHAR(255) NOT NULL UNIQUE,
     Description TEXT,
     FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE

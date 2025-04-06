@@ -3,23 +3,23 @@ const bcrypt = require('bcryptjs');
 
 exports.register = async (req, res) => {
   try {
-    const { NazwaUzytkownika, Email, Haslo, Wzrost, Waga, Plec } = req.body;
+    const { UserName, Email, Password, Height, Weight, Gender } = req.body;
     
     // Hashowanie hasła
-    const hashedPassword = await bcrypt.hash(Haslo, 10);
+    const hashedPassword = await bcrypt.hash(Password, 10);
     
-    const userId = await User.create({
-      NazwaUzytkownika,
+    const UserId = await User.create({
+      UserName,
       Email,
-      Haslo: hashedPassword,
-      Wzrost,
-      Waga,
-      Plec
+      Password: hashedPassword,
+      Height,
+      Weight,
+      Gender
     });
 
     res.status(201).json({ 
       message: 'Rejestracja zakończona pomyślnie',
-      userId 
+      UserId 
     });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
@@ -31,10 +31,10 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { Email, Haslo } = req.body;
+    const { Email, Password } = req.body;
     const user = await User.findByEmail(Email);
     
-    if (!user || !(await bcrypt.compare(Haslo, user.Haslo))) {
+    if (!user || !(await bcrypt.compare(Password, user.Password))) {
       return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
     }
 
