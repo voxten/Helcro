@@ -43,12 +43,12 @@ db.connect(err => {
 // Rejestracja użytkownika
 app.post('/api/auth/register', async (req, res) => {
     
-    const { NazwaUzytkownika, Email, Haslo, Wzrost, Waga, Plec } = req.body;
+    const { UserName, Email, Password, Height, Weight, Gender } = req.body;
 
     try {
         // Sprawdź czy użytkownik już istnieje
-        db.query('SELECT * FROM Uzytkownik WHERE Email = ? OR NazwaUzytkownika = ?', 
-            [Email, NazwaUzytkownika], 
+        db.query('SELECT * FROM user WHERE Email = ? OR UserName = ?', 
+            [Email, UserName], 
             async (err, results) => {
                 if (err) throw err;
                 
@@ -57,14 +57,14 @@ app.post('/api/auth/register', async (req, res) => {
                 }
 
                 // Hashowanie hasła
-                const hashedPassword = await bcrypt.hash(Haslo, 10);
+                const hashedPassword = await bcrypt.hash(Password, 10);
 
                 // Dodanie nowego użytkownika
-                db.query('INSERT INTO Uzytkownik SET ?', 
-                    { NazwaUzytkownika, Email, Haslo: hashedPassword, Wzrost, Waga, Plec },
+                db.query('INSERT INTO user SET ?', 
+                    { UserName, Email, Password: hashedPassword, Height, Weight, Gender },
                     (err, result) => {
                         if (err) throw err;
-                        res.status(201).json({ message: 'Rejestracja zakończona pomyślnie', userId: result.insertId });
+                        res.status(201).json({ message: 'Rejestracja zakończona pomyślnie', UserId: result.insertId });
                     }
                 );
             }
@@ -76,10 +76,10 @@ app.post('/api/auth/register', async (req, res) => {
 
 // Logowanie użytkownika
 app.post('/api/auth/login', async (req, res) => {
-    const { Email, Haslo } = req.body;
+    const { Email, Password } = req.body;
 
     try {
-        db.query('SELECT * FROM Uzytkownik WHERE Email = ?', [Email], async (err, results) => {
+        db.query('SELECT * FROM user WHERE Email = ?', [Email], async (err, results) => {
             if (err) throw err;
             
             if (results.length === 0) {
@@ -87,7 +87,7 @@ app.post('/api/auth/login', async (req, res) => {
             }
 
             const user = results[0];
-            const isMatch = await bcrypt.compare(Haslo, user.Haslo);
+            const isMatch = await bcrypt.compare(Password, user.Password);
 
             if (!isMatch) {
                 return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
@@ -95,7 +95,7 @@ app.post('/api/auth/login', async (req, res) => {
 
             // Generowanie tokena JWT
             const token = jwt.sign(
-                { id: user.id_Uzytkownika },
+                { id: user.UserId },
                 process.env.JWT_SECRET,
                 { expiresIn: '1h' }
             );
@@ -104,8 +104,8 @@ app.post('/api/auth/login', async (req, res) => {
                 message: 'Zalogowano pomyślnie',
                 token,
                 user: {
-                    id: user.id_Uzytkownika,
-                    NazwaUzytkownika: user.NazwaUzytkownika,
+                    id: user.UserId,
+                    UserName: user.UserName,
                     Email: user.Email
                 }
             });
@@ -131,8 +131,8 @@ function authenticateToken(req, res, next) {
 
 // Przykładowy chroniony endpoint
 app.get('/api/user/profile', authenticateToken, (req, res) => {
-    db.query('SELECT id_Uzytkownika, NazwaUzytkownika, Email, Wzrost, Waga, Plec FROM Uzytkownik WHERE id_Uzytkownika = ?', 
-        [req.user.id], 
+    db.query('SELECT UserId, UserName, Email, Height, Weight, Gender FROM user WHERE UserId = ?', 
+        [req.user.UserId], 
         (err, results) => {
             if (err) throw err;
             res.json(results[0]);
@@ -152,7 +152,7 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
 
     try {
         // 2. Sprawdzenie czy użytkownik istnieje w bazie
-        db.query('SELECT id_Uzytkownika, Email FROM Uzytkownik WHERE Email = ?', [email], async (err, results) => {
+        db.query('SELECT UserId, Email FROM user WHERE Email = ?', [email], async (err, results) => {
             if (err) {
                 console.error('Błąd bazy danych:', err);
                 return res.status(500).json({ message: 'Błąd serwera' });
@@ -167,7 +167,7 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
             
             // 3. Generowanie tokena resetującego
             const token = jwt.sign(
-                { userId: user.id_Uzytkownika }, 
+                { UserId: user.UserId }, 
                 process.env.JWT_SECRET, 
                 { expiresIn: '1h' }
             );
@@ -207,8 +207,8 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
                 
                 // 7. Zapis tokena w bazie (opcjonalne)
                 db.query(
-                    'UPDATE Uzytkownik SET reset_token = ?, reset_token_expires = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id_Uzytkownika = ?',
-                    [token, user.id_Uzytkownika],
+                    'UPDATE user SET reset_token = ?, reset_token_expires = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE UserId = ?',
+                    [token, user.UserId],
                     (err) => {
                         if (err) {
                             console.error('Błąd zapisu tokena:', err);
@@ -240,8 +240,8 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
         
         // 3. Sprawdzenie w bazie (opcjonalne - dodatkowe zabezpieczenie)
         db.query(
-            'SELECT id_Uzytkownika FROM Uzytkownik WHERE id_Uzytkownika = ? AND reset_token = ? AND reset_token_expires > NOW()',
-            [decoded.userId, token],
+            'SELECT UserId FROM user WHERE UserId = ? AND reset_token = ? AND reset_token_expires > NOW()',
+            [decoded.UserId, token],
             async (err, results) => {
                 if (err) {
                     console.error('Błąd bazy danych:', err);
@@ -257,8 +257,8 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
                 
                 // 5. Aktualizacja hasła w bazie
                 db.query(
-                    'UPDATE Uzytkownik SET Haslo = ?, reset_token = NULL, reset_token_expires = NULL WHERE id_Uzytkownika = ?',
-                    [hashedPassword, decoded.userId],
+                    'UPDATE user SET Password = ?, reset_token = NULL, reset_token_expires = NULL WHERE UserId = ?',
+                    [hashedPassword, decoded.UserId],
                     (err) => {
                         if (err) {
                             console.error('Błąd aktualizacji hasła:', err);

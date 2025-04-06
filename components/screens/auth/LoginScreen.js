@@ -9,7 +9,7 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
   const { login } = useAuth();
   const [form, setForm] = useState({
     Email: '',
-    Haslo: ''
+    Password: ''
   });
  
   const [loading, setLoading] = useState(false);
@@ -22,15 +22,15 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
   try {
     const response = await api.post('/api/auth/login', {
       Email: form.Email,
-      Haslo: form.Haslo
+      Password: form.Password
     });
 
     console.log('Server response:', response.data); // Debug
 
     // Poprawne wywołanie login() z odpowiednią kolejnością argumentów
     login(response.data.token, {
-      id: response.data.user.id,
-      NazwaUzytkownika: response.data.user.NazwaUzytkownika,
+      id: response.data.user.UserId,
+      UserName: response.data.user.UserName,
       Email: response.data.user.Email
     });
       console.log('Full API response:', response.data);
@@ -74,8 +74,8 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
       <TextInput
         style={mainStyles.input}
         placeholder="Password *"
-        value={form.Haslo}
-        onChangeText={(text) => handleChange('Haslo', text)}
+        value={form.Password}
+        onChangeText={(text) => handleChange('Password', text)}
         secureTextEntry
       />
 

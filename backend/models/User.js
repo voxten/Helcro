@@ -1,14 +1,14 @@
 class User {
-    static async create({ NazwaUzytkownika, Email, Haslo, Wzrost, Waga, Plec }) {
+    static async create({ UserName, Email, Password, Height, Weight, Gender }) {
       const [result] = await pool.execute(
-        'INSERT INTO Uzytkownik (NazwaUzytkownika, Email, Haslo, Wzrost, Waga, Plec) VALUES (?, ?, ?, ?, ?, ?)',
-        [NazwaUzytkownika, Email, Haslo, Wzrost, Waga, Plec]
+        'INSERT INTO user (UserName, Email, Password, Height, Weight, Gender) VALUES (?, ?, ?, ?, ?, ?)',
+        [UserName, Email, Password, Height, Weight, Gender]
       );
       return result.insertId;
     }
   
     static async findByEmail(Email) {
-      const [rows] = await pool.execute('SELECT * FROM Uzytkownik WHERE Email = ?', [Email]);
+      const [rows] = await pool.execute('SELECT * FROM user WHERE Email = ?', [Email]);
       return rows[0];
     }
   
