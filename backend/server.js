@@ -10,9 +10,13 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+const pool = require("./config/db");
 
 require('dotenv').config();
 const path = require('path');
+
+const IntakeLog = require('./models/IntakeLog');
+
 // Create MySQL connection
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -369,6 +373,118 @@ app.get('/products', (req, res) => {
         }
         res.json(results);
     });
+});
+// GET /intakeLog - Fetch IntakeLog for a user and date
+app.get('/intakeLog', async (req, res) => {
+    try {
+        const { userId, date } = req.query;
+
+        if (!userId || !date) {
+            return res.status(400).json({ message: 'User ID and date are required' });
+        }
+
+        const intakeLog = await IntakeLog.findWithMealsAndProducts(userId, date);
+
+        if (!intakeLog) {
+            return res.status(200).json({ meals: [] }); // Return empty array if no data
+        }
+
+        // Return properly structured meals with all needed fields
+        res.json({
+            meals: intakeLog.meals.map(meal => ({
+                id: meal.MealId,
+                type: meal.MealType,
+                name: meal.MealName,
+                time: meal.createdAt || new Date().toISOString(), // Add fallback for time
+                products: meal.products || []
+            }))
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+// POST /intakeLog - Create new IntakeLog
+app.post('/intakeLog', async (req, res) => {
+    try {
+        const { userId, date, mealType, mealName, products } = req.body;
+
+        // Start transaction
+        const connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        try {
+            // 1. Create IntakeLog
+            const [intakeLogResult] = await connection.execute(
+                'INSERT INTO IntakeLog (UserId, LogDate) VALUES (?, ?)',
+                [userId, date]
+            );
+            const IntakeLogId = intakeLogResult.insertId;
+
+            // 2. Create meal - using mealType as fallback if mealName not provided
+            const mealNameToUse = mealName || mealType;
+            const [mealResult] = await connection.execute(
+                'INSERT INTO Meal (MealName, MealType) VALUES (?, ?)',
+                [mealNameToUse, mealType]
+            );
+            const MealId = mealResult.insertId;
+
+            // 3. Link meal to intake log
+            await connection.execute(
+                'INSERT INTO IntakeLog_has_Meal (UserId, IntakeLogId, MealId) VALUES (?, ?, ?)',
+                [userId, IntakeLogId, MealId]
+            );
+
+            // 4. Add products to meal
+            for (const product of products) {
+                await connection.execute(
+                    'INSERT INTO Meal_has_Product (MealId, ProductId, grams) VALUES (?, ?, ?)',
+                    [MealId, product.productId, product.grams || 100]
+                );
+            }
+
+            await connection.commit();
+            connection.release();
+
+            res.status(201).json({
+                success: true,
+                IntakeLogId,
+                MealId,
+                mealType,
+                mealName: mealNameToUse
+            });
+        } catch (error) {
+            await connection.rollback();
+            connection.release();
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error in /intakeLog:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+});
+
+// PUT /intakeLog/:id - Update existing IntakeLog
+app.put('/intakeLog/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { products } = req.body;
+
+        const success = await IntakeLog.updateProductsForIntakeLog(id, products);
+
+        if (!success) {
+            return res.status(404).json({ message: 'Intake log not found' });
+        }
+
+        res.json({ message: 'Intake log updated successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 /*
 app.get('/receptury', (req, res) => {

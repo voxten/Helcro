@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal, Image, Slider } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -6,8 +5,14 @@ import MealType from "./MealType";
 import styles from "../../styles/MainStyles";
 import Icon from "react-native-vector-icons/FontAwesome6";
 import Meal from "./Meal";
+import React, { useEffect, useState } from "react";
+
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+import { API_BASE_URL } from '@env';
 
 export default function Menu() {
+    const { user } = useAuth();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showCalendar, setShowCalendar] = useState(false);
     const [showMealType, setShowMealType] = useState(false);
@@ -21,6 +26,37 @@ export default function Menu() {
         carbohydrates: 200
     });
 
+    // In your Menu component
+    useEffect(() => {
+        const fetchMealsForDate = async () => {
+            try {
+                if (user && selectedDate) {
+                    const formattedDate = selectedDate.toISOString().split('T')[0];
+                    const response = await axios.get(`${API_BASE_URL}/intakeLog`, {
+                        params: {
+                            userId: user.id,
+                            date: formattedDate
+                        }
+                    });
+
+                    // Ensure we always have an array, even if empty
+                    const fetchedMeals = response.data?.meals || [];
+
+                    // Update state with properly formatted meals
+                    setMeals(fetchedMeals.map(meal => ({
+                        ...meal,
+                        time: new Date(meal.time) // Ensure time is Date object
+                    })));
+                }
+            } catch (error) {
+                console.error("Error fetching intake log:", error);
+                setMeals([]); // Reset to empty array on error
+            }
+        };
+
+        fetchMealsForDate();
+    }, [selectedDate, user]);
+
     const formatDate = (date) => {
         return date.toLocaleDateString("en-GB", { weekday: 'long', day: 'numeric', month: 'long' });
     };
@@ -33,11 +69,12 @@ export default function Menu() {
         });
     };
 
-    const toggleMeal = (mealType) => {
-        setExpandedMeal(expandedMeal === mealType ? null : mealType);
+    const toggleMeal = (mealId) => {
+        setExpandedMeal(expandedMeal === mealId ? null : mealId);
     };
 
-    const handleAddMeal = (mealType, mealTime, mealName) => {
+// Update handleAddMeal to potentially save to database immediately
+    const handleAddMeal = async (mealType, mealTime, mealName) => {
         const mealTitle = mealType === 'Other' ? mealName : mealType;
 
         // Check if meal of this type already exists
@@ -47,22 +84,33 @@ export default function Menu() {
         );
 
         if (existingMealIndex >= 0) {
-            // Meal exists, just show the meal modal
             setShowMealType(false);
             setShowMeal(true);
         } else {
-            // Create new meal
-            const newMeal = {
-                type: mealType,
-                name: mealTitle,
-                time: mealTime,
-                products: []
-            };
-            setMeals([...meals, newMeal]);
-            setShowMealType(false);
-            setShowMeal(true);
+            try {
+                // Create new meal object for local state first
+                const newMeal = {
+                    type: mealType,
+                    name: mealTitle,
+                    time: mealTime,
+                    products: []
+                };
+
+                // Update local state immediately for better UX
+                setMeals([...meals, newMeal]);
+                setShowMealType(false);
+                setShowMeal(true);
+
+                // The actual database save will happen when products are added
+                // via the saveIntakeLog function in the Meal component
+            } catch (error) {
+                console.error("Error creating meal:", error);
+                // Rollback local state if needed
+                setMeals(meals.filter(m => m.name !== mealTitle));
+            }
         }
     };
+
 
     const handleAddProducts = (newProducts) => {
         if (meals.length > 0) {
@@ -288,6 +336,7 @@ export default function Menu() {
                 />
             </Modal>
 
+
             <Modal
                 visible={showMeal}
                 animationType="fade"
@@ -301,6 +350,17 @@ export default function Menu() {
                         expandedMeal ?
                             meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.products || []
                             : []
+                    }
+                    selectedDate={selectedDate}
+                    mealType={
+                        expandedMeal ?
+                            meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.type
+                            : meals[meals.length - 1]?.type
+                    }
+                    mealName={
+                        expandedMeal ?
+                            meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.name
+                            : meals[meals.length - 1]?.name
                     }
                 />
             </Modal>
