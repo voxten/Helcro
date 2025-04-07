@@ -1,10 +1,3 @@
-Stworzcie baze danych w php my admin pod nazwa HELCRO oraz do backend dodajcie plik .env z zawartoscia:DB_HOST='localhost'
-DB_USER='root'
-DB_PASS=''
-DB_NAME='HELCRO'
-
-
-Tworzenie tabel:
 CREATE TABLE User (
     UserId INT PRIMARY KEY AUTO_INCREMENT,
     UserName VARCHAR(255) NOT NULL UNIQUE,
@@ -35,7 +28,9 @@ CREATE TABLE IntakeLog (
 
 CREATE TABLE Meal (
     MealId INT PRIMARY KEY AUTO_INCREMENT,
-    MealName VARCHAR(255) NOT NULL UNIQUE
+    MealName VARCHAR(255) NOT NULL,
+    MealType VARCHAR(255) NOT NULL,
+    CreatedAt DATE NOT NULL
 );
 
 CREATE TABLE IntakeLog_has_Meal (
@@ -58,6 +53,7 @@ CREATE TABLE Product (
     fibers DECIMAL(10,2),
     salt DECIMAL(10,2),
     calories DECIMAL(10,2),
+    grams DECIMAL(10,2),
     image VARCHAR(255),
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
