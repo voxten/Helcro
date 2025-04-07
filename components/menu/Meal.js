@@ -74,28 +74,48 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
     }
   };
 
+  const cleanProductsBeforeSave = (products) => {
+    const uniqueProducts = [];
+    const seenIds = new Set();
+
+    products.forEach(product => {
+      const id = product.ProductId || product.productId;
+      if (!seenIds.has(id)) {
+        seenIds.add(id);
+        uniqueProducts.push(product);
+      }
+    });
+
+    return uniqueProducts;
+  };
+
   const saveIntakeLog = async (productsToSave) => {
     try {
+      const cleanedProducts = cleanProductsBeforeSave(productsToSave);
       const formattedDate = selectedDate.toISOString().split('T')[0];
       const products = productsToSave.map(product => ({
-        productId: product.ProductId,
+        productId: product.ProductId || product.productId,
         grams: product.grams || 100
       }));
 
-      // Include all meal information in the request
+      // Check if we're editing an existing meal
+      const existingMeal = existingProducts.length > 0 ? existingProducts[0] : null;
+      const mealId = existingMeal?.MealId;
+
       const response = await axios.post(`${apiUrl}/intakeLog`, {
         userId: user.UserId,
         date: formattedDate,
         mealType,
-        mealName: mealType, // Or use a specific name if available
-        products
+        mealName: mealType,
+        products,
+        mealId // Include mealId if editing existing meal
       });
 
       if (onSave) {
         onSave(productsToSave);
       }
 
-      return response.data; // Return the saved data if needed
+      return response.data;
     } catch (error) {
       console.error("Error saving intake log:", error);
       throw error;
@@ -136,14 +156,26 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
   };
 
   const handleSelectProduct = (product) => {
-    setProducts([
-      ...products,
-      {
-        ...product,
-        grams: 100, // Default to 100g
-        originalValues: { ...product } // Store original values
-      }
-    ]);
+    // Check if product already exists in the current meal
+    const productExists = products.some(p =>
+        p.ProductId === product.ProductId ||
+        (p.productId === product.ProductId) ||
+        (p.product_name === product.product_name && !p.ProductId && !p.productId)
+    );
+
+    if (!productExists) {
+      setProducts(prevProducts => [
+        ...prevProducts,
+        {
+          ...product,
+          grams: 100, // Default to 100g
+          originalValues: { ...product } // Store original values
+        }
+      ]);
+    } else {
+      // Optionally show a message that product already exists
+      alert('This product is already added to the meal');
+    }
     setIsChoosingProduct(false);
   };
 

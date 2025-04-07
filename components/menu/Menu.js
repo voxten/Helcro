@@ -113,35 +113,44 @@ export default function Menu() {
 
 
     const handleAddProducts = (newProducts) => {
-        if (meals.length > 0) {
-            const updatedMeals = [...meals];
-            const lastMealIndex = updatedMeals.length - 1;
+        setMeals(prevMeals => {
+            if (expandedMeal) {
+                // Update existing meal
+                return prevMeals.map(meal => {
+                    if (meal.type + prevMeals.indexOf(meal) === expandedMeal) {
+                        // Merge products, avoiding duplicates
+                        const existingProductIds = meal.products.map(p => p.ProductId || p.productId);
+                        const uniqueNewProducts = newProducts.filter(
+                            newProd => !existingProductIds.includes(newProd.ProductId || newProd.productId)
+                        );
 
-            // Check if this meal type already exists (excluding the last one we just created)
-            const existingMealIndex = meals.findIndex((meal, index) =>
-                index !== lastMealIndex &&
-                meal.type === updatedMeals[lastMealIndex].type &&
-                (meal.type !== 'Other' || meal.name === updatedMeals[lastMealIndex].name)
-            );
-
-            if (existingMealIndex >= 0) {
-                // Append new products to existing meal
-                updatedMeals[existingMealIndex].products = [
-                    ...updatedMeals[existingMealIndex].products,
-                    ...newProducts
-                ];
-                // Remove the newly created empty meal
-                updatedMeals.splice(lastMealIndex, 1);
+                        return {
+                            ...meal,
+                            products: [...meal.products, ...uniqueNewProducts]
+                        };
+                    }
+                    return meal;
+                });
             } else {
-                // Add products to the new meal
-                updatedMeals[lastMealIndex].products = [
-                    ...updatedMeals[lastMealIndex].products,
-                    ...newProducts
-                ];
-            }
+                // Add to new meal
+                const updatedMeals = [...prevMeals];
+                if (updatedMeals.length > 0) {
+                    const lastMealIndex = updatedMeals.length - 1;
+                    const existingProductIds = updatedMeals[lastMealIndex].products.map(
+                        p => p.ProductId || p.productId
+                    );
+                    const uniqueNewProducts = newProducts.filter(
+                        newProd => !existingProductIds.includes(newProd.ProductId || newProd.productId)
+                    );
 
-            setMeals(updatedMeals);
-        }
+                    updatedMeals[lastMealIndex] = {
+                        ...updatedMeals[lastMealIndex],
+                        products: [...updatedMeals[lastMealIndex].products, ...uniqueNewProducts]
+                    };
+                }
+                return updatedMeals;
+            }
+        });
         setShowMeal(false);
     };
 
@@ -304,7 +313,7 @@ export default function Menu() {
                                                         {product.product_name} ({product.grams}g)
                                                     </Text>
                                                     <Text style={localStyles.productDetails}>
-                                                        {product.calories} kcal | {product.proteins}g protein | {product.fats}g fat | {product.carbohydrates}g carbs
+                                                        {typeof product.calories === 'number' ? product.calories.toFixed(2) : '0.00'} kcal | {typeof product.proteins === 'number' ? product.proteins.toFixed(2) : '0.00'}g protein | {typeof product.fats === 'number' ? product.fats.toFixed(2) : '0.00'}g fat | {typeof product.carbohydrates === 'number' ? product.carbohydrates.toFixed(2) : '0.00'}g carbs
                                                     </Text>
                                                 </View>
                                             </View>
