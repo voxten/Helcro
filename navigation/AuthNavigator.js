@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import LoginScreen from '../components/screens/auth/LoginScreen';
 import RegisterScreen from '../components/screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../components/screens/auth/ForgotPasswordScreen';

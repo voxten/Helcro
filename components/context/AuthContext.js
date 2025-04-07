@@ -8,10 +8,20 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
 
   const login = async (token, userData) => {
+    // Przekształć obiekt userData, aby używał spójnych nazw pól
+    const fullUserData = {
+      UserId: userData.UserId,       // Mapowanie UserId → id
+      Email: userData.Email,
+      UserName: userData.UserName,
+      Height: userData.Height,
+      Weight: userData.Weight,
+      Gender: userData.Gender
+    };
+  
     setToken(token);
-    setUser(userData);
+    setUser(fullUserData); // Zapisujemy pełne dane
     await AsyncStorage.setItem('userToken', token);
-    await AsyncStorage.setItem('userData', JSON.stringify(userData));
+    await AsyncStorage.setItem('userData', JSON.stringify(fullUserData));
   };
 
   const logout = async () => {
@@ -22,7 +32,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      login, 
+      logout,
+    }}>
       {children}
     </AuthContext.Provider>
   );

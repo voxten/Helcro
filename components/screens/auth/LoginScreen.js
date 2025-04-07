@@ -19,25 +19,22 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
   };
 
   const handleLogin = async () => {
-  try {
-    const response = await api.post('/api/auth/login', {
-      Email: form.Email,
-      Password: form.Password
-    });
-
-    console.log('Server response:', response.data); // Debug
-
-    // Poprawne wywołanie login() z odpowiednią kolejnością argumentów
-    login(response.data.token, {
-      id: response.data.user.UserId,
-      UserName: response.data.user.UserName,
-      Email: response.data.user.Email
-    });
+    try {
+      const response = await api.post('/api/auth/login', {
+        Email: form.Email,
+        Password: form.Password
+      });
+  
+      console.log('Server response:', response.data); // Debug
+  
+      // Przekaż wszystkie dane użytkownika otrzymane z backendu
+      login(response.data.token, response.data.user); // Zmiana tutaj
+      
       console.log('Full API response:', response.data);
-      // Zapisz token w AsyncStorage lub kontekście
-      // navigation.navigate('Home'); // Przekieruj po zalogowaniu
       Alert.alert('Logged in successfully');
       
+      // Wywołaj callback po udanym logowaniu
+      onLoginSuccess?.();
     } catch (error) {
       console.error('Login error:', error.response?.data);
       
@@ -51,7 +48,7 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
       } else if (error.message.includes('Network Error')) {
         errorMessage = 'No connection to the server';
       }
-
+  
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);

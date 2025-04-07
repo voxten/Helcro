@@ -38,11 +38,11 @@ const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
   if (emailSent) {
     return (
       <View style={styles.successContainer}>
-        <Icon name="check-circle" size={60} color="green" />
+        <Icon name="check-circle" size={60} color="brown" />
         <Text style={styles.successText}>Password reset email sent!</Text>
         <Text style={styles.successSubtext}>Please check your inbox and follow the instructions.</Text>
         <TouchableOpacity 
-          style={[styles.button, { backgroundColor: 'green' }]} 
+          style={[styles.button, { backgroundColor: 'brown' }]} 
           onPress={onBackPress}
         >
           <Text style={styles.buttonText}>Back to Login</Text>

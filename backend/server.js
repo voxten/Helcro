@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 require('dotenv').config();
-
+const path = require('path');
 // Create MySQL connection
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -30,7 +30,13 @@ const transporter = nodemailer.createTransport({
       pass: process.env.SMTP_PASS
     }
   });
-
+  dotenv.config({
+    path: path.resolve(__dirname, '../.env') // dostosuj ścieżkę
+  });
+  
+  
+  const API_BASE_URL = process.env.API_BASE_URL;
+  console.log('API_BASE_URL:', process.env.API_BASE_URL);
 db.connect(err => {
     if (err) {
         console.error('Database connection failed:', err);
@@ -53,7 +59,7 @@ app.post('/api/auth/register', async (req, res) => {
                 if (err) throw err;
                 
                 if (results.length > 0) {
-                    return res.status(400).json({ error: 'Użytkownik już istnieje' });
+                    return res.status(400).json({ error: 'User arleady exists' });
                 }
 
                 // Hashowanie hasła
@@ -64,13 +70,13 @@ app.post('/api/auth/register', async (req, res) => {
                     { UserName, Email, Password: hashedPassword, Height, Weight, Gender },
                     (err, result) => {
                         if (err) throw err;
-                        res.status(201).json({ message: 'Rejestracja zakończona pomyślnie', UserId: result.insertId });
+                        res.status(201).json({ message: 'Registration completed successfully!', UserId: result.insertId });
                     }
                 );
             }
         );
     } catch (error) {
-        res.status(500).json({ error: 'Błąd serwera' });
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -83,14 +89,14 @@ app.post('/api/auth/login', async (req, res) => {
             if (err) throw err;
             
             if (results.length === 0) {
-                return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
+                return res.status(401).json({ error: 'Invalid login credentials.' });
             }
 
             const user = results[0];
             const isMatch = await bcrypt.compare(Password, user.Password);
 
             if (!isMatch) {
-                return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
+                return res.status(401).json({ error: 'Invalid login credentials.' });
             }
 
             // Generowanie tokena JWT
@@ -100,18 +106,23 @@ app.post('/api/auth/login', async (req, res) => {
                 { expiresIn: '1h' }
             );
 
+            // Zwróć pełne dane użytkownika
             res.json({ 
-                message: 'Zalogowano pomyślnie',
+                message: 'Logged in successfully',
                 token,
                 user: {
-                    id: user.UserId,
+                    UserId: user.UserId,
                     UserName: user.UserName,
-                    Email: user.Email
+                    Email: user.Email,
+                    Height: user.Height,
+                    Weight: user.Weight,
+                    Gender: user.Gender
                 }
             });
+            
         });
     } catch (error) {
-        res.status(500).json({ error: 'Błąd serwera' });
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -130,16 +141,80 @@ function authenticateToken(req, res, next) {
 }
 
 // Przykładowy chroniony endpoint
+// server.js - zaktualizowany endpoint
 app.get('/api/user/profile', authenticateToken, (req, res) => {
     db.query('SELECT UserId, UserName, Email, Height, Weight, Gender FROM user WHERE UserId = ?', 
-        [req.user.UserId], 
+        [req.user.id], // Zmienione z req.user.UserId na req.user.id
         (err, results) => {
-            if (err) throw err;
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+            
+            if (results.length === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
             res.json(results[0]);
         }
     );
 });
+// Serwowanie statycznej strony resetowania hasła
+app.get('/reset-password', (req, res) => {
+    const token = req.query.token;
+    res.sendFile(path.join(__dirname, 'public/reset-password.html'));
+});
 
+// Endpoint do obsługi formularza
+app.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    // 1. Walidacja hasła
+    if (!newPassword || newPassword.length < 8) {
+        return res.status(400).json({ message: 'The password must be at least 8 characters long.' });
+    }
+
+    try {
+        // 2. Weryfikacja tokena JWT
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // 3. Sprawdzenie w bazie (opcjonalne - dodatkowe zabezpieczenie)
+        db.query(
+            'SELECT UserId FROM user WHERE UserId = ? AND reset_token = ? AND reset_token_expires > NOW()',
+            [decoded.UserId, token],
+            async (err, results) => {
+                if (err) {
+                    console.error('Database error', err);
+                    return res.status(500).json({ message: 'Server error' });
+                }
+
+                if (results.length === 0) {
+                    return res.status(400).json({ message: 'Invalid or expired token.' });
+                }
+
+                // 4. Hashowanie nowego hasła
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                
+                // 5. Aktualizacja hasła w bazie
+                db.query(
+                    'UPDATE user SET Password = ?, reset_token = NULL, reset_token_expires = NULL WHERE UserId = ?',
+                    [hashedPassword, decoded.UserId],
+                    (err) => {
+                        if (err) {
+                            console.error('Password update error:', err);
+                            return res.status(500).json({ message: 'Error during password reset' });
+                        }
+                        
+                        res.json({ message: 'The password has been successfully reset.' });
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        console.error('Błąd:', error);
+        res.status(400).json({ message: 'Invalid or expired token.' });
+    }
+});
   
   // Endpoint do wysłania linku resetującego
   app.post('/api/auth/forgot-password', async (req, res) => {
@@ -147,20 +222,20 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
 
     // 1. Walidacja emaila
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return res.status(400).json({ message: 'Proszę podać poprawny adres email' });
+        return res.status(400).json({ message: 'Please provide a valid email address.' });
     }
 
     try {
         // 2. Sprawdzenie czy użytkownik istnieje w bazie
         db.query('SELECT UserId, Email FROM user WHERE Email = ?', [email], async (err, results) => {
             if (err) {
-                console.error('Błąd bazy danych:', err);
-                return res.status(500).json({ message: 'Błąd serwera' });
+                console.error('Database error:', err);
+                return res.status(500).json({ message: 'Server error' });
             }
 
             if (results.length === 0) {
-                // Celowo zwracamy sukces, aby nie ujawniać czy email istnieje
-                return res.json({ message: 'Jeśli email istnieje w naszej bazie, wysłaliśmy link resetujący' });
+                // Zwracamy informację, że email nie istnieje
+                return res.status(404).json({ message: 'Invalid email' });
             }
 
             const user = results[0];
@@ -173,36 +248,36 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
             );
 
             // 4. Tworzenie linku resetującego
-            const resetUrl = `${process.env.API_BASE_URL}/reset-password?token=${token}`;
+            const resetUrl = API_BASE_URL+`/reset-password?token=${token}`;
 
             // 5. Konfiguracja i wysyłka emaila
             const mailOptions = {
-                from: `"Support" <${process.env.SMTP_USER}>`,
+                from: `"Helcro-Support" <${process.env.SMTP_USER}>`,
                 to: email,
-                subject: 'Reset hasła - Twoja Aplikacja',
+                subject: 'Password reset - Helcro',
                 html: `
-                    <h2>Resetowanie hasła</h2>
-                    <p>Otrzymaliśmy prośbę o reset hasła dla tego emaila.</p>
-                    <p>Kliknij poniższy link aby zresetować hasło:</p>
+                    <h2>Password Reset</h2>
+                    <p>We received a request to reset the password for this email address.</p>
+                    <p>Click the link below to reset your password:</p>
                     <a href="${resetUrl}" style="
                         display: inline-block;
                         padding: 10px 20px;
-                        background-color: #4CAF50;
+                        background-color: brown;
                         color: white;
                         text-decoration: none;
                         border-radius: 5px;
                         margin: 15px 0;
-                    ">Resetuj hasło</a>
-                    <p>Link będzie aktywny przez 1 godzinę.</p>
-                    <p>Jeśli to nie Ty wysłałeś tę prośbę, zignoruj tę wiadomość.</p>
+                    ">Reset Password</a>
+                    <p>The link will be valid for 1 hour.</p>
+                    <p>If you didn't request this, please ignore this message.</p>
                 `
             };
 
             // 6. Wysłanie emaila
             transporter.sendMail(mailOptions, (error) => {
                 if (error) {
-                    console.error('Błąd wysyłania emaila:', error);
-                    return res.status(500).json({ message: 'Błąd podczas wysyłania emaila' });
+                    console.error('Error sending email', error);
+                    return res.status(500).json({ message: 'Error sending email' });
                 }
                 
                 // 7. Zapis tokena w bazie (opcjonalne)
@@ -211,17 +286,17 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
                     [token, user.UserId],
                     (err) => {
                         if (err) {
-                            console.error('Błąd zapisu tokena:', err);
+                            console.error('Error saving token:', err);
                             // Kontynuuj pomimo błędu - token JWT jest już wystarczający
                         }
-                        res.json({ message: 'Jeśli email istnieje w naszej bazie, wysłaliśmy link resetujący' });
+                        res.json({ message: 'A password reset link has been sent to the provided email address.' });
                     }
                 );
             });
         });
     } catch (error) {
         console.error('Błąd:', error);
-        res.status(500).json({ message: 'Wystąpił błąd serwera' });
+        res.status(500).json({ message: 'Server error' });
     }
 });
   
@@ -231,7 +306,7 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
 
     // 1. Walidacja hasła
     if (!newPassword || newPassword.length < 8) {
-        return res.status(400).json({ message: 'Hasło musi mieć co najmniej 8 znaków' });
+        return res.status(400).json({ message: 'The password must be at least 8 characters long.' });
     }
 
     try {
@@ -245,11 +320,11 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
             async (err, results) => {
                 if (err) {
                     console.error('Błąd bazy danych:', err);
-                    return res.status(500).json({ message: 'Błąd serwera' });
+                    return res.status(500).json({ message: 'Server error' });
                 }
 
                 if (results.length === 0) {
-                    return res.status(400).json({ message: 'Nieprawidłowy lub przedawniony token' });
+                    return res.status(400).json({ message: 'Invalid or expired token' });
                 }
 
                 // 4. Hashowanie nowego hasła
@@ -261,18 +336,18 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
                     [hashedPassword, decoded.UserId],
                     (err) => {
                         if (err) {
-                            console.error('Błąd aktualizacji hasła:', err);
-                            return res.status(500).json({ message: 'Błąd podczas resetowania hasła' });
+                            console.error('Password update error:', err);
+                            return res.status(500).json({ message: 'Error during password reset' });
                         }
                         
-                        res.json({ message: 'Hasło zostało pomyślnie zresetowane' });
+                        res.json({ message: 'The password has been successfully reset.' });
                     }
                 );
             }
         );
     } catch (error) {
         console.error('Błąd:', error);
-        res.status(400).json({ message: 'Nieprawidłowy lub przedawniony token' });
+        res.status(400).json({ message: 'Invalid or expired token' });
     }
 });
 
