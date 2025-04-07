@@ -103,3 +103,11 @@ CREATE TABLE Recipe_has_Category (
     FOREIGN KEY (RecipeId) REFERENCES Recipe(RecipeId) ON DELETE CASCADE,
     FOREIGN KEY (CategoryId) REFERENCES Category(CategoryId) ON DELETE CASCADE
 );
+
+CREATE TABLE Weight_History (
+    WeightId INT PRIMARY KEY AUTO_INCREMENT,
+    UserId INT NOT NULL,
+    WeightDate DATE NOT NULL,
+    Weight DECIMAL(10,2),
+    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE
+);
