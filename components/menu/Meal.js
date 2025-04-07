@@ -4,10 +4,14 @@ import axios from "axios";
 import styles from "../../styles/MainStyles";
 import styles2 from "./MealStyles";
 import { API_BASE_URL } from '@env';
-
 const apiUrl = `${API_BASE_URL}`;
 
-export default function Meal({ onClose, onSave, existingProducts = [] }) {
+import { useAuth } from "../context/AuthContext";
+
+
+
+export default function Meal({ onClose, onSave, existingProducts = [], selectedDate, mealType  }) {
+  const { user } = useAuth();
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [products, setProducts] = useState([]);
   const [databaseProducts, setDatabaseProducts] = useState([]);
@@ -23,6 +27,8 @@ export default function Meal({ onClose, onSave, existingProducts = [] }) {
   const [isButtonsDisabled, setIsButtonsDisabled] = useState(false);
   const [isChoosingProduct, setIsChoosingProduct] = useState(false);
 
+
+
   useEffect(() => {
     axios.get(apiUrl + "/products")
         .then(response => {
@@ -31,6 +37,72 @@ export default function Meal({ onClose, onSave, existingProducts = [] }) {
         })
         .catch(error => console.error("Error fetching data:", error.response.data));
   }, []);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const intakeProducts = await fetchIntakeLog();
+      if (intakeProducts.length > 0) {
+        setProducts(intakeProducts);
+      } else if (existingProducts.length > 0) {
+        setProducts(existingProducts);
+      }
+    };
+
+    loadData();
+  }, [selectedDate, existingProducts]); // Add existingProducts to dependencies
+
+  // Fetch IntakeLog when component mounts or date changes
+  const fetchIntakeLog = async () => {
+    try {
+        if(user && user.id) {
+          const formattedDate = selectedDate.toISOString().split('T')[0];
+          const response = await axios.get(`${apiUrl}/intakeLog`, {
+            params: {
+              userId: user.id,
+              date: formattedDate
+            }
+          });
+
+          if (response.data) {
+            return response.data.products || [];
+          }
+        }
+      return [];
+    } catch (error) {
+      console.error("Error fetching intake log:", error);
+      return [];
+    }
+  };
+
+  const saveIntakeLog = async (productsToSave) => {
+    try {
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      const products = productsToSave.map(product => ({
+        productId: product.ProductId,
+        grams: product.grams || 100
+      }));
+
+      // Include all meal information in the request
+      const response = await axios.post(`${apiUrl}/intakeLog`, {
+        userId: user.id,
+        date: formattedDate,
+        mealType,
+        mealName: mealType, // Or use a specific name if available
+        products
+      });
+
+      if (onSave) {
+        onSave(productsToSave);
+      }
+
+      return response.data; // Return the saved data if needed
+    } catch (error) {
+      console.error("Error saving intake log:", error);
+      throw error;
+    }
+  };
+
+
 
   const handleCreateProduct = () => {
     setIsCreatingProduct(true);
@@ -75,11 +147,22 @@ export default function Meal({ onClose, onSave, existingProducts = [] }) {
     setIsChoosingProduct(false);
   };
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave(products);
+  const handleSave = async () => {
+    try {
+      // First save to IntakeLog
+      await saveIntakeLog(products);
+
+      // Then call the parent's onSave if provided
+      if (onSave) {
+        onSave(products);
+      }
+
+      // Close the modal
+      onClose();
+    } catch (error) {
+      console.error("Failed to save:", error);
+      // You might want to show an error message to the user here
     }
-    onClose();
   };
 
   // Search function to filter products
@@ -118,7 +201,7 @@ export default function Meal({ onClose, onSave, existingProducts = [] }) {
                 />
                 <FlatList
                     data={filteredProducts}
-                    keyExtractor={(item) => item.ProductId.toString()}
+                    keyExtractor={(item) => item.ProductId}
                     renderItem={({ item }) => (
                         <TouchableOpacity onPress={() => handleSelectProduct(item)}>
                           <View style={localStyles.productCard}>
