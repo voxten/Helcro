@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity } from 'react-native';
-import api from '../../utils/api'; // Importujemy nasz nowy plik api
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  Alert,
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform 
+} from 'react-native';
+import api from '../../utils/api';
 import Icon from "react-native-vector-icons/FontAwesome5";
 
 const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
@@ -40,8 +50,12 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         Gender: form.Gender
       });
 
-      Alert.alert('Account has been successfully created');
-      
+      Alert.alert('Success', 'Account has been successfully created', [
+        { 
+          text: 'OK', 
+          onPress: () => onRegisterSuccess() 
+        }
+      ]);
     } catch (error) {
       console.error('Registration error:', error);
       let errorMessage = 'An error occurred during registration';
@@ -61,94 +75,106 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Registration</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="User name *"
-        value={form.UserName}
-        onChangeText={(text) => handleChange('UserName', text)}
-        autoCapitalize="none"
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Email *"
-        value={form.Email}
-        onChangeText={(text) => handleChange('Email', text)}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Password *"
-        value={form.Password}
-        onChangeText={(text) => handleChange('Password', text)}
-        secureTextEntry
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm password *"
-        value={form.PotwierdzPassword}
-        onChangeText={(text) => handleChange('PotwierdzPassword', text)}
-        secureTextEntry
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Height (cm)"
-        value={form.Height}
-        onChangeText={(text) => handleChange('Height', text)}
-        keyboardType="numeric"
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Weight (kg)"
-        value={form.Weight}
-        onChangeText={(text) => handleChange('Weight', text)}
-        keyboardType="numeric"
-      />
-      
-      <View style={styles.radioGroup}>
-        <Text style={styles.radioLabel}>Gender:</Text>
-        {['M', 'W'].map((gender) => (
-        <TouchableOpacity
-          key={gender}
-          style={[
-            styles.radioButton,
-            form.Gender === gender && styles.radioButtonSelected,
-          ]}
-          onPress={() => handleChange('Gender', gender)}
-        >
-          <Text style={styles.radioText}>
-            {gender === 'M' ? 'Men' : 'Women'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Icon name="user-plus" size={20} color="white" style={styles.icon} />
-        <Text style={styles.buttonText}>Register</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-        onPress={onLoginPress}
-        style={styles.secondaryButton}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.secondaryButtonText}>Have an account? Log in</Text>
-      </TouchableOpacity>
-    </View>
+        <Text style={styles.title}>Registration</Text>
+        
+        <TextInput
+          style={styles.input}
+          placeholder="User name *"
+          value={form.UserName}
+          onChangeText={(text) => handleChange('UserName', text)}
+          autoCapitalize="none"
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Email *"
+          value={form.Email}
+          onChangeText={(text) => handleChange('Email', text)}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Password *"
+          value={form.Password}
+          onChangeText={(text) => handleChange('Password', text)}
+          secureTextEntry
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Confirm password *"
+          value={form.PotwierdzPassword}
+          onChangeText={(text) => handleChange('PotwierdzPassword', text)}
+          secureTextEntry
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Height (cm)"
+          value={form.Height}
+          onChangeText={(text) => handleChange('Height', text)}
+          keyboardType="numeric"
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Weight (kg)"
+          value={form.Weight}
+          onChangeText={(text) => handleChange('Weight', text)}
+          keyboardType="numeric"
+        />
+        
+        <View style={styles.radioGroup}>
+          <Text style={styles.radioLabel}>Gender:</Text>
+          {['M', 'W'].map((gender) => (
+          <TouchableOpacity
+            key={gender}
+            style={[
+              styles.radioButton,
+              form.Gender === gender && styles.radioButtonSelected,
+            ]}
+            onPress={() => handleChange('Gender', gender)}
+          >
+            <Text style={styles.radioText}>
+              {gender === 'M' ? 'Men' : 'Women'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
+          <Icon name="user-plus" size={20} color="white" style={styles.icon} />
+          <Text style={styles.buttonText}>Register</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          onPress={onLoginPress}
+          style={styles.secondaryButton}
+        >
+          <Text style={styles.secondaryButtonText}>Have an account? Log in</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 16,
   },

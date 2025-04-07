@@ -16,10 +16,11 @@ export default function ProfileScreen() {
 
     const handleUpdateProfile = () => {
         // Implement update profile logic here
-        console.log("profile updated");
     };
+    console.log(user); // Sprawdź, co jest zapisane w user
 
     return (
+        
         <View style={styles.container}>
             <View style={styles.profilePicContainer}>
                 <Image
