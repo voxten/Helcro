@@ -407,43 +407,109 @@ app.get('/intakeLog', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-// POST /intakeLog - Create new IntakeLog
+// POST /intakeLog - Create or update IntakeLog
 app.post('/intakeLog', async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-        const { userId, date, mealType, mealName, products } = req.body;
+        const { userId, date, mealType, mealName, products, mealId } = req.body;
 
-        // Start transaction
-        const connection = await pool.getConnection();
+        // Validate required fields
+        if (!userId || !date || !mealType) {
+            await connection.rollback();
+            connection.release();
+            return res.status(400).json({
+                success: false,
+                message: 'userId, date, and mealType are required'
+            });
+        }
+
         await connection.beginTransaction();
 
         try {
-            // 1. Create IntakeLog
-            const [intakeLogResult] = await connection.execute(
-                'INSERT INTO IntakeLog (UserId, LogDate) VALUES (?, ?)',
+            // 1. Find or create IntakeLog (enforce one log per user per date)
+            let IntakeLogId;
+            const [existingLog] = await connection.execute(
+                'SELECT IntakeLogId FROM IntakeLog WHERE UserId = ? AND LogDate = ? FOR UPDATE',
                 [userId, date]
             );
-            const IntakeLogId = intakeLogResult.insertId;
 
-            // 2. Create meal - using mealType as fallback if mealName not provided
+            if (existingLog.length > 0) {
+                IntakeLogId = existingLog[0].IntakeLogId;
+            } else {
+                try {
+                    const [intakeLogResult] = await connection.execute(
+                        'INSERT INTO IntakeLog (UserId, LogDate) VALUES (?, ?)',
+                        [userId, date]
+                    );
+                    IntakeLogId = intakeLogResult.insertId;
+                } catch (error) {
+                    // Handle case where unique constraint violation occurs (race condition)
+                    if (error.code === 'ER_DUP_ENTRY') {
+                        const [duplicateLog] = await connection.execute(
+                            'SELECT IntakeLogId FROM IntakeLog WHERE UserId = ? AND LogDate = ?',
+                            [userId, date]
+                        );
+                        IntakeLogId = duplicateLog[0].IntakeLogId;
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+
+            // 2. Handle meal (create new or use existing)
+            let MealId;
             const mealNameToUse = mealName || mealType;
-            const [mealResult] = await connection.execute(
-                'INSERT INTO Meal (MealName, MealType) VALUES (?, ?)',
-                [mealNameToUse, mealType]
-            );
-            const MealId = mealResult.insertId;
 
-            // 3. Link meal to intake log
-            await connection.execute(
-                'INSERT INTO IntakeLog_has_Meal (UserId, IntakeLogId, MealId) VALUES (?, ?, ?)',
-                [userId, IntakeLogId, MealId]
-            );
+            if (mealId) {
+                // Update existing meal
+                MealId = mealId;
 
-            // 4. Add products to meal
-            for (const product of products) {
+                // Update meal name/type if needed
                 await connection.execute(
-                    'INSERT INTO Meal_has_Product (MealId, ProductId, grams) VALUES (?, ?, ?)',
-                    [MealId, product.productId, product.grams || 100]
+                    'UPDATE Meal SET MealName = ?, MealType = ? WHERE MealId = ?',
+                    [mealNameToUse, mealType, MealId]
                 );
+
+                // Clear existing products to avoid duplicates
+                await connection.execute(
+                    'DELETE FROM Meal_has_Product WHERE MealId = ?',
+                    [MealId]
+                );
+            } else {
+                // Create new meal
+                const [mealResult] = await connection.execute(
+                    'INSERT INTO Meal (MealName, MealType) VALUES (?, ?)',
+                    [mealNameToUse, mealType]
+                );
+                MealId = mealResult.insertId;
+
+                // Link meal to intake log
+                await connection.execute(
+                    'INSERT INTO IntakeLog_has_Meal (UserId, IntakeLogId, MealId) VALUES (?, ?, ?)',
+                    [userId, IntakeLogId, MealId]
+                );
+            }
+
+            // 3. Add products to meal with duplicate prevention
+            for (const product of products) {
+                // First check if product already exists (in case of retries)
+                const [existingProduct] = await connection.execute(
+                    'SELECT 1 FROM Meal_has_Product WHERE MealId = ? AND ProductId = ?',
+                    [MealId, product.productId]
+                );
+
+                if (existingProduct.length === 0) {
+                    await connection.execute(
+                        'INSERT INTO Meal_has_Product (MealId, ProductId, grams) VALUES (?, ?, ?)',
+                        [MealId, product.productId, product.grams || 100]
+                    );
+                } else {
+                    // Update existing product entry if needed
+                    await connection.execute(
+                        'UPDATE Meal_has_Product SET grams = ? WHERE MealId = ? AND ProductId = ?',
+                        [product.grams || 100, MealId, product.productId]
+                    );
+                }
             }
 
             await connection.commit();
@@ -459,9 +525,15 @@ app.post('/intakeLog', async (req, res) => {
         } catch (error) {
             await connection.rollback();
             connection.release();
-            throw error;
+            console.error('Transaction error in /intakeLog:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Transaction failed',
+                error: error.message
+            });
         }
     } catch (error) {
+        connection.release();
         console.error('Error in /intakeLog:', error);
         res.status(500).json({
             success: false,

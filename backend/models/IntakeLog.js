@@ -4,12 +4,23 @@ const pool = require("../config/db");
 class IntakeLog {
     static async create({ UserId, LogDate }) {
         try {
+            // First check if log already exists for this user/date
+            const existing = await this.findByUserAndDate(UserId, LogDate);
+            if (existing) {
+                return existing.IntakeLogId; // Return existing ID instead of creating new
+            }
+
             const [result] = await pool.execute(
                 'INSERT INTO IntakeLog (UserId, LogDate) VALUES (?, ?)',
                 [UserId, LogDate]
             );
             return result.insertId;
         } catch (error) {
+            // Handle unique constraint violation
+            if (error.code === 'ER_DUP_ENTRY') {
+                const existing = await this.findByUserAndDate(UserId, LogDate);
+                return existing.IntakeLogId;
+            }
             console.error('Error creating IntakeLog:', error);
             throw error;
         }
@@ -82,8 +93,27 @@ class IntakeLog {
         return result.affectedRows > 0;
     }
 
-    static async updateProductsForIntakeLog(IntakeLogId, products) {
-        // First get the associated meal
+    static async updateProductsForIntakeLog(IntakeLogId, products, MealId = null) {
+        // If MealId is provided, only update that specific meal
+        if (MealId) {
+            // Delete existing products
+            await pool.execute(
+                'DELETE FROM Meal_has_Product WHERE MealId = ?',
+                [MealId]
+            );
+
+            // Add new products
+            for (const product of products) {
+                await this.addProductToMeal({
+                    MealId,
+                    ProductId: product.ProductId,
+                    grams: product.grams
+                });
+            }
+            return true;
+        }
+
+        // Otherwise update all meals for this intake log (existing behavior)
         const [meals] = await pool.execute(
             'SELECT MealId FROM IntakeLog_has_Meal WHERE IntakeLogId = ?',
             [IntakeLogId]
@@ -91,21 +121,21 @@ class IntakeLog {
 
         if (meals.length === 0) return false;
 
-        const MealId = meals[0].MealId;
+        for (const meal of meals) {
+            // Delete existing products
+            await pool.execute(
+                'DELETE FROM Meal_has_Product WHERE MealId = ?',
+                [meal.MealId]
+            );
 
-        // Delete existing products
-        await pool.execute(
-            'DELETE FROM Meal_has_Product WHERE MealId = ?',
-            [MealId]
-        );
-
-        // Add new products
-        for (const product of products) {
-            await this.addProductToMeal({
-                MealId,
-                ProductId: product.ProductId,
-                grams: product.grams
-            });
+            // Add new products
+            for (const product of products) {
+                await this.addProductToMeal({
+                    MealId: meal.MealId,
+                    ProductId: product.ProductId,
+                    grams: product.grams
+                });
+            }
         }
 
         return true;
