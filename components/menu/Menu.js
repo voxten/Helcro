@@ -34,7 +34,7 @@ export default function Menu() {
                     const formattedDate = selectedDate.toISOString().split('T')[0];
                     const response = await axios.get(`${API_BASE_URL}/intakeLog`, {
                         params: {
-                            userId: user.id,
+                            userId: user.UserId,
                             date: formattedDate
                         }
                     });

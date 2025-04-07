@@ -54,11 +54,11 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
   // Fetch IntakeLog when component mounts or date changes
   const fetchIntakeLog = async () => {
     try {
-        if(user && user.id) {
+        if(user && user.UserId) {
           const formattedDate = selectedDate.toISOString().split('T')[0];
           const response = await axios.get(`${apiUrl}/intakeLog`, {
             params: {
-              userId: user.id,
+              userId: user.UserId,
               date: formattedDate
             }
           });
@@ -84,7 +84,7 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
 
       // Include all meal information in the request
       const response = await axios.post(`${apiUrl}/intakeLog`, {
-        userId: user.id,
+        userId: user.UserId,
         date: formattedDate,
         mealType,
         mealName: mealType, // Or use a specific name if available
