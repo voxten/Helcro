@@ -47,16 +47,32 @@ const handleMulterError = (err, req, res, next) => {
 
 // Upload endpoint
 router.post('/upload', upload.single('image'), handleMulterError, (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
+  try {
+    console.log('Upload request received. File:', req.file); // Debug log
+    
+    if (!req.file) {
+      console.log('No file uploaded');
+      return res.status(400).json({ 
+        success: false,
+        error: 'No file uploaded' 
+      });
+    }
+    
+    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/recipes/${req.file.filename}`;
+    console.log('File uploaded successfully:', imageUrl);
+    
+    res.json({ 
+      success: true,
+      imageUrl 
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message
+    });
   }
-  
-  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/recipes/${req.file.filename}`;
-  
-  res.json({ 
-    success: true,
-    imageUrl 
-  });
 });
 
 module.exports = router;

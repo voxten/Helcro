@@ -17,6 +17,16 @@ const path = require('path');
 
 const IntakeLog = require('./models/IntakeLog');
 
+//FOR UPLOAD IMAGES
+
+
+const uploadRoutes = require('./routes/uploadRoutes');
+app.use('/api', uploadRoutes);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Create MySQL connection
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -839,6 +849,323 @@ app.delete('/weight/:id', async (req, res) => {
         console.error('Error deleting weight:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
+});
+// ===== RECIPE ENDPOINTS ===== //
+
+// Get all categories
+app.get('/api/categories', (req, res) => {
+    db.query('SELECT * FROM Category', (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json(results);
+    });
+});
+
+// Get products for recipe selection
+app.get('/api/recipe-products', (req, res) => {
+    const { search } = req.query;
+    let query = 'SELECT ProductId, product_name, image FROM Product';
+    let params = [];
+    
+    if (search) {
+        query += ' WHERE product_name LIKE ?';
+        params.push(`%${search}%`);
+    }
+    
+    query += ' ORDER BY product_name LIMIT 50';
+    
+    db.query(query, params, (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json(results);
+    });
+});
+
+// Create a new recipe
+app.post('/api/recipes', authenticateToken, (req, res) => {
+    const { UserId, Name, Description, Steps, Image } = req.body;
+    
+    console.log('Creating recipe with:', { UserId, Name, Description, Steps, Image }); // Debug log
+
+    // Validate inputs
+    if (!UserId || !Name || !Description || !Steps) {
+        console.log('Missing required fields'); // Debug log
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Insert into database
+    db.query(
+        'INSERT INTO Recipe (UserId, Name, Description, Steps, Image) VALUES (?, ?, ?, ?, ?)',
+        [UserId, Name, Description, Steps, Image || null], // Ensure Image is null if not provided
+        (err, result) => {
+            if (err) {
+                console.error('Database error:', err); // Detailed error logging
+                return res.status(500).json({ 
+                    error: 'Database error',
+                    details: err.message 
+                });
+            }
+            res.status(201).json({ 
+                success: true, 
+                RecipeId: result.insertId,
+                message: 'Recipe created successfully'
+            });
+        }
+    );
+});
+
+// Add categories to recipe
+app.post('/api/recipes/:recipeId/categories', authenticateToken, (req, res) => {
+    const { recipeId } = req.params;
+    const { categoryIds } = req.body;
+    const UserId = req.user.id;
+
+    if (!categoryIds || !Array.isArray(categoryIds)) {
+        return res.status(400).json({ error: 'Invalid category IDs' });
+    }
+
+    // First verify the recipe belongs to the user
+    db.query(
+        'SELECT UserId FROM Recipe WHERE RecipeId = ?',
+        [recipeId],
+        (err, results) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+
+            if (results.length === 0 || results[0].UserId !== UserId) {
+                return res.status(404).json({ error: 'Recipe not found' });
+            }
+
+            // Delete existing categories first (optional)
+            db.query(
+                'DELETE FROM Recipe_has_Category WHERE RecipeId = ?',
+                [recipeId],
+                (err) => {
+                    if (err) {
+                        console.error('Database error:', err);
+                        return res.status(500).json({ error: 'Database error' });
+                    }
+
+                    // Insert new categories
+                    const values = categoryIds.map(catId => [recipeId, catId]);
+                    
+                    if (values.length === 0) {
+                        return res.json({ success: true, message: 'Categories updated' });
+                    }
+
+                    db.query(
+                        'INSERT INTO Recipe_has_Category (RecipeId, CategoryId) VALUES ?',
+                        [values],
+                        (err) => {
+                            if (err) {
+                                console.error('Database error:', err);
+                                return res.status(500).json({ error: 'Database error' });
+                            }
+                            res.json({ success: true, message: 'Categories added to recipe' });
+                        }
+                    );
+                }
+            );
+        }
+    );
+});
+
+// Add products to recipe
+app.post('/api/recipes/:recipeId/products', authenticateToken, (req, res) => {
+    const { recipeId } = req.params;
+    const { products } = req.body;
+    const UserId = req.user.id;
+
+    if (!products || !Array.isArray(products)) {
+        return res.status(400).json({ error: 'Invalid products data' });
+    }
+
+    // First verify the recipe belongs to the user
+    db.query(
+        'SELECT UserId FROM Recipe WHERE RecipeId = ?',
+        [recipeId],
+        (err, results) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+
+            if (results.length === 0 || results[0].UserId !== UserId) {
+                return res.status(404).json({ error: 'Recipe not found' });
+            }
+
+            // Delete existing products first (optional)
+            db.query(
+                'DELETE FROM Recipe_has_Product WHERE RecipeId = ?',
+                [recipeId],
+                (err) => {
+                    if (err) {
+                        console.error('Database error:', err);
+                        return res.status(500).json({ error: 'Database error' });
+                    }
+
+                    // Insert new products
+                    const values = products.map(p => [recipeId, p.ProductId, p.Amount]);
+                    
+                    if (values.length === 0) {
+                        return res.json({ success: true, message: 'Products updated' });
+                    }
+
+                    db.query(
+                        'INSERT INTO Recipe_has_Product (RecipeId, ProductId, Amount) VALUES ?',
+                        [values],
+                        (err) => {
+                            if (err) {
+                                console.error('Database error:', err);
+                                return res.status(500).json({ error: 'Database error' });
+                            }
+                            res.json({ success: true, message: 'Products added to recipe' });
+                        }
+                    );
+                }
+            );
+        }
+    );
+});
+
+// Get recipe details
+app.get('/api/recipes/:recipeId', authenticateToken, (req, res) => {
+    const { recipeId } = req.params;
+    const UserId = req.user.id;
+
+    db.query(
+        'SELECT * FROM Recipe WHERE RecipeId = ? AND UserId = ?',
+        [recipeId, UserId],
+        (err, recipeResults) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+
+            if (recipeResults.length === 0) {
+                return res.status(404).json({ error: 'Recipe not found' });
+            }
+
+            const recipe = recipeResults[0];
+
+            // Get categories
+            db.query(
+                `SELECT c.CategoryId, c.Name 
+                 FROM Recipe_has_Category rc 
+                 JOIN Category c ON rc.CategoryId = c.CategoryId
+                 WHERE rc.RecipeId = ?`,
+                [recipeId],
+                (err, categoryResults) => {
+                    if (err) {
+                        console.error('Database error:', err);
+                        return res.status(500).json({ error: 'Database error' });
+                    }
+
+                    // Get products
+                    db.query(
+                        `SELECT p.ProductId, p.product_name, rp.Amount 
+                         FROM Recipe_has_Product rp 
+                         JOIN Product p ON rp.ProductId = p.ProductId
+                         WHERE rp.RecipeId = ?`,
+                        [recipeId],
+                        (err, productResults) => {
+                            if (err) {
+                                console.error('Database error:', err);
+                                return res.status(500).json({ error: 'Database error' });
+                            }
+
+                            // Format the response
+                            res.json({
+                                ...recipe,
+                                steps: recipe.Steps ? recipe.Steps.split('||') : [],
+                                categories: categoryResults,
+                                products: productResults
+                            });
+                        }
+                    );
+                }
+            );
+        }
+    );
+});
+
+// Get all recipes with categories and products
+app.get('/api/recipes', authenticateToken, (req, res) => {
+    // First get all recipes
+    db.query(`
+        SELECT r.*, u.UserName 
+        FROM Recipe r
+        JOIN user u ON r.UserId = u.UserId
+        ORDER BY r.Name
+    `, (err, recipeResults) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (recipeResults.length === 0) {
+            return res.json([]);
+        }
+
+        // Get categories for all recipes
+        db.query(`
+            SELECT rc.RecipeId, c.CategoryId, c.Name 
+            FROM Recipe_has_Category rc
+            JOIN Category c ON rc.CategoryId = c.CategoryId
+        `, (err, categoryResults) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+
+            // Get products for all recipes
+            db.query(`
+                SELECT rp.RecipeId, p.ProductId, p.product_name, rp.Amount 
+                FROM Recipe_has_Product rp
+                JOIN Product p ON rp.ProductId = p.ProductId
+            `, (err, productResults) => {
+                if (err) {
+                    console.error('Database error:', err);
+                    return res.status(500).json({ error: 'Database error' });
+                }
+
+                // Format the response
+                const recipes = recipeResults.map(recipe => {
+                    const categories = categoryResults
+                        .filter(c => c.RecipeId === recipe.RecipeId)
+                        .map(c => c.Name);
+                    
+                    const products = productResults
+                        .filter(p => p.RecipeId === recipe.RecipeId)
+                        .map(p => ({
+                            name: p.product_name,
+                            amount: p.Amount
+                        }));
+                    
+                    return {
+                        RecipeId: recipe.RecipeId,
+                        name: recipe.Name,
+                        description: recipe.Description,
+                        products: products,
+                        photo: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+                        categories: categories,
+                        rating: 4.5, // Default rating for now
+                        UserId: recipe.UserId,
+                        userName: recipe.UserName,
+                        steps: recipe.Steps ? recipe.Steps.split('||') : []
+                    };
+                });
+
+                res.json(recipes);
+            });
+        });
+    });
 });
 
 /*

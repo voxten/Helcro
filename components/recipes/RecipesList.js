@@ -4,6 +4,8 @@ import RecipeCard from "./RecipeCard";
 import Recipe from "./Recipe";
 import styles2 from "./RecipesStyles";
 import Icon from "react-native-vector-icons/FontAwesome6";
+import { useAuth } from "../context/AuthContext";
+
 
 const recipes = [
     new Recipe(
@@ -66,6 +68,7 @@ const categorizeRecipes = (recipes) => {
 };
 
 const RecipesList = ({ navigation }) => {
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -91,10 +94,15 @@ const RecipesList = ({ navigation }) => {
             </TouchableOpacity>
 
             // Add Recipe
-            <TouchableOpacity style={styles2.button} onPress={() => navigation.navigate("RecipesAdd")}>
-                <Icon name="plus" size={20} color="white" style={styles2.icon} />
-                <Text style={styles2.buttonText}>Add Recipe</Text>
-            </TouchableOpacity>
+            {user && (
+                <TouchableOpacity 
+                    style={styles2.button} 
+                    onPress={() => navigation.navigate("RecipesAdd")}
+                >
+                    <Icon name="plus" size={20} color="white" style={styles2.icon} />
+                    <Text style={styles2.buttonText}>Add Recipe</Text>
+                </TouchableOpacity>
+            )}
 
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles2.modalContainer}>

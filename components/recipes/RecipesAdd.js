@@ -7,152 +7,114 @@ import axios from "axios";
 import { API_BASE_URL } from '@env';
 import { useAuth } from "../context/AuthContext";
 
-const apiUrl = `${API_BASE_URL}`;
-
-const RecipesAdd = ({ navigation, route }) => {
+const RecipesAdd = ({ navigation }) => {
+  const { user, token } = useAuth();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState([""]);
+  const [imageUri, setImageUri] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [products, setProducts] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
-  const [newProduct, setNewProduct] = useState({
-    productId: "",
-    amount: ""
-  });
-  const [imageUri, setImageUri] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [newProduct, setNewProduct] = useState({ productId: "", amount: "" });
   const [isProductModalVisible, setIsProductModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Filter products based on search query
+  const filteredProducts = availableProducts.filter(product =>
+    product.product_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
+    // Fetch categories and products when component mounts
     const fetchData = async () => {
       try {
-        if (!user?.token) {
-          Alert.alert("Authentication required", "Please login to add recipes");
-          navigation.navigate('AuthNavigator');
-          return;
-        }
-  
-        setLoading(true);
-        
-        console.log("Fetching data with token:", user.token);
-        
-        // Fetch categories
-        const categoriesResponse = await axios.get(`${apiUrl}/api/categories`, {
-          headers: { 
-            'Authorization': `Bearer ${user.token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!categoriesResponse.data) {
-          throw new Error("No categories data received");
-        }
-        console.log("Categories data:", categoriesResponse.data);
-        
-        // Fetch products
-        const productsResponse = await axios.get(`${apiUrl}/api/products`, {
-          headers: { 
-            'Authorization': `Bearer ${user.token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!productsResponse.data) {
-          throw new Error("No products data received");
-        }
-        console.log("Products data:", productsResponse.data);
-        
-        setCategories(categoriesResponse.data);
-        setAvailableProducts(productsResponse.data);
-        setFilteredProducts(productsResponse.data);
-        
+        const [categoriesRes, productsRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/categories`),
+          axios.get(`${API_BASE_URL}/api/recipe-products`)
+        ]);
+        setCategories(categoriesRes.data);
+        setAvailableProducts(productsRes.data);
       } catch (error) {
-        console.error("Data fetching error:", {
-          message: error.message,
-          response: error.response?.data,
-          config: error.config
-        });
-        
-        if (error.response?.status === 401) {
-          Alert.alert("Session expired", "Please login again");
-          navigation.navigate('AuthNavigator');
-        } else {
-          Alert.alert("Error", "Failed to load data. Please check console for details.");
-        }
-      } finally {
-        setLoading(false);
+        console.error("Error fetching data:", error);
+        Alert.alert("Error", "Failed to load data");
       }
     };
-  
+
     fetchData();
-  }, [user?.token, navigation]);
+  }, []);
 
   const pickImage = async () => {
     try {
-      const { status } = await requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission required', 
-          'We need access to your photos to upload images'
-        );
-        return;
-      }
+        const { status } = await requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission required', 'We need access to your photos to upload images');
+            return;
+        }
     
-      let result = await launchImageLibraryAsync({
-        mediaTypes: MediaTypeOptions.Images, // Use MediaTypeOptions directly
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-  
-      console.log('Image picker result:', result);
-      
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImageUri(result.assets[0].uri);
-      }
+        let result = await launchImageLibraryAsync({
+            mediaTypes: 'Images',  // Changed from MediaTypeOptions.Images
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+        
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            setImageUri(result.assets[0].uri);
+        }
     } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+        console.error('Error picking image:', error);
+        Alert.alert('Error', 'Failed to pick image');
     }
-  };
-
-  const uploadImage = async () => {
-    if (!imageUri || !user?.token) return null;
-  
-    let filename = imageUri.split('/').pop();
-    let match = /\.(\w+)$/.exec(filename);
-    let type = match ? `image/${match[1]}` : 'image';
-  
+};
+const uploadImage = async () => {
+  try {
+    setUploadingImage(true);
+    
+    // Create FormData object
     const formData = new FormData();
+    
+    // Get the file extension from the URI
+    const fileExt = imageUri.split('.').pop();
+    const fileType = imageUri.split('.').pop().toLowerCase() === 'png' ? 'image/png' : 'image/jpeg';
+
     formData.append('image', {
       uri: imageUri,
-      type,
-      name: filename || 'recipe.jpg',
+      type: fileType,
+      name: `recipe-${Date.now()}.${fileExt}`
     });
-  
-    try {
-      const response = await axios.post(`${apiUrl}/api/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-      return response.data.imageUrl;
-    } catch (error) {
-      console.error("Image upload error:", {
-        message: error.message,
-        response: error.response?.data,
-        config: error.config
-      });
-      return null;
-    }
-  };
+
+    console.log('Uploading image...', formData); // Debug log
+
+    // Make the upload request
+    const response = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      },
+      transformRequest: (data) => data, // Don't transform the FormData
+    });
+
+    console.log('Image upload response:', response.data); // Debug log
+
+    // Return the image URL from the response
+    return response.data.imageUrl;
+  } catch (error) {
+    console.error("Error uploading image:", {
+      message: error.message,
+      response: error.response?.data,
+      stack: error.stack
+    });
+    Alert.alert("Error", "Failed to upload image: " + (error.response?.data?.error || error.message));
+    return null;
+  } finally {
+    setUploadingImage(false);
+  }
+};
+
 
   const handleSelectProduct = (product) => {
     if (!product || !product.ProductId) {
@@ -209,65 +171,96 @@ const RecipesAdd = ({ navigation, route }) => {
   };
 
   const handleSubmit = async () => {
-    if (!user?.token) {
-        Alert.alert("Session expired", "Please login again");
-        navigation.navigate('AuthNavigator'); // Change 'AuthNavigator' to your actual login screen name
+    if (!user || !token) {
+        Alert.alert("Error", "You need to be logged in to add recipes");
         return;
     }
-  
-    if (!name || !description || steps.some(step => !step) || products.length === 0) {
+
+    // Validate form inputs
+    if (!name || !description || steps.some(step => !step.trim()) || products.length === 0) {
         Alert.alert("Error", "Please fill in all required fields");
         return;
     }
-  
+
     try {
         setLoading(true);
         
         // Upload image if exists
-        const imageUrl = imageUri ? await uploadImage() : null;
-        
-        // Create the recipe
-        const recipeResponse = await axios.post(`${apiUrl}/api/recipes`, {
+        let imageUrl = null;
+        if (imageUri) {
+            console.log('Starting image upload...');
+            imageUrl = await uploadImage();
+            console.log('Image upload result:', imageUrl);
+        }
+
+        console.log('Creating recipe with:', {
             UserId: user.UserId,
             Name: name,
             Description: description,
-            Steps: steps.filter(step => step.trim() !== "").join('||'), // Join steps with delimiter
+            Steps: steps.filter(step => step.trim() !== "").join('||'),
+            Image: imageUrl
+        });
+        
+        // Create the recipe with UserId
+        const recipeResponse = await axios.post(`${API_BASE_URL}/api/recipes`, {
+            UserId: user.UserId,
+            Name: name,
+            Description: description,
+            Steps: steps.filter(step => step.trim() !== "").join('||'),
             Image: imageUrl
         }, {
-            headers: { Authorization: `Bearer ${user.token}` },
+            headers: { 
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}` 
+            },
         });
+
+        console.log('Recipe created:', recipeResponse.data);
 
         const recipeId = recipeResponse.data.RecipeId;
 
         // Add categories if any selected
         if (selectedCategories.length > 0) {
-            await axios.post(`${apiUrl}/api/recipes/${recipeId}/categories`, {
+            console.log('Adding categories:', selectedCategories);
+            await axios.post(`${API_BASE_URL}/api/recipes/${recipeId}/categories`, {
                 categoryIds: selectedCategories
             }, {
-                headers: { Authorization: `Bearer ${user.token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
         }
 
         // Add products
-        await axios.post(`${apiUrl}/api/recipes/${recipeId}/products`, {
+        console.log('Adding products:', products);
+        await axios.post(`${API_BASE_URL}/api/recipes/${recipeId}/products`, {
             products: products.map(p => ({
                 ProductId: p.ProductId,
                 Amount: p.amount
             }))
         }, {
-            headers: { Authorization: `Bearer ${user.token}` },
+            headers: { Authorization: `Bearer ${token}` },
         });
 
         Alert.alert("Success", "Recipe added successfully!");
         navigation.goBack();
     } catch (error) {
-        console.error("Error adding recipe:", error);
-        if (error.response?.status === 401) {
-            Alert.alert("Session expired", "Please login again");
-            navigation.navigate('AuthNavigator');
-        } else {
-            Alert.alert("Error", error.response?.data?.message || "Failed to add recipe. Please try again.");
+        console.error("Error adding recipe:", {
+            message: error.message,
+            response: error.response?.data,
+            stack: error.stack
+        });
+        
+        let errorMessage = "Failed to add recipe. Please try again.";
+        if (error.response) {
+            if (error.response.status === 401) {
+                errorMessage = "Session expired. Please log in again.";
+            } else if (error.response.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.response.data?.error) {
+                errorMessage = error.response.data.error;
+            }
         }
+        
+        Alert.alert("Error", errorMessage);
     } finally {
         setLoading(false);
     }
