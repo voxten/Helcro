@@ -69,7 +69,7 @@ const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
-          autoFocus={true}
+          autoFocus={false}
         />
 
         <TouchableOpacity 

@@ -51,6 +51,202 @@ db.connect(err => {
     }
     console.log('Connected to MySQL');
 });
+
+app.post('/api/auth/verify-password', async (req, res) => {
+    const { userId, password } = req.body;
+
+    if (!userId || !password) {
+        return res.status(400).json({ success: false, message: "Missing credentials" });
+    }
+
+    db.query('SELECT Password FROM user WHERE UserId = ?', [userId], async (err, results) => {
+        if (err) {
+            console.error("Verify password error:", err);
+            return res.status(500).json({ success: false, message: "Internal server error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const isMatch = await bcrypt.compare(password, results[0].Password);
+
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Incorrect password" });
+        }
+
+        return res.json({ success: true });
+    });
+});
+app.post('/api/auth/change-password', async (req, res) => {
+    const { userId, newPassword } = req.body;
+
+    if (!userId || !newPassword) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'UserId and new password are required' 
+        });
+    }
+
+    if (newPassword.length < 8) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Password must be at least 8 characters' 
+        });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // wrap callback-based db.query into Promise
+        const runQuery = (sql, params) => {
+            return new Promise((resolve, reject) => {
+                db.query(sql, params, (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                });
+            });
+        };
+
+        await runQuery('UPDATE user SET Password = ? WHERE UserId = ?', [hashedPassword, userId]);
+        
+
+        res.json({ 
+            success: true,
+            message: 'Password changed successfully' 
+        });
+
+    } catch (error) {
+        console.error('Password change error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to change password' 
+        });
+    }
+});
+app.get('/delete-account', (req, res) => {
+    const token = req.query.token;
+    res.sendFile(path.join(__dirname, 'public/delete-account.html'));
+});
+// Request account deletion endpoint
+app.post('/api/auth/request-account-deletion', (req, res) => {
+    const { email } = req.body;
+
+    // 1. Check if user exists
+    db.query('SELECT * FROM user WHERE Email = ?', [email], (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ success: false, message: 'Server error' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const user = results[0];
+
+        // 2. Generate deletion token (valid for 24 hours)
+        const token = jwt.sign(
+            { userId: user.UserId, action: 'delete-account' },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        // 3. Create deletion link
+        const deletionUrl = `${API_BASE_URL}/delete-account?token=${token}`;
+
+        // 4. Send email with deletion link
+        const mailOptions = {
+            from: `"Support" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: 'Confirm Account Deletion',
+            html: `
+                <h2>Account Deletion Request</h2>
+                <p>We received a request to delete your account.</p>
+                <p>Click the button below to permanently delete your account:</p>
+                <a href="${deletionUrl}" style="
+                    display: inline-block;
+                    padding: 10px 20px;
+                    background-color: #dc3545;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    margin: 15px 0;
+                ">Delete My Account</a>
+                <p>This link will expire in 24 hours.</p>
+                <p>If you didn't request this, please secure your account immediately.</p>
+            `
+        };
+
+        transporter.sendMail(mailOptions, (mailError) => {
+            if (mailError) {
+                console.error('Email sending error:', mailError);
+                return res.status(500).json({ success: false, message: 'Failed to send email' });
+            }
+
+            // 5. Store deletion token in database (optional)
+            db.query(
+                'UPDATE user SET deletion_token = ?, deletion_token_expires = DATE_ADD(NOW(), INTERVAL 1 DAY) WHERE UserId = ?',
+                [token, user.UserId],
+                (updateError) => {
+                    if (updateError) {
+                        console.error('Token update error:', updateError);
+                        // Continue anyway - the JWT token is sufficient
+                    }
+                    res.json({ success: true, message: 'Deletion email sent' });
+                }
+            );
+        });
+    });
+});
+
+// Actual account deletion endpoint (using callback style)
+app.post('/api/auth/delete-account', (req, res) => {
+    const { token } = req.body;
+
+    // Verify token
+    jwt.verify(token, process.env.JWT_SECRET, (jwtError, decoded) => {
+        if (jwtError) {
+            console.error('JWT verification error:', jwtError);
+            
+            if (jwtError.name === 'TokenExpiredError') {
+                return res.status(400).json({ success: false, message: 'Token has expired' });
+            }
+            
+            return res.status(400).json({ success: false, message: 'Invalid token' });
+        }
+        
+        if (decoded.action !== 'delete-account') {
+            return res.status(400).json({ success: false, message: 'Invalid token' });
+        }
+
+        // Optional: Verify token against database
+        db.query(
+            'SELECT * FROM user WHERE UserId = ? AND deletion_token = ? AND deletion_token_expires > NOW()',
+            [decoded.userId, token],
+            (selectError, tokens) => {
+                if (selectError) {
+                    console.error('Database error:', selectError);
+                    return res.status(500).json({ success: false, message: 'Server error' });
+                }
+
+                if (tokens.length === 0) {
+                    return res.status(400).json({ success: false, message: 'Invalid or expired token' });
+                }
+
+                // Delete user from database
+                db.query('DELETE FROM user WHERE UserId = ?', [decoded.userId], (deleteError) => {
+                    if (deleteError) {
+                        console.error('Deletion error:', deleteError);
+                        return res.status(500).json({ success: false, message: 'Failed to delete account' });
+                    }
+
+                    res.json({ success: true, message: 'Account deleted successfully' });
+                });
+            }
+        );
+    });
+});
 // ===== DODANE NOWE ENDPOINTY ===== //
 
 // Rejestracja użytkownika
