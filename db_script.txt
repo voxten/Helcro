@@ -7,7 +7,9 @@ CREATE TABLE User (
     Weight FLOAT,
     Gender ENUM('M', 'K', 'Inne'),
     reset_token TEXT,
-    reset_token_expires DATETIME
+    reset_token_expires DATETIME,
+    deletion_token TEXT,
+    deletion_token_expires DATETIME
 );
 
 CREATE TABLE Goal (
