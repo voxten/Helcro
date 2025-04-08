@@ -72,6 +72,8 @@ CREATE TABLE Recipe (
     UserId INT NOT NULL,
     Name VARCHAR(255) NOT NULL UNIQUE,
     Description TEXT,
+    Steps TEXT,
+    Image VARCHAR(255),
     FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE
 );
 
@@ -96,6 +98,33 @@ CREATE TABLE Category (
     CategoryId INT PRIMARY KEY AUTO_INCREMENT,
     Name VARCHAR(255) NOT NULL UNIQUE
 );
+
+INSERT INTO Category (Name) VALUES 
+('Healthy'),
+('For Kids'),
+('Italian'),
+('Pasta'),
+('Vegetarian'),
+('Vegan'),
+('Low Carb'),
+('High Protein'),
+('Gluten-Free'),
+('Dairy-Free'),
+('Quick Meals'),
+('Comfort Food'),
+('Breakfast'),
+('Lunch'),
+('Dinner'),
+('Desserts'),
+('Salads'),
+('Soups'),
+('Asian'),
+('Mexican'),
+('Mediterranean'),
+('Baking'),
+('Grilling'),
+('Smoothies'),
+('Snacks');
 
 CREATE TABLE Recipe_has_Category (
     RecipeId INT NOT NULL,
