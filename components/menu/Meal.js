@@ -2,15 +2,12 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, TextInput, FlatList, Image, StyleSheet } from 'react-native';
 import axios from "axios";
 import styles from "../../styles/MainStyles";
-import styles2 from "./MealStyles";
 import { API_BASE_URL } from '@env';
 const apiUrl = `${API_BASE_URL}`;
 
 import { useAuth } from "../context/AuthContext";
 
-
-
-export default function Meal({ onClose, onSave, existingProducts = [], selectedDate, mealType  }) {
+export default function Meal({ onClose, onSave, existingProducts = [], selectedDate, mealType, mealName  }) {
   const { user } = useAuth();
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [products, setProducts] = useState([]);
@@ -69,6 +66,7 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
         }
       return [];
     } catch (error) {
+      console.log("error w meal");
       console.error("Error fetching intake log:", error);
       return [];
     }
@@ -88,25 +86,26 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
 
     return uniqueProducts;
   };
-
   const saveIntakeLog = async (productsToSave) => {
     try {
       const cleanedProducts = cleanProductsBeforeSave(productsToSave);
       const formattedDate = selectedDate.toISOString().split('T')[0];
+
+      // Prepare products with grams
       const products = productsToSave.map(product => ({
         productId: product.ProductId || product.productId,
-        grams: product.grams || 100
+        grams: product.grams || 100 // Include grams from the product
       }));
 
-      // Check if we're editing an existing meal
-      const existingMeal = existingProducts.length > 0 ? existingProducts[0] : null;
-      const mealId = existingMeal?.MealId;
+      // Determine if we're editing an existing meal
+      const isEditing = existingProducts.length > 0;
+      const mealId = isEditing ? existingProducts[0]?.MealId : null;
 
       const response = await axios.post(`${apiUrl}/intakeLog`, {
         userId: user.UserId,
         date: formattedDate,
-        mealType,
-        mealName: mealType,
+        mealType: mealType, // Use the prop passed from Menu
+        mealName: mealName || mealType, // Use the prop passed from Menu
         products,
         mealId // Include mealId if editing existing meal
       });
@@ -121,8 +120,6 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
       throw error;
     }
   };
-
-
 
   const handleCreateProduct = () => {
     setIsCreatingProduct(true);

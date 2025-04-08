@@ -26,12 +26,18 @@ export default function Menu() {
         carbohydrates: 200
     });
 
-    // In your Menu component
+
     useEffect(() => {
+        if (!user) {
+            setMeals([]);
+            return; // Exit early, don't try to fetch
+        }
+
         const fetchMealsForDate = async () => {
             try {
                 if (user && selectedDate) {
                     const formattedDate = selectedDate.toISOString().split('T')[0];
+
                     const response = await axios.get(`${API_BASE_URL}/intakeLog`, {
                         params: {
                             userId: user.UserId,
@@ -39,18 +45,20 @@ export default function Menu() {
                         }
                     });
 
-                    // Ensure we always have an array, even if empty
                     const fetchedMeals = response.data?.meals || [];
 
-                    // Update state with properly formatted meals
                     setMeals(fetchedMeals.map(meal => ({
                         ...meal,
-                        time: new Date(meal.time) // Ensure time is Date object
+                        time: new Date()
                     })));
                 }
             } catch (error) {
-                console.error("Error fetching intake log:", error);
-                setMeals([]); // Reset to empty array on error
+                console.error("Error fetching intake log:", {
+                    message: error.message,
+                    response: error.response?.data,
+                    config: error.config
+                });
+                setMeals([]);
             }
         };
 
@@ -156,11 +164,12 @@ export default function Menu() {
 
     const calculateTotalNutrition = (products) => {
         return products.reduce((acc, product) => {
+            const grams = product.grams || 100;
             return {
-                calories: acc.calories + parseFloat(product.calories || 0),
-                proteins: acc.proteins + parseFloat(product.proteins || 0),
-                fats: acc.fats + parseFloat(product.fats || 0),
-                carbohydrates: acc.carbohydrates + parseFloat(product.carbohydrates || 0)
+                calories: acc.calories + (parseFloat(product.calories || 0) / 100 * grams),
+                proteins: acc.proteins + (parseFloat(product.proteins || 0) / 100 * grams),
+                fats: acc.fats + (parseFloat(product.fats || 0) / 100 * grams),
+                carbohydrates: acc.carbohydrates + (parseFloat(product.carbohydrates || 0) / 100 * grams)
             };
         }, { calories: 0, proteins: 0, fats: 0, carbohydrates: 0 });
     };

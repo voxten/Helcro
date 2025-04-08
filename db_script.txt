@@ -28,20 +28,16 @@ CREATE TABLE IntakeLog (
 
 CREATE TABLE Meal (
     MealId INT PRIMARY KEY AUTO_INCREMENT,
-    MealName VARCHAR(255) NOT NULL,
-    MealType VARCHAR(255) NOT NULL,
-    CreatedAt DATE NOT NULL
+    MealType VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE IntakeLog_has_Meal (
-    UserId INT NOT NULL,
-    IntakeLogId INT NOT NULL,
-    MealId INT NOT NULL,
-    PRIMARY KEY (UserId, IntakeLogId, MealId),
-    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE,
-    FOREIGN KEY (IntakeLogId) REFERENCES IntakeLog(IntakeLogId) ON DELETE CASCADE,
-    FOREIGN KEY (MealId) REFERENCES Meal(MealId) ON DELETE CASCADE
-);
+INSERT INTO Meal (MealType) VALUES
+('Breakfast'),
+('Second Breakfast'),
+('Lunch'),
+('Afternoon Snack'),
+('Dinner'),
+('Other');
 
 CREATE TABLE Product (
     ProductId INT AUTO_INCREMENT PRIMARY KEY,
@@ -53,15 +49,18 @@ CREATE TABLE Product (
     fibers DECIMAL(10,2),
     salt DECIMAL(10,2),
     calories DECIMAL(10,2),
-    grams DECIMAL(10,2),
     image VARCHAR(255),
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE Meal_has_Product (
+CREATE TABLE IntakeLog_has_Product (
+    IntakeLogId INT NOT NULL,
     ProductId INT NOT NULL,
     MealId INT NOT NULL,
-    PRIMARY KEY (ProductId, MealId),
+    MealName VARCHAR(255),
+    grams DECIMAL(10,2) DEFAULT 100,
+    PRIMARY KEY (IntakeLogId, ProductId ,MealId),
+    FOREIGN KEY (IntakeLogId) REFERENCES IntakeLog(IntakeLogId) ON DELETE CASCADE,
     FOREIGN KEY (ProductId) REFERENCES Product(ProductId) ON DELETE CASCADE,
     FOREIGN KEY (MealId) REFERENCES Meal(MealId) ON DELETE CASCADE
 );
