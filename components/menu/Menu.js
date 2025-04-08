@@ -209,33 +209,6 @@ export default function Menu() {
 
     return (
         <View style={localStyles.container}>
-
-
-            <View style={localStyles.dateContainer}>
-                <TouchableOpacity onPress={() => changeDay(-1)}>
-                    <AntDesign name="left" size={20} color="brown" />
-                </TouchableOpacity>
-                <Text style={localStyles.dateText}>{formatDate(selectedDate)}</Text>
-                <TouchableOpacity onPress={() => changeDay(1)}>
-                    <AntDesign name="right" size={20} color="brown" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowCalendar(true)}>
-                    <AntDesign name="calendar" size={24} color="brown" />
-                </TouchableOpacity>
-            </View>
-
-            {showCalendar && (
-                <DateTimePicker
-                    value={selectedDate}
-                    mode="date"
-                    display="default"
-                    onChange={(event, date) => {
-                        setShowCalendar(false);
-                        if (date) setSelectedDate(date);
-                    }}
-                />
-            )}
-
             <View style={localStyles.nutritionContainer}>
                 <View style={localStyles.nutritionFooter}>
                     <NutritionSlider
@@ -260,6 +233,31 @@ export default function Menu() {
                     />
                 </View>
             </View>
+
+            <View style={localStyles.dateContainer}>
+                <TouchableOpacity onPress={() => changeDay(-1)}>
+                    <AntDesign name="left" size={20} color="brown" />
+                </TouchableOpacity>
+                <Text style={localStyles.dateText}>{formatDate(selectedDate)}</Text>
+                <TouchableOpacity onPress={() => changeDay(1)}>
+                    <AntDesign name="right" size={20} color="brown" />
+                </TouchableOpacity>
+                <TouchableOpacity  onPress={() => setShowCalendar(true)}>
+                    <AntDesign name="calendar" size={24} color="brown" />
+                </TouchableOpacity> 
+            </View>
+
+            {showCalendar && (
+                <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display="default"
+                    onChange={(event, date) => {
+                        setShowCalendar(false);
+                        if (date) setSelectedDate(date);
+                    }}
+                />
+            )}
 
             <ScrollView style={localStyles.mealList}>
                 {meals.length === 0 ? (
@@ -436,9 +434,23 @@ const localStyles = StyleSheet.create({
         alignItems: 'center',
         marginVertical: 15
     },
-    dateText: { fontSize: 18, marginHorizontal: 10, color: 'brown' },
-    mealList: { flex: 1, marginBottom: 10 },
-    mealText: { fontSize: 16, textAlign: 'center', marginTop: 20, color: 'gray' },
+    dateText: {
+        fontSize: 18,
+        marginHorizontal: 10,
+        color: 'brown',
+        textAlign: 'center',
+        width: 220, // Fixed width to accommodate the widest expected date
+    },
+    mealList: {
+        flex: 1,
+        marginBottom: 10
+    },
+    mealText: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginTop: 20,
+        color: 'gray'
+    },
     mealContainer: {
         backgroundColor: '#fff',
         borderRadius: 10,
