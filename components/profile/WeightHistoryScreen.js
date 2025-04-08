@@ -1,85 +1,142 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, TextInput, Modal, StyleSheet, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, TextInput, Modal, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Icon from "react-native-vector-icons/FontAwesome";
-import mainStyles from "../../styles/MainStyles"
+import mainStyles from "../../styles/MainStyles";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+import { API_BASE_URL } from '@env';
 
 export default function WeightHistoryScreen() {
+    const { user } = useAuth();
+    const [weights, setWeights] = useState([]);
     const [weightHistory, setWeightHistory] = useState({
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-        datasets: [
-            {
-                data: [70, 72, 71, 75, 73, 74, 72, 70, 71, 73, 72, 71],
-                strokeWidth: 2,
-                color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})`,
-            },
-        ],
+        labels: [],
+        datasets: [{ data: [], strokeWidth: 2, color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})` }]
     });
-
-    const [weights, setWeights] = useState([
-        { date: "2025-01-15", weight: 70 },
-        { date: "2025-02-10", weight: 72 },
-        { date: "2025-03-05", weight: 71 },
-        { date: "2025-04-20", weight: 75 },
-        { date: "2025-05-18", weight: 73 },
-        { date: "2025-06-12", weight: 74 },
-        { date: "2025-07-09", weight: 72 },
-        { date: "2025-08-14", weight: 70 },
-        { date: "2025-09-07", weight: 71 },
-        { date: "2025-10-22", weight: 73 },
-        { date: "2025-11-16", weight: 72 },
-        { date: "2025-12-28", weight: 71 },
-    ]);
-
     const [modalVisible, setModalVisible] = useState(false);
     const [newWeight, setNewWeight] = useState("");
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleAddWeight = () => {
-        setModalVisible(false);
+    useEffect(() => {
+        if (user) {
+            fetchWeights();
+        } else {
+            setWeights([]);
+            setWeightHistory({
+                labels: [],
+                datasets: [{ data: [], strokeWidth: 2 }]
+            });
+        }
+    }, [user]);
 
-        const formattedDate = selectedDate.toISOString().split("T")[0];
+    const fetchWeights = async () => {
+        try {
+            setIsLoading(true);
+            const response = await axios.get(`${API_BASE_URL}/weight`, {
+                params: { userId: user.UserId }
+            });
 
-        setWeightHistory((prev) => ({
-            ...prev,
-            datasets: [
-                {
-                    ...prev.datasets[0],
-                    data: [...prev.datasets[0].data, parseFloat(newWeight)],
-                },
-            ],
-        }));
+            const weightsData = response.data.weights || [];
+            setWeights(weightsData);
 
-        setWeights((prev) => [
-            ...prev,
-            { date: formattedDate, weight: parseFloat(newWeight) },
-        ]);
+            // Prepare chart data - ensure we have valid numbers
+            const validWeights = weightsData.filter(item =>
+                !isNaN(parseFloat(item.Weight)) && item.WeightDate
+            );
 
-        setNewWeight("");
+            const labels = validWeights.map(item =>
+                new Date(item.WeightDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            );
+
+            const dataPoints = validWeights.map(item => parseFloat(item.Weight));
+
+            setWeightHistory({
+                labels,
+                datasets: [{
+                    data: dataPoints,
+                    strokeWidth: 2,
+                    color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})`
+                }]
+            });
+        } catch (error) {
+            console.error("Error fetching weights:", error);
+            setWeightHistory({
+                labels: [],
+                datasets: [{ data: [], strokeWidth: 2 }]
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    const handleAddWeight = async () => {
+        try {
+            const formattedDate = selectedDate.toISOString().split("T")[0];
+            const weightValue = parseFloat(newWeight);
+
+            if (isNaN(weightValue)) {
+                alert("Please enter a valid weight");
+                return;
+            }
+
+            const response = await axios.post(`${API_BASE_URL}/weight`, {
+                userId: user.UserId,
+                date: formattedDate,
+                weight: weightValue.toFixed(1) // Ensure consistent decimal format
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.data.success) {
+                setModalVisible(false);
+                setNewWeight("");
+                fetchWeights();
+            } else {
+                alert("Failed to add weight: " + (response.data.message || "Unknown error"));
+            }
+        } catch (error) {
+            console.error("Error adding weight:", error);
+            alert(`Error adding weight: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <View style={styles.container}>
+                <ActivityIndicator size="large" color="brown" />
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
-            <LineChart
-                data={weightHistory}
-                width={400}
-                height={250}
-                chartConfig={{
-                    backgroundGradientFrom: "#eee",
-                    backgroundGradientTo: "#eee",
-                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-
-                }}
-                bezier
-                fromZero={true}
-                yAxisInterval={1}
-                yAxisSuffix=" kg"
-                yAxisMin={Math.min(...weightHistory.datasets[0].data) - 5}
-                yAxisMax={Math.max(...weightHistory.datasets[0].data) + 5}
-            />
+            {weights.length > 0 && weightHistory.datasets[0].data.length > 0 ? (
+                <LineChart
+                    data={weightHistory}
+                    width={400}
+                    height={250}
+                    chartConfig={{
+                        backgroundGradientFrom: "#eee",
+                        backgroundGradientTo: "#eee",
+                        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                        decimalPlaces: 1, // Ensure consistent decimal formatting
+                    }}
+                    bezier
+                    fromZero={true}
+                    yAxisSuffix=" kg"
+                    yAxisMin={Math.min(...weightHistory.datasets[0].data) - 5}
+                    yAxisMax={Math.max(...weightHistory.datasets[0].data) + 5}
+                />
+            ) : (
+                <Text style={styles.noDataText}>No weight data available</Text>
+            )}
 
             <TouchableOpacity
                 style={styles.addButton}
@@ -89,25 +146,28 @@ export default function WeightHistoryScreen() {
                 <Text style={styles.addButtonText}>Add Weight</Text>
             </TouchableOpacity>
 
-            {/* Scrollable List of Weights */}
             <ScrollView style={styles.scrollContainer}>
                 {weights.map((item, index) => (
                     <View key={index} style={styles.listItem}>
                         <Text style={styles.listText}>
-                            {item.date}: {item.weight} kg
+                            {new Date(item.WeightDate).toLocaleDateString()}: {item.Weight} kg
                         </Text>
                     </View>
                 ))}
             </ScrollView>
 
-            {/* Modal for Adding New Weight */}
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={mainStyles.overlay}>
                     <View style={mainStyles.modalContainer}>
                         <Text style={styles.modalTitle}>Add Weight</Text>
 
-                        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
-                            <Text style={styles.dateText}>{selectedDate.toDateString()}</Text>
+                        <TouchableOpacity
+                            onPress={() => setShowDatePicker(true)}
+                            style={styles.datePickerButton}
+                        >
+                            <Text style={styles.dateText}>
+                                {selectedDate.toLocaleDateString()}
+                            </Text>
                         </TouchableOpacity>
 
                         {showDatePicker && (
@@ -130,10 +190,16 @@ export default function WeightHistoryScreen() {
                             keyboardType="numeric"
                         />
                         <View style={styles.buttons}>
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => setModalVisible(false)}
+                            >
                                 <Text style={styles.closeButtonText}>Close</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.submitButton} onPress={handleAddWeight}>
+                            <TouchableOpacity
+                                style={styles.submitButton}
+                                onPress={handleAddWeight}
+                            >
                                 <Text style={styles.submitButtonText}>Submit</Text>
                             </TouchableOpacity>
                         </View>
@@ -236,6 +302,11 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         width: "100%",
         marginTop: 10,
+    },
+    noDataText: {
+        fontSize: 16,
+        color: 'gray',
+        textAlign: 'center',
+        marginTop: 20
     }
-
 });

@@ -383,31 +383,67 @@ app.get('/intakeLog', async (req, res) => {
         const { userId, date } = req.query;
 
         if (!userId || !date) {
-            return res.status(400).json({ message: 'User ID and date are required' });
+            console.log('Missing userId or date');
+            return res.status(400).json({
+                success: false,
+                message: 'User ID and date are required'
+            });
         }
 
-        const intakeLog = await IntakeLog.findWithMealsAndProducts(userId, date);
+        const intakeLog = await IntakeLog.findWithProducts(userId, date);
 
         if (!intakeLog) {
-            return res.status(200).json({ meals: [] }); // Return empty array if no data
+            console.log('No intake log found');
+            return res.status(200).json({
+                success: true,
+                meals: []
+            });
         }
 
-        // Return properly structured meals with all needed fields
-        res.json({
-            meals: intakeLog.meals.map(meal => ({
-                id: meal.MealId,
-                type: meal.MealType,
-                name: meal.MealName,
-                time: meal.createdAt || new Date().toISOString(), // Add fallback for time
-                products: meal.products || []
+        // Group products by meal
+        const mealsMap = new Map();
+        intakeLog.products.forEach(product => {
+            if (!mealsMap.has(product.MealId)) {
+                mealsMap.set(product.MealId, {
+                    MealId: product.MealId,
+                    MealType: product.MealType,
+                    MealName: product.MealName || product.MealType,
+                    products: []
+                });
+            }
+            mealsMap.get(product.MealId).products.push(product);
+        });
+
+        const meals = Array.from(mealsMap.values()).map(meal => ({
+            id: meal.MealId,
+            type: meal.MealType,
+            name: meal.MealName,
+            products: meal.products.map(product => ({
+                ...product,
+                calories: (product.calories / 100) * (product.grams || 100),
+                proteins: (product.proteins / 100) * (product.grams || 100),
+                fats: (product.fats / 100) * (product.grams || 100),
+                carbohydrates: (product.carbohydrates / 100) * (product.grams || 100)
             }))
+        }));
+
+        res.json({
+            success: true,
+            meals
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error in /intakeLog:', {
+            message: error.message,
+            stack: error.stack
+        });
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
     }
 });
-// POST /intakeLog - Create or update IntakeLog
+
 app.post('/intakeLog', async (req, res) => {
     const connection = await pool.getConnection();
     try {
@@ -426,7 +462,7 @@ app.post('/intakeLog', async (req, res) => {
         await connection.beginTransaction();
 
         try {
-            // 1. Find or create IntakeLog (enforce one log per user per date)
+            // 1. Find or create IntakeLog
             let IntakeLogId;
             const [existingLog] = await connection.execute(
                 'SELECT IntakeLogId FROM IntakeLog WHERE UserId = ? AND LogDate = ? FOR UPDATE',
@@ -436,78 +472,53 @@ app.post('/intakeLog', async (req, res) => {
             if (existingLog.length > 0) {
                 IntakeLogId = existingLog[0].IntakeLogId;
             } else {
-                try {
-                    const [intakeLogResult] = await connection.execute(
-                        'INSERT INTO IntakeLog (UserId, LogDate) VALUES (?, ?)',
-                        [userId, date]
+                const [intakeLogResult] = await connection.execute(
+                    'INSERT INTO IntakeLog (UserId, LogDate) VALUES (?, ?)',
+                    [userId, date]
+                );
+                IntakeLogId = intakeLogResult.insertId;
+            }
+
+            // 2. Get or create Meal
+            let MealId = mealId;
+            const mealNameToUse = mealName || mealType;
+
+            if (!MealId) {
+                const [mealRows] = await connection.execute(
+                    'SELECT MealId FROM Meal WHERE MealType = ?',
+                    [mealType]
+                );
+
+                if (mealRows.length > 0) {
+                    MealId = mealRows[0].MealId;
+                } else {
+                    const [mealResult] = await connection.execute(
+                        'INSERT INTO Meal (MealType) VALUES (?)',
+                        [mealType]
                     );
-                    IntakeLogId = intakeLogResult.insertId;
-                } catch (error) {
-                    // Handle case where unique constraint violation occurs (race condition)
-                    if (error.code === 'ER_DUP_ENTRY') {
-                        const [duplicateLog] = await connection.execute(
-                            'SELECT IntakeLogId FROM IntakeLog WHERE UserId = ? AND LogDate = ?',
-                            [userId, date]
-                        );
-                        IntakeLogId = duplicateLog[0].IntakeLogId;
-                    } else {
-                        throw error;
-                    }
+                    MealId = mealResult.insertId;
                 }
             }
 
-            // 2. Handle meal (create new or use existing)
-            let MealId;
-            const mealNameToUse = mealName || mealType;
-
-            if (mealId) {
-                // Update existing meal
-                MealId = mealId;
-
-                // Update meal name/type if needed
-                await connection.execute(
-                    'UPDATE Meal SET MealName = ?, MealType = ? WHERE MealId = ?',
-                    [mealNameToUse, mealType, MealId]
-                );
-
-                // Clear existing products to avoid duplicates
-                await connection.execute(
-                    'DELETE FROM Meal_has_Product WHERE MealId = ?',
-                    [MealId]
-                );
-            } else {
-                // Create new meal
-                const [mealResult] = await connection.execute(
-                    'INSERT INTO Meal (MealName, MealType) VALUES (?, ?)',
-                    [mealNameToUse, mealType]
-                );
-                MealId = mealResult.insertId;
-
-                // Link meal to intake log
-                await connection.execute(
-                    'INSERT INTO IntakeLog_has_Meal (UserId, IntakeLogId, MealId) VALUES (?, ?, ?)',
-                    [userId, IntakeLogId, MealId]
-                );
-            }
-
-            // 3. Add products to meal with duplicate prevention
+            // 3. Add/update products in IntakeLog_has_Product with grams
             for (const product of products) {
-                // First check if product already exists (in case of retries)
+                const grams = product.grams || 100; // Default to 100g if not specified
+
+                // Check if product already exists
                 const [existingProduct] = await connection.execute(
-                    'SELECT 1 FROM Meal_has_Product WHERE MealId = ? AND ProductId = ?',
-                    [MealId, product.productId]
+                    'SELECT 1 FROM IntakeLog_has_Product WHERE IntakeLogId = ? AND ProductId = ? AND MealId = ?',
+                    [IntakeLogId, product.productId, MealId]
                 );
 
                 if (existingProduct.length === 0) {
                     await connection.execute(
-                        'INSERT INTO Meal_has_Product (MealId, ProductId, grams) VALUES (?, ?, ?)',
-                        [MealId, product.productId, product.grams || 100]
+                        'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, MealName, grams) VALUES (?, ?, ?, ?, ?)',
+                        [IntakeLogId, product.productId, MealId, mealNameToUse, grams]
                     );
                 } else {
-                    // Update existing product entry if needed
                     await connection.execute(
-                        'UPDATE Meal_has_Product SET grams = ? WHERE MealId = ? AND ProductId = ?',
-                        [product.grams || 100, MealId, product.productId]
+                        'UPDATE IntakeLog_has_Product SET MealName = ?, grams = ? WHERE IntakeLogId = ? AND ProductId = ? AND MealId = ?',
+                        [mealNameToUse, grams, IntakeLogId, product.productId, MealId]
                     );
                 }
             }
@@ -525,7 +536,7 @@ app.post('/intakeLog', async (req, res) => {
         } catch (error) {
             await connection.rollback();
             connection.release();
-            console.error('Transaction error in /intakeLog:', error);
+            console.error('Transaction error:', error);
             res.status(500).json({
                 success: false,
                 message: 'Transaction failed',
@@ -534,7 +545,7 @@ app.post('/intakeLog', async (req, res) => {
         }
     } catch (error) {
         connection.release();
-        console.error('Error in /intakeLog:', error);
+        console.error('Error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error',
@@ -542,7 +553,6 @@ app.post('/intakeLog', async (req, res) => {
         });
     }
 });
-
 // PUT /intakeLog/:id - Update existing IntakeLog
 app.put('/intakeLog/:id', async (req, res) => {
     try {
@@ -561,6 +571,80 @@ app.put('/intakeLog/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+const Weight = require('./models/Weight');
+
+// GET /weight - Get all weight entries for user
+app.get('/weight', async (req, res) => {
+    try {
+        const { userId } = req.query;
+
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'User ID is required' });
+        }
+
+        const weights = await Weight.findByUser(userId);
+        res.json({ success: true, weights });
+    } catch (error) {
+        console.error('Error fetching weight history:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// POST /weight - Add new weight entry
+// In server.js
+app.post('/weight', async (req, res) => {
+    try {
+        const { userId, date, weight } = req.body;
+
+        if (!userId || !date || !weight) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID, date, and weight are required'
+            });
+        }
+
+        const weightId = await Weight.create({
+            UserId: userId,
+            WeightDate: date,
+            Weight: parseFloat(weight)
+        });
+
+        res.status(201).json({
+            success: true,
+            weight: {
+                WeightId: weightId,
+                WeightDate: date,
+                Weight: weight
+            }
+        });
+    } catch (error) {
+        console.error('Error adding weight:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+});
+
+// DELETE /weight/:id - Delete weight entry
+app.delete('/weight/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const success = await Weight.delete(id);
+
+        if (!success) {
+            return res.status(404).json({ success: false, message: 'Weight entry not found' });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting weight:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 /*
 app.get('/receptury', (req, res) => {
     db.query('SELECT r.Nazwa AS NazwaReceptury, p.id AS ProduktID, p.product_name AS products, rhp.Ilosc AS Ilosc FROM Receptury_has_Produkty rhp JOIN products p ON rhp.Produkty_idProduktu = p.id JOIN Receptury r ON rhp.Receptury_idReceptury = r.idReceptury  -- Corrected column name here WHERE rhp.Receptury_idReceptury = 1;', (err, results) => {
