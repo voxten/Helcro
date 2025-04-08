@@ -7,7 +7,9 @@ CREATE TABLE User (
     Weight FLOAT,
     Gender ENUM('M', 'K', 'Inne'),
     reset_token TEXT,
-    reset_token_expires DATETIME
+    reset_token_expires DATETIME,
+    deletion_token TEXT,
+    deletion_token_expires DATETIME
 );
 
 CREATE TABLE Goal (
@@ -28,20 +30,16 @@ CREATE TABLE IntakeLog (
 
 CREATE TABLE Meal (
     MealId INT PRIMARY KEY AUTO_INCREMENT,
-    MealName VARCHAR(255) NOT NULL,
-    MealType VARCHAR(255) NOT NULL,
-    CreatedAt DATE NOT NULL
+    MealType VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE IntakeLog_has_Meal (
-    UserId INT NOT NULL,
-    IntakeLogId INT NOT NULL,
-    MealId INT NOT NULL,
-    PRIMARY KEY (UserId, IntakeLogId, MealId),
-    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE,
-    FOREIGN KEY (IntakeLogId) REFERENCES IntakeLog(IntakeLogId) ON DELETE CASCADE,
-    FOREIGN KEY (MealId) REFERENCES Meal(MealId) ON DELETE CASCADE
-);
+INSERT INTO Meal (MealType) VALUES
+('Breakfast'),
+('Second Breakfast'),
+('Lunch'),
+('Afternoon Snack'),
+('Dinner'),
+('Other');
 
 CREATE TABLE Product (
     ProductId INT AUTO_INCREMENT PRIMARY KEY,
@@ -53,15 +51,18 @@ CREATE TABLE Product (
     fibers DECIMAL(10,2),
     salt DECIMAL(10,2),
     calories DECIMAL(10,2),
-    grams DECIMAL(10,2),
     image VARCHAR(255),
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE Meal_has_Product (
+CREATE TABLE IntakeLog_has_Product (
+    IntakeLogId INT NOT NULL,
     ProductId INT NOT NULL,
     MealId INT NOT NULL,
-    PRIMARY KEY (ProductId, MealId),
+    MealName VARCHAR(255),
+    grams DECIMAL(10,2) DEFAULT 100,
+    PRIMARY KEY (IntakeLogId, ProductId ,MealId),
+    FOREIGN KEY (IntakeLogId) REFERENCES IntakeLog(IntakeLogId) ON DELETE CASCADE,
     FOREIGN KEY (ProductId) REFERENCES Product(ProductId) ON DELETE CASCADE,
     FOREIGN KEY (MealId) REFERENCES Meal(MealId) ON DELETE CASCADE
 );
@@ -98,24 +99,6 @@ CREATE TABLE Category (
     Name VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE Recipe_has_Category (
-    RecipeId INT NOT NULL,
-    CategoryId INT NOT NULL,
-    PRIMARY KEY (RecipeId, CategoryId),
-    FOREIGN KEY (RecipeId) REFERENCES Recipe(RecipeId) ON DELETE CASCADE,
-    FOREIGN KEY (CategoryId) REFERENCES Category(CategoryId) ON DELETE CASCADE
-);
-
-CREATE TABLE Weight_History (
-    WeightId INT PRIMARY KEY AUTO_INCREMENT,
-    UserId INT NOT NULL,
-    WeightDate DATE NOT NULL,
-    Weight DECIMAL(10,2),
-    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE
-);
-
-//Insert to category example Data
-
 INSERT INTO Category (Name) VALUES 
 ('Healthy'),
 ('For Kids'),
@@ -143,4 +126,18 @@ INSERT INTO Category (Name) VALUES
 ('Smoothies'),
 ('Snacks');
 
+CREATE TABLE Recipe_has_Category (
+    RecipeId INT NOT NULL,
+    CategoryId INT NOT NULL,
+    PRIMARY KEY (RecipeId, CategoryId),
+    FOREIGN KEY (RecipeId) REFERENCES Recipe(RecipeId) ON DELETE CASCADE,
+    FOREIGN KEY (CategoryId) REFERENCES Category(CategoryId) ON DELETE CASCADE
+);
 
+CREATE TABLE Weight_History (
+    WeightId INT PRIMARY KEY AUTO_INCREMENT,
+    UserId INT NOT NULL,
+    WeightDate DATE NOT NULL,
+    Weight DECIMAL(10,2),
+    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE
+);
