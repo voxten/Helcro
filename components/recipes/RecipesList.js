@@ -90,6 +90,12 @@ const RecipesList = ({ navigation }) => {
                 <Text style={styles2.buttonText}>Categories</Text>
             </TouchableOpacity>
 
+            // Add Recipe
+            <TouchableOpacity style={styles2.button} onPress={() => navigation.navigate("RecipesAdd")}>
+                <Icon name="plus" size={20} color="white" style={styles2.icon} />
+                <Text style={styles2.buttonText}>Add Recipe</Text>
+            </TouchableOpacity>
+
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles2.modalContainer}>
                     <View style={styles2.modalContent}>
