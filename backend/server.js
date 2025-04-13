@@ -565,6 +565,72 @@ app.post('/reset-password', async (req, res) => {
 });
 
 // ===== KONIEC NOWYCH ENDPOINTÓW ===== //
+// ===== PUBLIC ROUTES ===== //
+
+// Get all categories (public access)
+app.get('/api/categories', (req, res) => {
+    db.query('SELECT * FROM Category', (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json(results);
+    });
+});
+
+// Get all recipes (public access)
+app.get('/api/recipes', (req, res) => {
+    db.query(`
+        SELECT r.*, u.UserName, GROUP_CONCAT(c.Name) as categories
+        FROM Recipe r
+        JOIN user u ON r.UserId = u.UserId
+        LEFT JOIN Recipe_has_Category rc ON r.RecipeId = rc.RecipeId
+        LEFT JOIN Category c ON rc.CategoryId = c.CategoryId
+        GROUP BY r.RecipeId
+        ORDER BY r.Name
+    `, (err, recipes) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json(recipes.map(recipe => ({
+            ...recipe,
+            Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+            rating: 4.5,
+            categories: recipe.categories ? recipe.categories.split(',') : []
+        })));
+    });
+});
+
+// Get recipes by category (public access)
+app.get('/api/recipes/category/:categoryName', (req, res) => {
+    const { categoryName } = req.params;
+    
+    db.query(`
+        SELECT r.*, u.UserName 
+        FROM Recipe r
+        JOIN user u ON r.UserId = u.UserId
+        JOIN Recipe_has_Category rc ON r.RecipeId = rc.RecipeId
+        JOIN Category c ON rc.CategoryId = c.CategoryId
+        WHERE c.Name = ?
+        ORDER BY r.Name
+    `, [categoryName], (err, recipes) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json(recipes.map(recipe => ({
+            ...recipe,
+            Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+            rating: 4.5
+        })));
+    });
+});
+
+// Koniec Recipes Public
+
 // Sample endpoint to get data
 app.get('/users', (req, res) => {
     db.query('SELECT * FROM user', (err, results) => {
@@ -1168,6 +1234,87 @@ app.get('/api/recipes', authenticateToken, (req, res) => {
     });
 });
 
+
+// Get all categories (public access)
+app.get('/api/categories/public', (req, res) => {
+    db.query('SELECT * FROM Category', (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json(results);
+    });
+});
+
+// Get recipes by category (public access)
+app.get('/api/recipes/public/by-category', (req, res) => {
+    const { category } = req.query;
+    
+    if (!category) {
+        return res.status(400).json({ error: 'Category parameter is required' });
+    }
+
+    db.query(`
+        SELECT r.*, u.UserName 
+        FROM Recipe r
+        JOIN user u ON r.UserId = u.UserId
+        JOIN Recipe_has_Category rc ON r.RecipeId = rc.RecipeId
+        JOIN Category c ON rc.CategoryId = c.CategoryId
+        WHERE c.Name = ?
+        ORDER BY r.Name
+    `, [category], (err, recipeResults) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (recipeResults.length === 0) {
+            return res.json([]);
+        }
+
+        // Get products for these recipes
+        db.query(`
+            SELECT rp.RecipeId, p.product_name, rp.Amount 
+            FROM Recipe_has_Product rp
+            JOIN Product p ON rp.ProductId = p.ProductId
+            WHERE rp.RecipeId IN (?)
+        `, [recipeResults.map(r => r.RecipeId)], (err, productResults) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+
+            // Format the response
+            const recipes = recipeResults.map(recipe => ({
+                RecipeId: recipe.RecipeId,
+                Name: recipe.Name,
+                Description: recipe.Description,
+                Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+                rating: 4.5,
+                UserId: recipe.UserId,
+                UserName: recipe.UserName,
+                steps: recipe.Steps ? recipe.Steps.split('||') : [],
+                products: productResults
+                    .filter(p => p.RecipeId === recipe.RecipeId)
+                    .map(p => ({
+                        name: p.product_name,
+                        amount: p.Amount
+                    })),
+                categories: [category] // Since we're filtering by one category
+            }));
+
+            res.json(recipes);
+        });
+    });
+});
+
+
+
+
+
+// ===== AUTHENTICATED ROUTES ===== //
+// Add your authenticateToken middleware here
+// Then add all routes that require authentication
 /*
 app.get('/receptury', (req, res) => {
     db.query('SELECT r.Nazwa AS NazwaReceptury, p.id AS ProduktID, p.product_name AS products, rhp.Ilosc AS Ilosc FROM Receptury_has_Produkty rhp JOIN products p ON rhp.Produkty_idProduktu = p.id JOIN Receptury r ON rhp.Receptury_idReceptury = r.idReceptury  -- Corrected column name here WHERE rhp.Receptury_idReceptury = 1;', (err, results) => {
