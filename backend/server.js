@@ -917,7 +917,102 @@ app.delete('/weight/:id', async (req, res) => {
     }
 });
 // ===== RECIPE ENDPOINTS ===== //
+// Get recipe details (public access)
+app.get('/api/recipes/detail/:recipeId', (req, res) => {
+    const { recipeId } = req.params;
+    
+    // Get recipe basic info
+    db.query(`
+        SELECT r.*, u.UserName 
+        FROM Recipe r
+        JOIN user u ON r.UserId = u.UserId
+        WHERE r.RecipeId = ?
+    `, [recipeId], (err, recipeResults) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
 
+        if (recipeResults.length === 0) {
+            return res.status(404).json({ error: 'Recipe not found' });
+        }
+
+        const recipe = recipeResults[0];
+
+        // Get categories
+        db.query(`
+            SELECT c.Name 
+            FROM Recipe_has_Category rc 
+            JOIN Category c ON rc.CategoryId = c.CategoryId
+            WHERE rc.RecipeId = ?
+        `, [recipeId], (err, categoryResults) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+
+            // Get products with nutrition info
+            db.query(`
+                SELECT 
+                    p.ProductId, 
+                    p.product_name as name, 
+                    rp.Amount,
+                    p.calories,
+                    p.proteins,
+                    p.fats,
+                    p.carbohydrates
+                FROM Recipe_has_Product rp 
+                JOIN Product p ON rp.ProductId = p.ProductId
+                WHERE rp.RecipeId = ?
+            `, [recipeId], (err, productResults) => {
+                if (err) {
+                    console.error('Database error:', err);
+                    return res.status(500).json({ error: 'Database error' });
+                }
+
+                // Calculate total nutrition
+                let totalCalories = 0;
+                let totalProteins = 0;
+                let totalFats = 0;
+                let totalCarbs = 0;
+
+                productResults.forEach(product => {
+                    const amount = product.Amount || 100; // Default to 100g if amount not specified
+                    totalCalories += (product.calories / 100) * amount;
+                    totalProteins += (product.proteins / 100) * amount;
+                    totalFats += (product.fats / 100) * amount;
+                    totalCarbs += (product.carbohydrates / 100) * amount;
+                });
+
+                // Format the response
+                res.json({
+                    RecipeId: recipe.RecipeId,
+                    name: recipe.Name,
+                    description: recipe.Description,
+                    Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+                    rating: 4.5,
+                    UserName: recipe.UserName,
+                    steps: recipe.Steps ? recipe.Steps.split('||') : [], // Split steps by ||
+                    categories: categoryResults.map(c => c.Name),
+                    products: productResults.map(p => ({
+                        name: p.name,
+                        amount: p.Amount,
+                        calories: (p.calories / 100) * (p.Amount || 100),
+                        proteins: (p.proteins / 100) * (p.Amount || 100),
+                        fats: (p.fats / 100) * (p.Amount || 100),
+                        carbohydrates: (p.carbohydrates / 100) * (p.Amount || 100)
+                    })),
+                    totalNutrition: {
+                        calories: totalCalories || 0,
+                        proteins: totalProteins || 0,
+                        fats: totalFats || 0,
+                        carbohydrates: totalCarbs || 0
+                    }
+                });
+            });
+        });
+    });
+});
 // Get all categories
 app.get('/api/categories', (req, res) => {
     db.query('SELECT * FROM Category', (err, results) => {
