@@ -1,73 +1,127 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet } from 'react-native';
 
-const detailStyles = StyleSheet.create({
+export default StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f5f5f5",
         padding: 15,
-        
+        backgroundColor: '#fff'
     },
     detailTitle: {
-        fontSize: 24,
-        fontWeight: "bold",
-        textAlign: "center",
-        marginBottom: 10,
-        color: "#333",
+        fontSize: 28,
+        fontWeight: 'bold',
+        marginBottom: 5,
+        color: '#333'
+    },
+    userName: {
+        fontSize: 16,
+        color: '#666',
+        marginBottom: 15
     },
     detailImage: {
-        width: "100%",
+        width: '100%',
         height: 250,
         borderRadius: 10,
-        alignSelf: "center",
-        marginBottom: 15,
-        resizeMode: "cover",
+        marginBottom: 15
     },
     detailRating: {
         fontSize: 18,
-        textAlign: "center",
-        marginBottom: 10,
-        color: "#ff9800",
-        fontWeight: "bold",
+        color: '#FFD700',
+        marginBottom: 15
     },
     detailDescription: {
         fontSize: 16,
-        textAlign: "justify",
-        marginBottom: 15,
-        color: "#555",
+        lineHeight: 24,
+        marginBottom: 20,
+        color: '#444'
     },
     detailSection: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginTop: 15,
+        marginBottom: 10,
+        color: '#333'
+    },
+    nutritionBox: {
+        backgroundColor: '#f8f8f8',
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#e0e0e0'
+    },
+    nutritionTitle: {
         fontSize: 18,
-        fontWeight: "bold",
-        marginTop: 10,
-        marginBottom: 5,
-        color: "#444",
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: '#333',
+        textAlign: 'center'
     },
-    detailCategory: {
+    nutritionRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 8
+    },
+    nutritionLabel: {
         fontSize: 16,
-        backgroundColor: "#e0e0e0",
-        padding: 8,
-        borderRadius: 5,
-        marginBottom: 5,
-        textAlign: "center",
+        color: '#555'
     },
-    detailIngredient: {
+    nutritionValue: {
         fontSize: 16,
-        paddingVertical: 5,
-        borderBottomWidth: 1,
-        borderBottomColor: "#ddd",
+        fontWeight: 'bold',
+        color: '#333'
     },
-    bottom: {
-        marginBottom: 25,
+    categoriesContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 10
     },
-    detailStep: {
+    categoryPill: {
+        backgroundColor: '#e0e0e0',
+        borderRadius: 15,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        marginRight: 8,
+        marginBottom: 8
+    },
+    categoryText: {
+        fontSize: 14,
+        color: '#333'
+    },
+    ingredientRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+        paddingHorizontal: 10
+    },
+    ingredientName: {
         fontSize: 16,
-        paddingVertical: 5,
-        borderBottomWidth: 1,
-        borderBottomColor: "#ddd",
-        marginLeft: 10,
+        color: '#444',
+        flex: 2
+    },
+    ingredientAmount: {
+        fontSize: 16,
+        color: '#666',
+        flex: 1,
+        textAlign: 'right'
+    },
+    stepContainer: {
+        flexDirection: 'row',
+        marginBottom: 10,
+        paddingHorizontal: 10
+    },
+    stepNumber: {
+        fontSize: 16,
+        fontWeight: 'bold',
         marginRight: 10,
+        color: '#333'
+    },
+    stepText: {
+        fontSize: 16,
+        color: '#444',
+        flex: 1,
+        lineHeight: 22
+    },
+    bottomSpacer: {
+        height: 50
     }
-    
 });
-
-export default detailStyles;

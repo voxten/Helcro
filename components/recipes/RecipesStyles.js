@@ -162,6 +162,62 @@ const styles2 = StyleSheet.create({
         fontSize: 18,
         fontWeight: "bold",
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    clearButton: {
+        backgroundColor: '#ff4444',
+        padding: 10,
+        borderRadius: 5,
+        marginVertical: 10,
+        alignItems: 'center'
+    },
+    clearButtonText: {
+        color: 'white',
+        fontWeight: 'bold'
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+        width: '80%',
+        backgroundColor: 'white',
+        borderRadius: 10,
+        overflow: 'hidden',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    modalScroll: {
+        maxHeight: '80%',
+    },
+    modalItem: {
+        padding: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f5f5f5',
+    },
+    modalButton: {
+        fontSize: 16,
+    },
+    modalCloseButton: {
+        padding: 5,
+    },
+    
+    
 });
 
 export default styles2;

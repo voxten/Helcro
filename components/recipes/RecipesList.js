@@ -1,83 +1,193 @@
-import React, { useState } from "react";
-import { ScrollView, View, Text, FlatList, TextInput, TouchableOpacity, Modal } from "react-native";
+import React, { useState, useEffect } from "react";
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  TextInput, 
+  TouchableOpacity, 
+  Modal, 
+  ActivityIndicator, 
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Dimensions 
+} from "react-native";
 import RecipeCard from "./RecipeCard";
-import Recipe from "./Recipe";
 import styles2 from "./RecipesStyles";
 import Icon from "react-native-vector-icons/FontAwesome6";
 import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+import { API_BASE_URL } from '@env';
 
-
-const recipes = [
-    new Recipe(
-        "Spaghetti Bolognese",
-        "A classic Italian pasta dish.",
-        [{ name: "Pasta", amount: "200g" }, { name: "Tomato Sauce", amount: "100ml" }, { name: "Ground Beef", amount: "150g" }],
-        "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
-        ["Italian", "Pasta"],
-        4,
-        1,
-        [
-            "Gotuj makaron zgodnie z instrukcją na opakowaniu.",
-            "Podsmaż mielone mięso na patelni.",
-            "Dodaj sos pomidorowy i gotuj przez 10 minut.",
-            "Połącz z makaronem i podawaj ciepłe."
-        ]
-    ),
-    new Recipe(
-        "Chicken Salad",
-        "A fresh and healthy chicken salad.",
-        [{ name: "Chicken", amount: "150g" }, { name: "Lettuce", amount: "1 head" }, { name: "Tomato", amount: "2" }, { name: "Cucumber", amount: "1" }],
-        "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
-        ["Healthy", "Salad"],
-        5,
-        2,
-        [
-            "Ugotuj i pokrój kurczaka na kawałki.",
-            "Posiekaj sałatę, pomidory i ogórka.",
-            "Wymieszaj wszystkie składniki w misce.",
-            "Dodaj sos i delikatnie wymieszaj przed podaniem."
-        ]
-    ),
-    new Recipe(
-        "Vegetable Stir Fry",
-        "A quick and easy vegetable stir fry.",
-        [{ name: "Bell peppers", amount: "4" }, { name: "Broccoli", amount: "2" }, { name: "Carrots", amount: "4" }, { name: "Soy Sauce", amount: "100ml" }],
-        "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
-        ["Healthy", "Vegan"],
-        4.5,
-        3,
-        [
-            "Pokrój paprykę w kwadraty, marchewkę w słupki, a pora w plasterki. Podziel brokuły na równej wielkości różyczki.",
-            "Sos: Zetrzyj czosnek i imbir do miski. Dodaj miód, sok z limonki, Sos sojowy Kikkoman i ketchup. Dokładnie wymieszaj.",
-            "Rozgrzej odrobinę oleju na patelni i dodaj marchewkę. Smaż przez około 1 minutę. Dodaj paprykę i brokuły. Smaż przez 3-5 minut. Dodaj sos i dokładnie wymieszaj. Smaż przez kolejne 1-2 minuty."
-        ]
-    )
-];
-
-const categorizeRecipes = (recipes) => {
-    const categories = {};
-    recipes.forEach((recipe) => {
-        recipe.categories.forEach((category) => {
-            if (!categories[category]) {
-                categories[category] = [];
-            }
-            categories[category].push(recipe);
-        });
-    });
-    return categories;
-};
+const { height } = Dimensions.get('window');
 
 const RecipesList = ({ navigation }) => {
     const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
-    const categorizedRecipes = categorizeRecipes(recipes);
+    const [recipes, setRecipes] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [viewMode, setViewMode] = useState('grid');
     
-    const filteredRecipes = recipes.filter(recipe => 
-        recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const fetchRecipesWithCategories = async (category = null) => {
+        try {
+            setLoading(true);
+            let url = `${API_BASE_URL}/api/recipes`;
+            if (category) {
+                url = `${API_BASE_URL}/api/recipes/category/${encodeURIComponent(category)}`;
+                setViewMode('grid');
+            } else {
+                setViewMode('category');
+            }
+            
+            const response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${user?.token}`
+                }
+            });
+            
+            // No need to process categories here as the API now returns them
+            setRecipes(response.data);
+        } catch (error) {
+            console.error("Error fetching recipes:", error);
+            Alert.alert("Error", "Failed to load recipes");
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+    
+    const fetchCategories = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/api/categories`, {
+                headers: {
+                    Authorization: `Bearer ${user?.token}`
+                }
+            });
+            setCategories(response.data);
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+            Alert.alert("Error", "Failed to load categories");
+        }
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchRecipesWithCategories(selectedCategory);
+    };
+
+    useEffect(() => {
+        fetchRecipesWithCategories();
+        fetchCategories();
+    }, []);
+
+    const handleCategorySelect = (categoryName) => {
+        setSelectedCategory(categoryName);
+        setModalVisible(false);
+        fetchRecipesWithCategories(categoryName);
+    };
+
+    const handleSearch = () => {
+        if (!searchQuery) {
+            fetchRecipesWithCategories(selectedCategory);
+            return;
+        }
+        const filtered = recipes.filter(recipe => 
+            recipe.Name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setRecipes(filtered);
+    };
+
+    const handleClearFilters = () => {
+        setSelectedCategory(null);
+        setSearchQuery("");
+        fetchRecipesWithCategories();
+    };
+
+    const groupRecipesByCategory = () => {
+        const grouped = {};
+        
+        // Initialize with all known categories
+        categories.forEach(category => {
+            grouped[category.Name] = [];
+        });
+        
+        // Group recipes by their categories
+        recipes.forEach(recipe => {
+            if (recipe.categories && recipe.categories.length > 0) {
+                recipe.categories.forEach(categoryName => {
+                    if (grouped[categoryName]) {
+                        grouped[categoryName].push(recipe);
+                    }
+                });
+            } else {
+                if (!grouped["Uncategorized"]) {
+                    grouped["Uncategorized"] = [];
+                }
+                grouped["Uncategorized"].push(recipe);
+            }
+        });
+        // Then populate with recipes
+        recipes.forEach(recipe => {
+            console.log("recipe.categories:", recipe.categories, "isArray?", Array.isArray(recipe.categories));
+            if (recipe.categories && recipe.categories.length > 0) {
+                recipe.categories.forEach(category => {
+                    const categoryName = category.Name || category; // Obsługuje przypadki gdy to string lub obiekt
+                    if (grouped[categoryName]) {
+                        if (!grouped[categoryName].some(r => r.RecipeId === recipe.RecipeId)) {
+                            grouped[categoryName].push(recipe);
+                        }
+                    }
+                });
+            } else {
+                if (!grouped["Uncategorized"]) {
+                    grouped["Uncategorized"] = [];
+                }
+                grouped["Uncategorized"].push(recipe);
+            }
+        });
+        
+        // Filter out empty categories and sort by category name
+        const filteredGroups = {};
+    Object.keys(grouped)
+        .sort()
+        .forEach(category => {
+            if (grouped[category].length > 0) {
+                filteredGroups[category] = grouped[category];
+            }
+        });
+    
+    return filteredGroups;
+};
+
+    const renderCategorySection = (category, recipes) => (
+        <View key={category} style={styles.categorySection}>
+            <Text style={styles.categoryTitle}>{category}</Text>
+            <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScrollContent}
+            >
+                {recipes.map(recipe => (
+                    <View key={recipe.RecipeId} style={styles.horizontalCard}>
+                        <RecipeCard recipe={recipe} />
+                    </View>
+                ))}
+            </ScrollView>
+        </View>
     );
 
+    if (loading && recipes.length === 0) {
+        return (
+            <View style={styles2.loadingContainer}>
+                <ActivityIndicator size="large" color="#0000ff" />
+            </View>
+        );
+    }
 
     return (
         <View style={styles2.container}>
@@ -86,14 +196,19 @@ const RecipesList = ({ navigation }) => {
                 placeholder="Search recipes..."
                 value={searchQuery}
                 onChangeText={setSearchQuery}
+                onSubmitEditing={handleSearch}
             />
 
-            <TouchableOpacity style={styles2.button} onPress={() => setModalVisible(true)}>
+            <TouchableOpacity 
+                style={styles2.button} 
+                onPress={() => setModalVisible(true)}
+            >
                 <Icon name="clipboard-list" size={20} color="white" style={styles2.icon} />
-                <Text style={styles2.buttonText}>Categories</Text>
+                <Text style={styles2.buttonText}>
+                    {selectedCategory || "Categories"}
+                </Text>
             </TouchableOpacity>
 
-            // Add Recipe
             {user && (
                 <TouchableOpacity 
                     style={styles2.button} 
@@ -104,62 +219,101 @@ const RecipesList = ({ navigation }) => {
                 </TouchableOpacity>
             )}
 
+            {(selectedCategory || searchQuery) && (
+                <TouchableOpacity 
+                    style={styles2.clearButton}
+                    onPress={handleClearFilters}
+                >
+                    <Text style={styles2.clearButtonText}>Clear Filters</Text>
+                </TouchableOpacity>
+            )}
+
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles2.modalContainer}>
-                    <View style={styles2.modalContent}>
-                        <Text style={styles2.modalItem}>Choose a category</Text>
-                        {Object.keys(categorizedRecipes).map((category) => (
-                            <TouchableOpacity key={category} onPress={() => {
-                                setSelectedCategory(category);
-                                setModalVisible(false);
-                            }}>
-                                <Text style={styles2.modalButton}>{category}</Text>
+                    <View style={[styles2.modalContent, { maxHeight: height * 0.7 }]}>
+                        <View style={styles2.modalHeader}>
+                            <Text style={styles2.modalTitle}>Choose a category</Text>
+                            <TouchableOpacity 
+                                style={styles2.modalCloseButton} 
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Icon name="times" size={20} color="#333" />
                             </TouchableOpacity>
-                        ))}
-                        <TouchableOpacity style={styles2.closeButton} onPress={() => {
-                            setModalVisible(false);
-                            setSelectedCategory(null); // Dodano resetowanie stanu
-                        }}>
-                            <Text style={styles2.closeButtonText}>Close</Text>
-                        </TouchableOpacity>
+                        </View>
+                        <ScrollView style={styles2.modalScroll}>
+                            {categories.map((category) => (
+                                <TouchableOpacity 
+                                    key={category.CategoryId} 
+                                    onPress={() => handleCategorySelect(category.Name)}
+                                    style={styles2.modalItem}
+                                >
+                                    <Text style={styles2.modalButton}>{category.Name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
 
-            <FlatList
-                key={(searchQuery || selectedCategory) ? "grid" : "list"}
-                data={searchQuery ? filteredRecipes : selectedCategory ? categorizedRecipes[selectedCategory] : Object.keys(categorizedRecipes)}
-                renderItem={({ item }) =>
-                    searchQuery || selectedCategory ? (
-                        // GRID VIEW (2 columns)
+            {viewMode === 'grid' ? (
+                <FlatList
+                    key="grid"
+                    data={recipes}
+                    renderItem={({ item }) => (
                         <View style={styles2.gridWrapper}>
                             <RecipeCard recipe={item} />
                         </View>
-                    ) : (
-                        // LIST VIEW (horizontal scroll per category)
-                        <View style={styles2.categoryContainer}>
-                            <Text style={styles2.categoryTitle}>{item}</Text>
-                            <FlatList
-                                horizontal
-                                data={categorizedRecipes[item]}
-                                renderItem={({ item }) => (
-                                    <View style={styles2.listWrapper}>
-                                        <RecipeCard recipe={item} />
-                                    </View>
-                                )}
-                                keyExtractor={(item, idx) => idx.toString()}
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles2.listContainer}
-                            />
-                        </View>
-                    )
-                }
-                keyExtractor={(item, index) => index.toString()}
-                numColumns={searchQuery || selectedCategory ? 2 : 1}
-                columnWrapperStyle={searchQuery || selectedCategory ? styles2.gridRow : null}
-            />
+                    )}
+                    keyExtractor={(item) => item.RecipeId.toString()}
+                    numColumns={2}
+                    columnWrapperStyle={styles2.gridRow}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                        />
+                    }
+                />
+            ) : (
+                <FlatList
+                    key="category"
+                    data={Object.entries(groupRecipesByCategory())}
+                    renderItem={({ item: [category, categoryRecipes] }) => 
+                        renderCategorySection(category, categoryRecipes)
+                    }
+                    keyExtractor={([category]) => category}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                        />
+                    }
+                    ListEmptyComponent={
+                        <Text style={styles2.noRecipesText}>No recipes found</Text>
+                    }
+                />
+            )}
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    categorySection: {
+        marginBottom: 10,
+    },
+    categoryTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginLeft: 10,
+        marginBottom: 5,
+        color: '#333',
+    },
+    horizontalScrollContent: {
+        paddingHorizontal: 10,
+    },
+    horizontalCard: {
+        marginRight: 10,
+    },
+});
 
 export default RecipesList;
