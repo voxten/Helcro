@@ -1,10 +1,10 @@
-import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal, Image, Slider } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal, Image } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MealType from "./MealType";
-import styles from "../../styles/MainStyles";
 import Icon from "react-native-vector-icons/FontAwesome6";
 import Meal from "./Meal";
+import MealActions from './MealActions';
 import React, { useEffect, useState } from "react";
 
 import { useAuth } from "../context/AuthContext";
@@ -81,22 +81,22 @@ export default function Menu() {
         setExpandedMeal(expandedMeal === mealId ? null : mealId);
     };
 
-// Update handleAddMeal to potentially save to database immediately
     const handleAddMeal = async (mealType, mealTime, mealName) => {
         const mealTitle = mealType === 'Other' ? mealName : mealType;
 
-        // Check if meal of this type already exists
+        // For "Other" meals, we need to check both type AND name
         const existingMealIndex = meals.findIndex(meal =>
             meal.type === mealType &&
             (mealType !== 'Other' || meal.name === mealName)
         );
 
         if (existingMealIndex >= 0) {
+            setExpandedMeal(mealType + existingMealIndex);
             setShowMealType(false);
             setShowMeal(true);
         } else {
             try {
-                // Create new meal object for local state first
+                // Create new meal object
                 const newMeal = {
                     type: mealType,
                     name: mealTitle,
@@ -104,21 +104,16 @@ export default function Menu() {
                     products: []
                 };
 
-                // Update local state immediately for better UX
                 setMeals([...meals, newMeal]);
                 setShowMealType(false);
+                setExpandedMeal(mealType + meals.length);
                 setShowMeal(true);
-
-                // The actual database save will happen when products are added
-                // via the saveIntakeLog function in the Meal component
             } catch (error) {
                 console.error("Error creating meal:", error);
-                // Rollback local state if needed
                 setMeals(meals.filter(m => m.name !== mealTitle));
             }
         }
     };
-
 
     const handleAddProducts = (newProducts) => {
         setMeals(prevMeals => {
@@ -276,19 +271,24 @@ export default function Menu() {
                                     </Text>
                                 </View>
                                 <View style={localStyles.mealHeaderRight}>
+                                    <MealActions
+                                        meal={meal}
+                                        onMealDeleted={(deletedMealId) => {
+                                            setMeals(meals.filter(m => m.id !== deletedMealId));
+                                        }}
+                                        onMealRenamed={(mealId, newName) => {
+                                            setMeals(meals.map(m =>
+                                                m.id === mealId ? {...m, name: newName} : m
+                                            ));
+                                        }}
+                                    />
                                     <TouchableOpacity
                                         style={localStyles.addButton}
                                         onPress={() => {
-                                            // Find the current expanded meal
-                                            const currentMeal = meals.find(meal =>
-                                                meal.type + meals.indexOf(meal) === expandedMeal
-                                            );
-
-                                            if (currentMeal) {
-                                                // Set the meal type to match the current meal
-                                                setShowMealType(false);
-                                                setShowMeal(true);
+                                            if (expandedMeal !== meal.type + index) {
+                                                setExpandedMeal(meal.type + index);
                                             }
+                                            setShowMeal(true);
                                         }}
                                     >
                                         <Text style={localStyles.addButtonText}>+</Text>
@@ -333,7 +333,14 @@ export default function Menu() {
                 )}
             </ScrollView>
 
-            <TouchableOpacity style={localStyles.button} onPress={() => setShowMealType(true)}>
+            <TouchableOpacity
+                style={localStyles.button}
+                onPress={() => {
+                    setShowMealType(true);
+                    // Reset expanded meal when adding a new meal
+                    setExpandedMeal(null);
+                }}
+            >
                 <Icon name="bowl-food" size={20} color="white" style={localStyles.icon} />
                 <Text style={localStyles.buttonText}>Add Meal</Text>
             </TouchableOpacity>
@@ -363,18 +370,18 @@ export default function Menu() {
                     onClose={() => setShowMeal(false)}
                     onSave={(newProducts) => handleAddProducts(newProducts)}
                     existingProducts={
-                        expandedMeal ?
+                        expandedMeal !== null ?
                             meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.products || []
-                            : []
+                            : meals[meals.length - 1]?.products || []
                     }
                     selectedDate={selectedDate}
                     mealType={
-                        expandedMeal ?
+                        expandedMeal !== null ?
                             meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.type
                             : meals[meals.length - 1]?.type
                     }
                     mealName={
-                        expandedMeal ?
+                        expandedMeal !== null ?
                             meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.name
                             : meals[meals.length - 1]?.name
                     }
