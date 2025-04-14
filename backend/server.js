@@ -609,8 +609,8 @@ app.get('/intakeLog', async (req, res) => {
                     p.*,
                     ihp.grams,
                     ihp.MealId,
-                    m.MealType,
-                    ihp.MealName
+                    COALESCE(ihp.MealName, m.MealType) AS MealName,  -- Use MealName from join table if available
+                    m.MealType
                 FROM IntakeLog_has_Product ihp
                          JOIN Product p ON ihp.ProductId = p.ProductId
                          JOIN Meal m ON ihp.MealId = m.MealId
@@ -795,6 +795,77 @@ app.put('/intakeLog/:id', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Delete a meal and its products
+app.delete('/intakeLog/meal', async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const { userId, mealId } = req.body;
+
+        await connection.beginTransaction();
+
+        // First delete from IntakeLog_has_Product
+        await connection.execute(
+            'DELETE FROM IntakeLog_has_Product WHERE MealId = ?',
+            [mealId]
+        );
+
+        // Then delete from Meal
+        await connection.execute(
+            'DELETE FROM Meal WHERE MealId = ?',
+            [mealId]
+        );
+
+        await connection.commit();
+        res.json({ success: true });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error deleting meal:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+// Rename a meal (only for "Other" meals)
+app.put('/intakeLog/meal', async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const { userId, mealId, newMealName } = req.body;
+
+        await connection.beginTransaction();
+
+        // 1. Update MealName in IntakeLog_has_Product for all products in this meal
+        await connection.execute(
+            'UPDATE IntakeLog_has_Product SET MealName = ? WHERE MealId = ?',
+            [newMealName, mealId]
+        );
+
+        // 2. (Optional) Update the Meal table if you store the name there too
+        // If you have a MealName column in the Meal table:
+        await connection.execute(
+            'UPDATE Meal SET MealName = ? WHERE MealId = ?',
+            [newMealName, mealId]
+        );
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            mealId,
+            newMealName
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error renaming meal:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    } finally {
+        connection.release();
     }
 });
 

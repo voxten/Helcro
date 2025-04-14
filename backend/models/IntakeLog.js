@@ -96,6 +96,9 @@ class IntakeLog {
         try {
             await connection.beginTransaction();
 
+            // Ensure products is always an array
+            const productsArray = Array.isArray(products) ? products : [];
+
             if (MealId) {
                 // Delete existing products for this meal
                 await connection.execute(
@@ -104,11 +107,18 @@ class IntakeLog {
                 );
 
                 // Add new products
-                for (const product of products) {
-                    await connection.execute(
-                        'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId) VALUES (?, ?, ?)',
-                        [IntakeLogId, product.productId, MealId]
-                    );
+                for (const product of productsArray) {
+                    if (product && product.productId) {  // Additional safety check
+                        await connection.execute(
+                            'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, grams) VALUES (?, ?, ?, ?)',
+                            [
+                                IntakeLogId,
+                                product.productId,
+                                MealId,
+                                product.grams || 100  // Default to 100g if not specified
+                            ]
+                        );
+                    }
                 }
             } else {
                 // Delete all products for this intake log
@@ -118,11 +128,18 @@ class IntakeLog {
                 );
 
                 // Add new products
-                for (const product of products) {
-                    await connection.execute(
-                        'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId) VALUES (?, ?, ?)',
-                        [IntakeLogId, product.productId, product.MealId]
-                    );
+                for (const product of productsArray) {
+                    if (product && product.productId && product.MealId) {  // Additional safety check
+                        await connection.execute(
+                            'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, grams) VALUES (?, ?, ?, ?)',
+                            [
+                                IntakeLogId,
+                                product.productId,
+                                product.MealId,
+                                product.grams || 100  // Default to 100g if not specified
+                            ]
+                        );
+                    }
                 }
             }
 

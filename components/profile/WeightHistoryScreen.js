@@ -44,9 +44,10 @@ export default function WeightHistoryScreen() {
             setWeights(weightsData);
 
             // Prepare chart data - ensure we have valid numbers
-            const validWeights = weightsData.filter(item =>
-                !isNaN(parseFloat(item.Weight)) && item.WeightDate
-            );
+            const validWeights = weightsData
+                .filter(item => !isNaN(parseFloat(item.Weight)) && item.WeightDate)
+                .sort((a, b) => new Date(a.WeightDate) - new Date(b.WeightDate));
+
 
             const labels = validWeights.map(item =>
                 new Date(item.WeightDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })

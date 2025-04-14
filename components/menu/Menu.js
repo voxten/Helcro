@@ -1,10 +1,10 @@
-import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal, Image, Slider } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal, Image } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MealType from "./MealType";
-import styles from "../../styles/MainStyles";
 import Icon from "react-native-vector-icons/FontAwesome6";
 import Meal from "./Meal";
+import MealActions from './MealActions';
 import React, { useEffect, useState } from "react";
 
 import { useAuth } from "../context/AuthContext";
@@ -271,10 +271,20 @@ export default function Menu() {
                                     </Text>
                                 </View>
                                 <View style={localStyles.mealHeaderRight}>
+                                    <MealActions
+                                        meal={meal}
+                                        onMealDeleted={(deletedMealId) => {
+                                            setMeals(meals.filter(m => m.id !== deletedMealId));
+                                        }}
+                                        onMealRenamed={(mealId, newName) => {
+                                            setMeals(meals.map(m =>
+                                                m.id === mealId ? {...m, name: newName} : m
+                                            ));
+                                        }}
+                                    />
                                     <TouchableOpacity
                                         style={localStyles.addButton}
                                         onPress={() => {
-                                            // Set the expandedMeal to this meal if it's not already expanded
                                             if (expandedMeal !== meal.type + index) {
                                                 setExpandedMeal(meal.type + index);
                                             }
