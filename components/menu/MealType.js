@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from "@react-native-picker/picker";
 import mainStyles from "../../styles/MainStyles";
 import styles from "./MealStyles";
 
@@ -8,18 +9,7 @@ export default function MealType({ onClose, onSubmit }) {
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [mealTime, setMealTime] = useState(new Date());
   const [mealName, setMealName] = useState('');
-  const [isMealTimeVisible, setMealTimeVisible] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-
-  const handleMealClick = (meal) => {
-    if (selectedMeal === meal) {
-      setSelectedMeal(null);
-      setMealTimeVisible(false);
-    } else {
-      setSelectedMeal(meal);
-      setMealTimeVisible(true);
-    }
-  };
 
   const handleTimeChange = (event, selectedDate) => {
     setShowTimePicker(Platform.OS === 'ios');
@@ -36,26 +26,28 @@ export default function MealType({ onClose, onSubmit }) {
 
   const isNextButtonDisabled = !selectedMeal || (selectedMeal === 'Other' && mealName.trim() === '');
 
-  const buttonStyle = (meal) => ({
-    ...mainStyles.button,
-    backgroundColor: selectedMeal === meal ? 'brown' : '#ddd',
-  });
-
   return (
       <View style={mainStyles.overlay}>
         <View style={mainStyles.modalContainer}>
           <Text style={mainStyles.header}>Select Meal Type</Text>
 
-          {["Breakfast", "Second Breakfast", "Lunch", "Afternoon Snack", "Dinner", "Other"].map((meal) => (
-              <TouchableOpacity
-                  key={meal}
-                  style={buttonStyle(meal)}
-                  onPress={() => handleMealClick(meal)}
-                  disabled={selectedMeal && selectedMeal !== meal}
-              >
-                <Text style={mainStyles.buttonText}>{meal}</Text>
-              </TouchableOpacity>
-          ))}
+          <View style={styles.pickerContainer}>
+            <Picker
+                selectedValue={selectedMeal}
+                onValueChange={(value) => setSelectedMeal(value)}
+                style={styles.picker}
+                dropdownIconColor="black" // Optional: to make dropdown icon visible
+            >
+              <Picker.Item label="Select a meal type..." value={null} />
+              <Picker.Item label="Breakfast" value="Breakfast" />
+              <Picker.Item label="Second Breakfast" value="Second Breakfast" />
+              <Picker.Item label="Lunch" value="Lunch" />
+              <Picker.Item label="Afternoon Snack" value="Afternoon Snack" />
+              <Picker.Item label="Dinner" value="Dinner" />
+              <Picker.Item label="Other" value="Other" />
+            </Picker>
+          </View>
+
 
           {selectedMeal === 'Other' && (
               <View style={styles.otherMealContainer}>
@@ -68,7 +60,7 @@ export default function MealType({ onClose, onSubmit }) {
               </View>
           )}
 
-          {isMealTimeVisible && selectedMeal && (
+          {selectedMeal && (
               <View style={styles.timeBox}>
                 <Text style={styles.timeText}>Select Time</Text>
                 <TouchableOpacity

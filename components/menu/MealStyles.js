@@ -58,6 +58,19 @@ const styles = StyleSheet.create({
         marginRight: 5,
         alignItems: "center",
     },
+    pickerContainer: {
+        backgroundColor: 'white',
+        borderRadius: 3,
+        width: '100%',
+        marginBottom: 15,
+        overflow: 'hidden',
+    },
+    picker: {
+        height: 50,
+        width: '100%',
+        color: 'black',
+    },
+
     closeButtonText: {
         color: 'white',
         fontSize: 16,
