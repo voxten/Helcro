@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const Weight = require('./models/Weight');
 dotenv.config();
 const app = express();
 app.use(cors());
@@ -16,9 +17,6 @@ require('dotenv').config();
 const path = require('path');
 
 const IntakeLog = require('./models/IntakeLog');
-
-//FOR UPLOAD IMAGES
-
 
 const uploadRoutes = require('./routes/uploadRoutes');
 app.use('/api', uploadRoutes);
@@ -583,7 +581,6 @@ app.get('/products', (req, res) => {
         res.json(results);
     });
 });
-// GET /intakeLog - Fetch IntakeLog for a user and date
 app.get('/intakeLog', async (req, res) => {
     try {
         const { userId, date } = req.query;
@@ -608,16 +605,17 @@ app.get('/intakeLog', async (req, res) => {
 
             // 2. Get all products with calculations
             const [products] = await connection.execute(`
-                SELECT 
+                SELECT
                     p.*,
                     ihp.grams,
                     ihp.MealId,
                     m.MealType,
                     ihp.MealName
                 FROM IntakeLog_has_Product ihp
-                JOIN Product p ON ihp.ProductId = p.ProductId
-                JOIN Meal m ON ihp.MealId = m.MealId
+                         JOIN Product p ON ihp.ProductId = p.ProductId
+                         JOIN Meal m ON ihp.MealId = m.MealId
                 WHERE ihp.IntakeLogId = ?
+                ORDER BY m.MealId
             `, [intakeLog[0].IntakeLogId]);
 
             // 3. Group by meal and calculate nutrition
@@ -701,19 +699,15 @@ app.post('/intakeLog', async (req, res) => {
                 )
             )[0].insertId;
 
-            // 2. Handle Meal
+            // 2. Handle Meal - don't try to insert MealName here
             let MealId = mealId;
             if (!MealId) {
-                const [mealRows] = await connection.execute(
-                    'SELECT MealId FROM Meal WHERE MealType = ?',
+                // For new meals, just insert the MealType
+                const [mealInsert] = await connection.execute(
+                    'INSERT INTO Meal (MealType) VALUES (?)',
                     [mealType]
                 );
-                MealId = mealRows.length > 0 ? mealRows[0].MealId : (
-                    await connection.execute(
-                        'INSERT INTO Meal (MealType) VALUES (?)',
-                        [mealType]
-                    )
-                )[0].insertId;
+                MealId = mealInsert.insertId;
             }
 
             // 3. Delete existing products for this meal
@@ -722,7 +716,7 @@ app.post('/intakeLog', async (req, res) => {
                 [IntakeLogId, MealId]
             );
 
-            // 4. Insert new products with grams
+            // 4. Insert new products with grams and MealName
             for (const product of products) {
                 await connection.execute(
                     'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, MealName, grams) VALUES (?, ?, ?, ?, ?)',
@@ -744,18 +738,14 @@ app.post('/intakeLog', async (req, res) => {
                 WHERE ihp.IntakeLogId = ? AND ihp.MealId = ?
             `, [IntakeLogId, MealId]);
 
-            // Calculate nutrition values properly
-// In your POST /intakeLog endpoint response
             const formattedProducts = savedProducts.map(product => {
                 const grams = product.grams || 100;
                 return {
                     ...product,
-                    // Ensure all fields exist and are numbers
                     calories: Number((product.calories * grams / 100).toFixed(1)),
                     proteins: Number((product.proteins * grams / 100).toFixed(1)),
                     fats: Number((product.fats * grams / 100).toFixed(1)),
                     carbohydrates: Number((product.carbohydrates * grams / 100).toFixed(1)),
-                    // Original values for recalculations
                     originalValues: {
                         calories: Number(product.calories),
                         proteins: Number(product.proteins),
@@ -774,7 +764,6 @@ app.post('/intakeLog', async (req, res) => {
                     name: mealName || mealType
                 }
             });
-
         } catch (error) {
             await connection.rollback();
             throw error;
@@ -808,8 +797,6 @@ app.put('/intakeLog/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-
-const Weight = require('./models/Weight');
 
 // GET /weight - Get all weight entries for user
 app.get('/weight', async (req, res) => {
