@@ -153,44 +153,82 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
   };
 
   const handleSelectProduct = (product) => {
-    // Check if product already exists in the current meal
     const productExists = products.some(p =>
-        p.ProductId === product.ProductId ||
-        (p.productId === product.ProductId) ||
-        (p.product_name === product.product_name && !p.ProductId && !p.productId)
+        (p.ProductId || p.productId) === product.ProductId
     );
 
     if (!productExists) {
-      setProducts(prevProducts => [
-        ...prevProducts,
+      setProducts(prev => [
+        ...prev,
         {
           ...product,
-          grams: 100, // Default to 100g
-          originalValues: { ...product } // Store original values
+          productId: product.ProductId,
+          grams: 100, // Default
+          originalValues: {
+            calories: product.calories,
+            proteins: product.proteins,
+            fats: product.fats,
+            carbohydrates: product.carbohydrates
+          },
+          calories: product.calories, // Initial 100g value
+          proteins: product.proteins,
+          fats: product.fats,
+          carbohydrates: product.carbohydrates
         }
       ]);
-    } else {
-      // Optionally show a message that product already exists
-      alert('This product is already added to the meal');
     }
     setIsChoosingProduct(false);
   };
 
+  const handleGramsChange = (text, index) => {
+    const grams = parseFloat(text) || 0;
+    setProducts(prev => {
+      const updated = [...prev];
+      const product = updated[index];
+
+      // Ensure originalValues exist
+      const original = product.originalValues || {
+        calories: 0,
+        proteins: 0,
+        fats: 0,
+        carbohydrates: 0
+      };
+
+      updated[index] = {
+        ...product,
+        grams,
+        calories: Number((original.calories * grams / 100).toFixed(1)),
+        proteins: Number((original.proteins * grams / 100).toFixed(1)),
+        fats: Number((original.fats * grams / 100).toFixed(1)),
+        carbohydrates: Number((original.carbohydrates * grams / 100).toFixed(1)),
+        originalValues: original // Preserve original values
+      };
+      return updated;
+    });
+  };
+
   const handleSave = async () => {
     try {
-      // First save to IntakeLog
-      await saveIntakeLog(products);
+      const response = await axios.post(`${API_BASE_URL}/intakeLog`, {
+        userId: user.UserId,
+        date: selectedDate.toISOString().split('T')[0],
+        mealType,
+        mealName,
+        products: products.map(p => ({
+          productId: p.ProductId || p.productId,
+          grams: p.grams || 100
+        })),
+        mealId: existingProducts[0]?.MealId
+      });
 
-      // Then call the parent's onSave if provided
-      if (onSave) {
-        onSave(products);
+      if (response.data.success) {
+        // Use the server-calculated values
+        setProducts(response.data.products);
+        if (onSave) onSave(response.data.products);
+        onClose();
       }
-
-      // Close the modal
-      onClose();
     } catch (error) {
-      console.error("Failed to save:", error);
-      // You might want to show an error message to the user here
+      console.error("Save failed:", error);
     }
   };
 
@@ -314,31 +352,17 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
                         <View style={localStyles.gramsInputContainer}>
                           <TextInput
                               style={localStyles.gramsInput}
-                              placeholder="Grams"
+                              value={item.grams?.toString()}
+                              onChangeText={(text) => handleGramsChange(text, index)}
                               keyboardType="numeric"
-                              value={item.grams?.toString() || ""}
-                              onChangeText={(text) => {
-                                const grams = parseFloat(text) || 0;
-                                const updatedProducts = [...products];
-
-                                updatedProducts[index] = {
-                                  ...item,
-                                  grams,
-                                  calories: ((item.originalValues.calories / 100) * grams).toFixed(2),
-                                  proteins: ((item.originalValues.proteins / 100) * grams).toFixed(2),
-                                  fats: ((item.originalValues.fats / 100) * grams).toFixed(2),
-                                  carbohydrates: ((item.originalValues.carbohydrates / 100) * grams).toFixed(2),
-                                };
-
-                                setProducts(updatedProducts);
-                              }}
                           />
                           <Text style={localStyles.gramsLabel}>grams</Text>
                         </View>
-
-                        {/* Nutritional details */}
                         <Text style={localStyles.productDetails}>
-                          {item.calories} kcal | {item.proteins}g protein | {item.fats}g fat | {item.carbohydrates}g carbs
+                          {(item.calories?.toString() || 0)} kcal |
+                          {(item.proteins?.toString() || 0)}g protein |
+                          {(item.fats?.toString() || 0)}g fat |
+                          {(item.carbohydrates?.toString() || 0)}g carbs
                         </Text>
                       </View>
                     </View>

@@ -49,7 +49,7 @@ class IntakeLog {
 
             if (intakeLog.length === 0) return null;
 
-            // Get all products with their actual grams values
+            // Get all products with their actual grams values AND original product data
             const [products] = await connection.execute(
                 `SELECT
                      p.*,
@@ -66,7 +66,14 @@ class IntakeLog {
 
             return {
                 ...intakeLog[0],
-                products
+                products: products.map(product => ({
+                    ...product,
+                    // Calculate nutrition based on grams
+                    calculated_calories: (product.calories / 100) * product.grams,
+                    calculated_proteins: (product.proteins / 100) * product.grams,
+                    calculated_fats: (product.fats / 100) * product.grams,
+                    calculated_carbohydrates: (product.carbohydrates / 100) * product.grams
+                }))
             };
         } catch (error) {
             console.error('Error:', error);
