@@ -1,15 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, TextInput, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from "@react-native-picker/picker";
 import mainStyles from "../../styles/MainStyles";
 import styles from "./MealStyles";
+import axios from 'axios';
+import { API_BASE_URL } from '@env';
+import { useAuth } from "../context/AuthContext";
 
-export default function MealType({ onClose, onSubmit }) {
-  const [selectedMeal, setSelectedMeal] = useState(null);
+export default function MealType({ onClose, onSubmit, isCopyAction = false }) {
+  const { user } = useAuth();
+  const [mealTypes, setMealTypes] = useState([]);
   const [mealTime, setMealTime] = useState(new Date());
   const [mealName, setMealName] = useState('');
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedMealId, setSelectedMealId] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMealTypes = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/meals`);
+        // Ensure we only use existing meal types from database
+        setMealTypes(response.data.map(meal => ({
+          MealId: meal.MealId,
+          MealType: meal.MealType
+        })));
+      } catch (error) {
+        console.error("Error fetching meal types:", error);
+        // Fallback to default types if API fails
+        setMealTypes([
+          { MealId: 1, MealType: 'Breakfast' },
+          { MealId: 2, MealType: 'Second Breakfast' },
+          { MealId: 3, MealType: 'Lunch' },
+          { MealId: 4, MealType: 'Afternoon Snack' },
+          { MealId: 5, MealType: 'Dinner' },
+          { MealId: 6, MealType: 'Other' }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMealTypes();
+  }, []);
+
+  const handleSubmit = () => {
+    if (isCopyAction) {
+      onSubmit(selectedMealId, null, null);
+    } else {
+      const mealType = mealTypes.find(m => m.MealId === selectedMealId)?.MealType || 'Other';
+      onSubmit(mealType, mealTime, mealName);
+    }
+  };
 
   const handleTimeChange = (event, selectedDate) => {
     setShowTimePicker(Platform.OS === 'ios');
@@ -20,36 +63,45 @@ export default function MealType({ onClose, onSubmit }) {
     setMealName(text);
   };
 
-  const handleSubmit = () => {
-    onSubmit(selectedMeal, mealTime, mealName);
-  };
+  const selectedMeal = mealTypes.find(m => m.MealId === selectedMealId)?.MealType || null;
 
-  const isNextButtonDisabled = !selectedMeal || (selectedMeal === 'Other' && mealName.trim() === '');
+  const isNextButtonDisabled = loading || !selectedMealId ||
+      (!isCopyAction && selectedMeal === 'Other' && mealName.trim() === '');
+
+  if (loading) {
+    return (
+        <View style={mainStyles.overlay}>
+          <View style={mainStyles.modalContainer}>
+            <Text>Loading meal types...</Text>
+          </View>
+        </View>
+    );
+  }
 
   return (
       <View style={mainStyles.overlay}>
         <View style={mainStyles.modalContainer}>
-          <Text style={mainStyles.header}>Select Meal Type</Text>
+          <Text style={mainStyles.header}>
+            {isCopyAction ? 'Select Target Meal Type' : 'Select Meal Type'}
+          </Text>
 
           <View style={styles.pickerContainer}>
             <Picker
-                selectedValue={selectedMeal}
-                onValueChange={(value) => setSelectedMeal(value)}
-                style={styles.picker}
-                dropdownIconColor="black" // Optional: to make dropdown icon visible
+                selectedValue={selectedMealId}
+                onValueChange={(value) => setSelectedMealId(value)}
             >
               <Picker.Item label="Select a meal type..." value={null} />
-              <Picker.Item label="Breakfast" value="Breakfast" />
-              <Picker.Item label="Second Breakfast" value="Second Breakfast" />
-              <Picker.Item label="Lunch" value="Lunch" />
-              <Picker.Item label="Afternoon Snack" value="Afternoon Snack" />
-              <Picker.Item label="Dinner" value="Dinner" />
-              <Picker.Item label="Other" value="Other" />
+              {mealTypes.map(meal => (
+                  <Picker.Item
+                      key={meal.MealId}
+                      label={meal.MealType}
+                      value={meal.MealId}
+                  />
+              ))}
             </Picker>
           </View>
 
-
-          {selectedMeal === 'Other' && (
+          {!isCopyAction && selectedMeal === 'Other' && (
               <View style={styles.otherMealContainer}>
                 <TextInput
                     style={styles.input}
@@ -60,7 +112,7 @@ export default function MealType({ onClose, onSubmit }) {
               </View>
           )}
 
-          {selectedMeal && (
+          {!isCopyAction && selectedMeal && (
               <View style={styles.timeBox}>
                 <Text style={styles.timeText}>Select Time</Text>
                 <TouchableOpacity
