@@ -873,12 +873,6 @@ app.delete('/intakeLog/meal', async (req, res) => {
             [mealId]
         );
 
-        // Then delete from Meal
-        await connection.execute(
-            'DELETE FROM Meal WHERE MealId = ?',
-            [mealId]
-        );
-
         await connection.commit();
         res.json({ success: true });
     } catch (error) {
