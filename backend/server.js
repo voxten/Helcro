@@ -647,6 +647,23 @@ app.get('/products', (req, res) => {
         res.json(results);
     });
 });
+
+app.get('/meals', async (req, res) => {
+    try {
+        const [meals] = await pool.execute(
+            'SELECT MealId, MealType FROM Meal ORDER BY MealId'
+        );
+        res.json(meals);
+    } catch (error) {
+        console.error('Error fetching meal types:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching meal types',
+            error: error.message
+        });
+    }
+});
+
 app.get('/intakeLog', async (req, res) => {
     try {
         const { userId, date } = req.query;
@@ -675,8 +692,8 @@ app.get('/intakeLog', async (req, res) => {
                     p.*,
                     ihp.grams,
                     ihp.MealId,
-                    COALESCE(ihp.MealName, m.MealType) AS MealName,  -- Use MealName from join table if available
-                    m.MealType
+                    m.MealType,
+                    COALESCE(ihp.MealName, m.MealType) AS MealName
                 FROM IntakeLog_has_Product ihp
                          JOIN Product p ON ihp.ProductId = p.ProductId
                          JOIN Meal m ON ihp.MealId = m.MealId
@@ -684,19 +701,19 @@ app.get('/intakeLog', async (req, res) => {
                 ORDER BY m.MealId
             `, [intakeLog[0].IntakeLogId]);
 
-            // 3. Group by meal and calculate nutrition
+            // 3. Group by meal
             const mealsMap = new Map();
             products.forEach(product => {
                 const grams = product.grams || 100;
                 if (!mealsMap.has(product.MealId)) {
                     mealsMap.set(product.MealId, {
+                        id: product.MealId,
                         MealId: product.MealId,
-                        MealType: product.MealType,
-                        MealName: product.MealName || product.MealType,
+                        type: product.MealType,
+                        name: product.MealName,
                         products: []
                     });
                 }
-
                 mealsMap.get(product.MealId).products.push({
                     ...product,
                     calories: (product.calories * grams / 100),
@@ -714,12 +731,7 @@ app.get('/intakeLog', async (req, res) => {
 
             res.json({
                 success: true,
-                meals: Array.from(mealsMap.values()).map(meal => ({
-                    id: meal.MealId,
-                    type: meal.MealType,
-                    name: meal.MealName,
-                    products: meal.products
-                }))
+                meals: Array.from(mealsMap.values())
             });
         } finally {
             connection.release();
@@ -733,18 +745,18 @@ app.get('/intakeLog', async (req, res) => {
         });
     }
 });
+
 app.post('/intakeLog', async (req, res) => {
     const connection = await pool.getConnection();
     try {
         const { userId, date, mealType, mealName, products, mealId } = req.body;
 
-        // Validate required fields
-        if (!userId || !date || !mealType) {
+        if (!userId || !date || !mealType || !mealId) {
             await connection.rollback();
             connection.release();
             return res.status(400).json({
                 success: false,
-                message: 'userId, date, and mealType are required'
+                message: 'userId, date, mealType and mealId are required'
             });
         }
 
@@ -765,67 +777,50 @@ app.post('/intakeLog', async (req, res) => {
                 )
             )[0].insertId;
 
-            // 2. Handle Meal - don't try to insert MealName here
-            let MealId = mealId;
-            if (!MealId) {
-                // For new meals, just insert the MealType
-                const [mealInsert] = await connection.execute(
-                    'INSERT INTO Meal (MealType) VALUES (?)',
-                    [mealType]
-                );
-                MealId = mealInsert.insertId;
+            // 2. Verify meal exists (don't insert new ones)
+            const [mealCheck] = await connection.execute(
+                'SELECT MealId FROM Meal WHERE MealId = ?',
+                [mealId]
+            );
+
+            if (mealCheck.length === 0) {
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid MealId - meal type does not exist'
+                });
             }
 
             // 3. Delete existing products for this meal
             await connection.execute(
                 'DELETE FROM IntakeLog_has_Product WHERE IntakeLogId = ? AND MealId = ?',
-                [IntakeLogId, MealId]
+                [IntakeLogId, mealId]
             );
 
-            // 4. Insert new products with grams and MealName
+            // 4. Insert new products
             for (const product of products) {
                 await connection.execute(
-                    'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, MealName, grams) VALUES (?, ?, ?, ?, ?)',
-                    [IntakeLogId, product.productId, MealId, mealName || mealType, product.grams || 100]
+                    'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, grams) VALUES (?, ?, ?, ?)',
+                    [IntakeLogId, product.productId, mealId, product.grams || 100]
                 );
             }
 
             await connection.commit();
 
-            // 5. Fetch the complete saved data with calculations
+            // 5. Return the saved data
             const [savedProducts] = await connection.execute(`
-                SELECT
-                    p.*,
-                    ihp.grams,
-                    ihp.MealId,
-                    ihp.MealName
+                SELECT p.*, ihp.grams, ihp.MealId
                 FROM IntakeLog_has_Product ihp
                          JOIN Product p ON ihp.ProductId = p.ProductId
                 WHERE ihp.IntakeLogId = ? AND ihp.MealId = ?
-            `, [IntakeLogId, MealId]);
-
-            const formattedProducts = savedProducts.map(product => {
-                const grams = product.grams || 100;
-                return {
-                    ...product,
-                    calories: Number((product.calories * grams / 100).toFixed(1)),
-                    proteins: Number((product.proteins * grams / 100).toFixed(1)),
-                    fats: Number((product.fats * grams / 100).toFixed(1)),
-                    carbohydrates: Number((product.carbohydrates * grams / 100).toFixed(1)),
-                    originalValues: {
-                        calories: Number(product.calories),
-                        proteins: Number(product.proteins),
-                        fats: Number(product.fats),
-                        carbohydrates: Number(product.carbohydrates)
-                    }
-                };
-            });
+            `, [IntakeLogId, mealId]);
 
             res.status(201).json({
                 success: true,
-                products: formattedProducts,
+                products: savedProducts,
                 meal: {
-                    id: MealId,
+                    id: mealId,
                     type: mealType,
                     name: mealName || mealType
                 }
@@ -928,6 +923,125 @@ app.put('/intakeLog/meal', async (req, res) => {
         console.error('Error renaming meal:', error);
         res.status(500).json({
             success: false,
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+});
+
+app.post('/intakeLog/copyMeal', async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const { userId, fromDate, fromMealId, toDate, toMealId } = req.body;
+
+        console.log('Received copy request:', {
+            userId,
+            fromDate,
+            fromMealId,
+            toDate,
+            toMealId
+        });
+
+        // Validate required fields
+        if (!userId || !fromDate || !fromMealId || !toDate || !toMealId) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required'
+            });
+        }
+
+        await connection.beginTransaction();
+
+        // 1. Get source intake log and meal type
+        const [fromIntakeLog] = await connection.execute(
+            'SELECT IntakeLogId FROM IntakeLog WHERE UserId = ? AND LogDate = ?',
+            [userId, fromDate]
+        );
+
+        if (fromIntakeLog.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'Source intake log not found'
+            });
+        }
+
+        // 2. Get source meal type name
+        const [fromMealType] = await connection.execute(
+            'SELECT MealType FROM Meal WHERE MealId = ?',
+            [fromMealId]
+        );
+
+        // 3. Get target meal type name
+        const [toMealType] = await connection.execute(
+            'SELECT MealType FROM Meal WHERE MealId = ?',
+            [toMealId]
+        );
+
+        // 4. Get source products
+        const [products] = await connection.execute(
+            `SELECT ProductId, grams, MealName 
+             FROM IntakeLog_has_Product 
+             WHERE IntakeLogId = ? AND MealId = ?`,
+            [fromIntakeLog[0].IntakeLogId, fromMealId]
+        );
+
+        if (products.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'No products found in source meal'
+            });
+        }
+
+        // 5. Get or create target intake log
+        let toIntakeLogId;
+        const [toIntakeLog] = await connection.execute(
+            'SELECT IntakeLogId FROM IntakeLog WHERE UserId = ? AND LogDate = ? FOR UPDATE',
+            [userId, toDate]
+        );
+
+        toIntakeLogId = toIntakeLog.length > 0 ? toIntakeLog[0].IntakeLogId : (
+            await connection.execute(
+                'INSERT INTO IntakeLog (UserId, LogDate) VALUES (?, ?)',
+                [userId, toDate]
+            )
+        )[0].insertId;
+
+        // 6. Clear existing products in target meal (if any)
+        await connection.execute(
+            'DELETE FROM IntakeLog_has_Product WHERE IntakeLogId = ? AND MealId = ?',
+            [toIntakeLogId, toMealId]
+        );
+
+        // 7. Copy products to target meal with updated MealName
+        for (const product of products) {
+            // Use the target meal type as the new MealName, unless it's "Other"
+            const newMealName = toMealType[0].MealType === 'Other' ? product.MealName : toMealType[0].MealType;
+
+            await connection.execute(
+                'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, MealName, grams) VALUES (?, ?, ?, ?, ?)',
+                [toIntakeLogId, product.ProductId, toMealId, newMealName, product.grams]
+            );
+        }
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: 'Meal copied successfully',
+            meal: {
+                id: toMealId,
+                type: toMealType[0].MealType
+            }
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error copying meal:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
             error: error.message
         });
     } finally {

@@ -49,8 +49,11 @@ export default function Menu() {
 
                     setMeals(fetchedMeals.map(meal => ({
                         ...meal,
-                        time: new Date()
+                        id: meal.id || meal.mealId, // Ensure we have the id
+                        time: new Date(),
+                        date: formattedDate
                     })));
+
                 }
             } catch (error) {
                 console.error("Error fetching intake log:", {
@@ -115,56 +118,80 @@ export default function Menu() {
         }
     };
 
-    const handleAddProducts = (newProducts) => {
-        setMeals(prevMeals => {
-            if (expandedMeal) {
-                // Update existing meal
-                return prevMeals.map(meal => {
-                    if (meal.type + prevMeals.indexOf(meal) === expandedMeal) {
-                        // Merge products, avoiding duplicates
-                        const existingProductIds = meal.products.map(p => p.ProductId || p.productId);
+    const handleAddProducts = (newProducts, shouldRefresh = false) => {
+        if (shouldRefresh) {
+            // If we need to refresh, refetch the data for the current date
+            const fetchData = async () => {
+                try {
+                    if (user && selectedDate) {
+                        const formattedDate = selectedDate.toISOString().split('T')[0];
+                        const response = await axios.get(`${API_BASE_URL}/intakeLog`, {
+                            params: {
+                                userId: user.UserId,
+                                date: formattedDate
+                            }
+                        });
+
+                        const fetchedMeals = response.data?.meals || [];
+                        setMeals(fetchedMeals.map(meal => ({
+                            ...meal,
+                            id: meal.id || meal.mealId,
+                            time: new Date(),
+                            date: formattedDate
+                        })));
+                    }
+                } catch (error) {
+                    console.error("Error refreshing intake log:", error);
+                }
+            };
+            fetchData();
+        } else {
+            // Original logic for adding products without refresh
+            setMeals(prevMeals => {
+                if (expandedMeal) {
+                    return prevMeals.map(meal => {
+                        if (meal.type + prevMeals.indexOf(meal) === expandedMeal) {
+                            const existingProductIds = meal.products.map(p => p.ProductId || p.productId);
+                            const uniqueNewProducts = newProducts.filter(
+                                newProd => !existingProductIds.includes(newProd.ProductId || newProd.productId)
+                            );
+                            return {
+                                ...meal,
+                                products: [...meal.products, ...uniqueNewProducts]
+                            };
+                        }
+                        return meal;
+                    });
+                } else {
+                    const updatedMeals = [...prevMeals];
+                    if (updatedMeals.length > 0) {
+                        const lastMealIndex = updatedMeals.length - 1;
+                        const existingProductIds = updatedMeals[lastMealIndex].products.map(
+                            p => p.ProductId || p.productId
+                        );
                         const uniqueNewProducts = newProducts.filter(
                             newProd => !existingProductIds.includes(newProd.ProductId || newProd.productId)
                         );
-
-                        return {
-                            ...meal,
-                            products: [...meal.products, ...uniqueNewProducts]
+                        updatedMeals[lastMealIndex] = {
+                            ...updatedMeals[lastMealIndex],
+                            products: [...updatedMeals[lastMealIndex].products, ...uniqueNewProducts]
                         };
                     }
-                    return meal;
-                });
-            } else {
-                // Add to new meal
-                const updatedMeals = [...prevMeals];
-                if (updatedMeals.length > 0) {
-                    const lastMealIndex = updatedMeals.length - 1;
-                    const existingProductIds = updatedMeals[lastMealIndex].products.map(
-                        p => p.ProductId || p.productId
-                    );
-                    const uniqueNewProducts = newProducts.filter(
-                        newProd => !existingProductIds.includes(newProd.ProductId || newProd.productId)
-                    );
-
-                    updatedMeals[lastMealIndex] = {
-                        ...updatedMeals[lastMealIndex],
-                        products: [...updatedMeals[lastMealIndex].products, ...uniqueNewProducts]
-                    };
+                    return updatedMeals;
                 }
-                return updatedMeals;
-            }
-        });
+            });
+        }
         setShowMeal(false);
     };
 
     const calculateTotalNutrition = (products) => {
         return products.reduce((acc, product) => {
-            const grams = product.grams || 100;
+            // Use the pre-calculated values from the server
             return {
-                calories: acc.calories + (parseFloat(product.calories || 0) / 100 * grams),
-                proteins: acc.proteins + (parseFloat(product.proteins || 0) / 100 * grams),
-                fats: acc.fats + (parseFloat(product.fats || 0) / 100 * grams),
-                carbohydrates: acc.carbohydrates + (parseFloat(product.carbohydrates || 0) / 100 * grams)
+                calories: acc.calories + parseFloat(product.calories || 0),
+                proteins: acc.proteins + parseFloat(product.proteins || 0),
+                fats: acc.fats + parseFloat(product.fats || 0),
+                carbohydrates: acc.carbohydrates + parseFloat(product.carbohydrates || 0)
             };
         }, { calories: 0, proteins: 0, fats: 0, carbohydrates: 0 });
     };
@@ -173,19 +200,28 @@ export default function Menu() {
         meals.flatMap(meal => meal.products)
     );
 
+    const handleMealCopied = (products, newMeal) => {
+        setMeals(prevMeals =>
+            prevMeals.map(m =>
+                m.id === newMeal.id
+                    ? { ...m, products: products, name: newMeal.name }
+                    : m
+            )
+        );
+    };
 
     const NutritionSlider = ({ label, current, target }) => {
         const percentage = Math.min((current / target) * 100, 100);
-        const sliderWidth = 85; // Slightly wider to accommodate text
+        const sliderWidth = 85;
 
         return (
             <View style={[localStyles.sliderContainer, { width: sliderWidth }]}>
                 <Text
                     style={localStyles.sliderLabel}
-                    numberOfLines={1}  // Prevent text wrapping
-                    ellipsizeMode="tail"  // Add ... if text is too long
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                 >
-                    {`${label}: ${current.toFixed(0)}/${target}`}
+                    {`${label}: ${Math.round(current)}/${target}`}
                 </Text>
                 <View style={localStyles.sliderTrack}>
                     <View
@@ -281,6 +317,8 @@ export default function Menu() {
                                                 m.id === mealId ? {...m, name: newName} : m
                                             ));
                                         }}
+                                        onMealCopied={handleMealCopied}
+                                        hasProducts={meal.products && meal.products.length > 0}
                                     />
                                     <TouchableOpacity
                                         style={localStyles.addButton}
@@ -320,7 +358,7 @@ export default function Menu() {
                                                         {product.product_name} ({product.grams}g)
                                                     </Text>
                                                     <Text style={localStyles.productDetails}>
-                                                        {typeof product.calories === 'number' ? product.calories.toFixed(2) : '0.00'} kcal | {typeof product.proteins === 'number' ? product.proteins.toFixed(2) : '0.00'}g protein | {typeof product.fats === 'number' ? product.fats.toFixed(2) : '0.00'}g fat | {typeof product.carbohydrates === 'number' ? product.carbohydrates.toFixed(2) : '0.00'}g carbs
+                                                        {product.calories} kcal | {product.proteins}g protein | {product.fats}g fat | {product.carbohydrates}g carbs
                                                     </Text>
                                                 </View>
                                             </View>
@@ -368,7 +406,7 @@ export default function Menu() {
             >
                 <Meal
                     onClose={() => setShowMeal(false)}
-                    onSave={(newProducts) => handleAddProducts(newProducts)}
+                    onSave={(newProducts, shouldRefresh) => handleAddProducts(newProducts, shouldRefresh)}
                     existingProducts={
                         expandedMeal !== null ?
                             meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.products || []
