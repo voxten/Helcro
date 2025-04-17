@@ -565,17 +565,6 @@ app.post('/reset-password', async (req, res) => {
 // ===== KONIEC NOWYCH ENDPOINTÓW ===== //
 // ===== PUBLIC ROUTES ===== //
 
-// Get all categories (public access)
-app.get('/api/categories', (req, res) => {
-    db.query('SELECT * FROM Category', (err, results) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ error: 'Database error' });
-        }
-        res.json(results);
-    });
-});
-
 // Get all recipes (public access)
 app.get('/api/recipes', (req, res) => {
     db.query(`
