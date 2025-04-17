@@ -444,7 +444,7 @@ const uploadImage = async () => {
               style={styles.closeModalButton}
               onPress={() => setIsProductModalVisible(false)}
             >
-              <Icon name="times" size={20} color="#666" />
+                <Text>X</Text>
             </TouchableOpacity>
           </View>
           
@@ -473,6 +473,7 @@ const uploadImage = async () => {
         onPress={handleSubmit}
         disabled={loading || uploadingImage}
         >
+            <Icon name="book-bookmark" size={20} color="white" style={styles.icon} />
         {loading || uploadingImage ? (
             <ActivityIndicator color="white" />
         ) : (
@@ -550,7 +551,7 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#4CAF50',
+      backgroundColor: 'brown',
       padding: 10,
       borderRadius: 5,
       marginTop: 10,
@@ -574,7 +575,7 @@ const styles = StyleSheet.create({
     categoryTag: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#4CAF50',
+      backgroundColor: 'brown',
       padding: 5,
       borderRadius: 15,
       marginRight: 5,
@@ -623,7 +624,7 @@ const styles = StyleSheet.create({
     addIngredientButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#4CAF50',
+      backgroundColor: 'brown',
       padding: 10,
       borderRadius: 5,
       justifyContent: 'center',
@@ -637,6 +638,9 @@ const styles = StyleSheet.create({
     productsList: {
       marginTop: 10,
     },
+    icon: {
+        marginRight: 10,
+    },
     productItem: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -649,12 +653,14 @@ const styles = StyleSheet.create({
       fontSize: 16,
     },
     submitButton: {
-      backgroundColor: '#2196F3',
-      padding: 15,
-      borderRadius: 5,
-      alignItems: 'center',
-      marginTop: 20,
-      marginBottom: 30,
+        flexDirection: "row",
+        justifyContent: "center",
+        backgroundColor: 'brown',
+        padding: 15,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 20,
+        marginBottom: 35,
     },
     submitButtonText: {
       color: 'white',

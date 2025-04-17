@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import styles from "../../styles/MainStyles";
 
 export default function DietaryGoalsScreen() {
     const [goal, setGoal] = useState("");
@@ -38,22 +37,22 @@ export default function DietaryGoalsScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={localStyles.container}>
             <TextInput
-                style={styles.input}
+                style={localStyles.input}
                 value={weight}
                 onChangeText={setWeight}
                 placeholder="Enter your weight (kg)"
                 keyboardType="numeric"
             />
             <TextInput
-                style={styles.input}
+                style={localStyles.input}
                 value={height}
                 onChangeText={setHeight}
                 placeholder="Enter your height (cm)"
                 keyboardType="numeric"
             />
-            <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
+            <TouchableOpacity style={localStyles.input} onPress={() => setShowPicker(true)}>
                 <Text style={{ color: dob ? "black" : "gray" }}>
                     {dob ? `Date of Birth: ${dob}` : "Select your date of birth"}
                 </Text>
@@ -75,11 +74,11 @@ export default function DietaryGoalsScreen() {
                     <Picker.Item label="Maintenance" value="maintenance" />
                 </Picker>
             </View>
-            <TouchableOpacity style={styles.submitButton} onPress={() => handleSubmit()}>
-                <Text style={ styles.submitButtonText }>Submit</Text>
+            <TouchableOpacity style={localStyles.submitButton} onPress={() => handleSubmit()}>
+                <Text style={ localStyles.submitButtonText }>Submit</Text>
             </TouchableOpacity>
             { age &&
-                <Text style={styles.text}>Your age: {age} years</Text>
+                <Text style={localStyles.text}>Your age: {age} years</Text>
             }
         </View>
     );
@@ -103,5 +102,33 @@ const localStyles = StyleSheet.create({
         color: "white",
         fontSize: 18,
         marginTop: 10,
+    },
+    input: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 10,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        elevation: 3,
+        marginBottom: 10,
+    },
+    container: {
+        flex: 1,
+        backgroundColor: '#eee',
+        paddingHorizontal: 20,
+        paddingTop: 40
+    },
+    submitButton: {
+        backgroundColor: "brown",
+        padding: 15,
+        borderRadius: 10,
+        alignItems: "center",
+        marginVertical: 20
+    },
+    submitButtonText: {
+        color: "white",
+        fontSize: 18,
+        fontWeight: "bold"
     },
 });
