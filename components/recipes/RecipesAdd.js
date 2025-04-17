@@ -369,7 +369,7 @@ const uploadImage = async () => {
                     setSelectedCategories(selectedCategories.filter(id => id !== catId));
                   }}
                 >
-                  <Icon name="times" size={14} color="white" />
+                <Text style={{ color: 'white' }}>X</Text>
                 </TouchableOpacity>
               </View>
             );
