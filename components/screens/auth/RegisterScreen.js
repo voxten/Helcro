@@ -21,11 +21,22 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
     PotwierdzPassword: '',
     Height: '',
     Weight: '',
-    Gender: 'M'
+    Gender: 'M',
+    Birthday: ''
   });
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleChange = (name, value) => {
     setForm(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleDateChange = (event, selectedDate) => { // ✅ move here too
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const isoDate = selectedDate.toISOString().split('T')[0];
+      handleChange('Birthday', isoDate);
+    }
   };
 
   const handleRegister = async () => {
@@ -47,7 +58,8 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         Password: form.Password,
         Height: form.Height ? parseFloat(form.Height) : null,
         Weight: form.Height ? parseFloat(form.Weight) : null,
-        Gender: form.Gender
+        Gender: form.Gender,
+        Birthday: form.Birthday
       });
 
       Alert.alert('Success', 'Account has been successfully created', [
@@ -134,7 +146,15 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
           onChangeText={(text) => handleChange('Weight', text)}
           keyboardType="numeric"
         />
-        
+        <TouchableOpacity 
+          onPress={() => setShowDatePicker(true)} 
+          style={[styles.input, styles.centeredInput]}
+        >
+          <Text style={[styles.inputText, !form.Birthday && styles.placeholderText]}>
+            {form.Birthday ? form.Birthday : 'Select Birthday *'}
+          </Text>
+        </TouchableOpacity>
+                
         <View style={styles.radioGroup}>
           <Text style={styles.radioLabel}>Gender:</Text>
           {['M', 'W'].map((gender) => (
@@ -245,6 +265,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 10,
   },
+  inputText: {
+    fontSize: 16,
+    color: 'black',
+  },
+  
+  placeholderText: {
+    color: '#aaa',
+  },
+  centeredInput: {
+    justifyContent: 'center',
+  }
 });
 
 export default RegisterScreen;

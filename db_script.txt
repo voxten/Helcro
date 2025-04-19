@@ -5,6 +5,7 @@ CREATE TABLE User (
     Password VARCHAR(255) NOT NULL,
     Height FLOAT,
     Weight FLOAT,
+    Birthday DATE,
     Gender ENUM('M', 'K', 'Inne'),
     reset_token TEXT,
     reset_token_expires DATETIME,

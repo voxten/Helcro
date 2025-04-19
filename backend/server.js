@@ -260,7 +260,7 @@ app.post('/api/auth/delete-account', (req, res) => {
 // Rejestracja użytkownika
 app.post('/api/auth/register', async (req, res) => {
     
-    const { UserName, Email, Password, Height, Weight, Gender } = req.body;
+    const { UserName, Email, Password, Height, Weight, Gender, Birthday } = req.body;
 
     try {
         // Sprawdź czy użytkownik już istnieje
@@ -278,7 +278,7 @@ app.post('/api/auth/register', async (req, res) => {
 
                 // Dodanie nowego użytkownika
                 db.query('INSERT INTO user SET ?', 
-                    { UserName, Email, Password: hashedPassword, Height, Weight, Gender },
+                    { UserName, Email, Password: hashedPassword, Height, Weight, Gender, Birthday },
                     (err, result) => {
                         if (err) throw err;
                         res.status(201).json({ message: 'Registration completed successfully!', UserId: result.insertId });
