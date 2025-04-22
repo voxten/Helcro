@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, TextInput, Platform } from 'react-native';
+import {View, Text, TouchableOpacity, TextInput, Platform, StyleSheet} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from "@react-native-picker/picker";
-import mainStyles from "../../styles/MainStyles";
-import styles from "./MealStyles";
 import axios from 'axios';
 import { API_BASE_URL } from '@env';
-import { useAuth } from "../context/AuthContext";
 
-export default function MealType({ onClose, onSubmit, isCopyAction = false }) {
-  const { user } = useAuth();
+export default function MealType({ onClose, onSubmit, isCopyAction = false, showOverlay = true }) {
   const [mealTypes, setMealTypes] = useState([]);
   const [mealTime, setMealTime] = useState(new Date());
   const [mealName, setMealName] = useState('');
@@ -29,14 +25,6 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false }) {
       } catch (error) {
         console.error("Error fetching meal types:", error);
         // Fallback to default types if API fails
-        setMealTypes([
-          { MealId: 1, MealType: 'Breakfast' },
-          { MealId: 2, MealType: 'Second Breakfast' },
-          { MealId: 3, MealType: 'Lunch' },
-          { MealId: 4, MealType: 'Afternoon Snack' },
-          { MealId: 5, MealType: 'Dinner' },
-          { MealId: 6, MealType: 'Other' }
-        ]);
       } finally {
         setLoading(false);
       }
@@ -70,8 +58,8 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false }) {
 
   if (loading) {
     return (
-        <View style={mainStyles.overlay}>
-          <View style={mainStyles.modalContainer}>
+        <View style={localStyles.overlay}>
+          <View style={localStyles.modalContainer}>
             <Text>Loading meal types...</Text>
           </View>
         </View>
@@ -79,13 +67,13 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false }) {
   }
 
   return (
-      <View style={mainStyles.overlay}>
-        <View style={mainStyles.modalContainer}>
-          <Text style={mainStyles.header}>
+      <View style={[localStyles.overlay, !showOverlay && { backgroundColor: 'transparent' }]}>
+        <View style={localStyles.modalContainer}>
+          <Text style={localStyles.header}>
             {isCopyAction ? 'Select Target Meal Type' : 'Select Meal Type'}
           </Text>
 
-          <View style={styles.pickerContainer}>
+          <View style={localStyles.pickerContainer}>
             <Picker
                 selectedValue={selectedMealId}
                 onValueChange={(value) => setSelectedMealId(value)}
@@ -102,9 +90,9 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false }) {
           </View>
 
           {!isCopyAction && selectedMeal === 'Other' && (
-              <View style={styles.otherMealContainer}>
+              <View style={localStyles.otherMealContainer}>
                 <TextInput
-                    style={styles.input}
+                    style={localStyles.input}
                     placeholder="Enter meal name"
                     value={mealName}
                     onChangeText={handleMealNameChange}
@@ -113,13 +101,13 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false }) {
           )}
 
           {!isCopyAction && selectedMeal && (
-              <View style={styles.timeBox}>
-                <Text style={styles.timeText}>Select Time</Text>
+              <View style={localStyles.timeBox}>
+                <Text style={localStyles.timeText}>Select Time</Text>
                 <TouchableOpacity
                     onPress={() => setShowTimePicker(true)}
-                    style={styles.timePickerButton}
+                    style={localStyles.timePickerButton}
                 >
-                  <Text style={styles.timePickerText}>
+                  <Text style={localStyles.timePickerText}>
                     {mealTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </Text>
                 </TouchableOpacity>
@@ -134,19 +122,159 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false }) {
               </View>
           )}
 
-          <View style={styles.buttons}>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeButtonText}>Close</Text>
+          <View style={localStyles.buttons}>
+            <TouchableOpacity style={localStyles.closeButton} onPress={onClose}>
+              <Text style={localStyles.closeButtonText}>Close</Text>
             </TouchableOpacity>
             <TouchableOpacity
-                style={[styles.submitButton, isNextButtonDisabled && styles.disabledButton]}
+                style={[localStyles.submitButton, isNextButtonDisabled && localStyles.disabledButton]}
                 onPress={handleSubmit}
                 disabled={isNextButtonDisabled}
             >
-              <Text style={styles.submitButtonText}>Next</Text>
+              <Text style={localStyles.submitButtonText}>Next</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
   );
 }
+
+const localStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  modalContainer: {
+    width: "90%",
+    maxWidth: 400,
+    padding: 25,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  header: {
+    fontSize: 22,
+    fontWeight: '600',
+    marginBottom: 20,
+    color: '#333',
+  },
+  pickerContainer: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    width: '100%',
+    marginBottom: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    color: '#333',
+  },
+  otherMealContainer: {
+    width: '100%',
+    marginTop: 10,
+  },
+  input: {
+    width: '100%',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f8f8f8',
+    fontSize: 16,
+    color: '#333',
+  },
+  timeBox: {
+    marginTop: 20,
+    width: "100%",
+    padding: 20,
+    borderRadius: 10,
+    backgroundColor: "#f8f8f8",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  timeText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#555",
+    marginBottom: 15,
+  },
+  timePickerButton: {
+    backgroundColor: "brown", // Brown color
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  timePickerText: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "500",
+  },
+  buttons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 25,
+  },
+  closeButton: {
+    backgroundColor: "brown", // Brown color
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  submitButton: {
+    backgroundColor: "brown", // Brown color
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  submitButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  disabledButton: {
+    backgroundColor: '#e0e0e0',
+    opacity: 0.7,
+  },
+});

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import api from '../../utils/api';
 import Icon from "react-native-vector-icons/FontAwesome5";
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
   const [form, setForm] = useState({
@@ -22,7 +23,7 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
     Height: '',
     Weight: '',
     Gender: 'M',
-    Birthday: ''
+        Birthday: ''
   });
 
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -30,7 +31,7 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
   const handleChange = (name, value) => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
-  
+  const [showDatePicker, setShowDatePicker] = useState(false); // ✅ move here
   const handleDateChange = (event, selectedDate) => { // ✅ move here too
     setShowDatePicker(false);
     if (selectedDate) {
@@ -38,7 +39,6 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
       handleChange('Birthday', isoDate);
     }
   };
-
   const handleRegister = async () => {
     // Walidacja
     if (form.Password !== form.PotwierdzPassword) {
@@ -148,13 +148,24 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         />
         <TouchableOpacity 
           onPress={() => setShowDatePicker(true)} 
-          style={[styles.input, styles.centeredInput]}
+          style={styles.input}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.inputText, !form.Birthday && styles.placeholderText]}>
+          <Text style={[styles.birthdayText, !form.Birthday && styles.placeholderText]}>
             {form.Birthday ? form.Birthday : 'Select Birthday *'}
           </Text>
         </TouchableOpacity>
-                
+
+        {showDatePicker && (
+            <DateTimePicker
+                value={form.Birthday ? new Date(form.Birthday) : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+            />
+        )}
+        
         <View style={styles.radioGroup}>
           <Text style={styles.radioLabel}>Gender:</Text>
           {['M', 'W'].map((gender) => (
@@ -265,17 +276,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 10,
   },
-  inputText: {
-    fontSize: 16,
-    color: 'black',
+  birthdayText: {
+    fontSize: 15,
+    color: '#000',
+    paddingVertical: 13,
   },
   
   placeholderText: {
-    color: '#aaa',
+    color: '#000',
+    fontSize: 15,
   },
-  centeredInput: {
-    justifyContent: 'center',
-  }
 });
 
 export default RegisterScreen;

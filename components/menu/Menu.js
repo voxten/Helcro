@@ -6,6 +6,7 @@ import Icon from "react-native-vector-icons/FontAwesome6";
 import Meal from "./Meal";
 import MealActions from './MealActions';
 import React, { useEffect, useState } from "react";
+import { useIsFocused } from '@react-navigation/native';
 
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
@@ -13,6 +14,7 @@ import { API_BASE_URL } from '@env';
 
 export default function Menu() {
     const { user } = useAuth();
+    const isFocused = useIsFocused();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showCalendar, setShowCalendar] = useState(false);
     const [showMealType, setShowMealType] = useState(false);
@@ -25,7 +27,33 @@ export default function Menu() {
         fats: 50,
         carbohydrates: 200
     });
-
+    useEffect(() => {
+        const fetchUserGoals = async () => {
+            if (!user?.UserId) return;
+            
+            try {
+                console.log("Fetching updated goals..."); // Debug log
+                const response = await axios.get(`${API_BASE_URL}/api/goal/${user.UserId}`);
+                if (response.data) {
+                    console.log("Received goals:", response.data); // Debug log
+                    setTargetNutrition({
+                        calories: parseFloat(response.data.DailyCalories) || 1500,
+                        proteins: parseFloat(response.data.DailyProteins) || 100,
+                        fats: parseFloat(response.data.DailyFats) || 50,
+                        carbohydrates: parseFloat(response.data.DailyCarbs) || 200
+                    });
+                } else {
+                    console.log("No goals data received"); // Debug log
+                }
+            } catch (error) {
+                console.error("Error fetching user goals:", error);
+            }
+        };
+    
+        if (isFocused) {
+            fetchUserGoals();
+        }
+    }, [user?.UserId, isFocused]);
 
     useEffect(() => {
         if (!user) {
@@ -396,7 +424,6 @@ export default function Menu() {
                     }
                 />
             </Modal>
-
 
             <Modal
                 visible={showMeal}
