@@ -3,7 +3,6 @@ import {ScrollView, View, Text, TextInput, StyleSheet, TouchableOpacity } from "
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import styles from "../../styles/MainStyles";
 
 import { useAuth } from "../context/AuthContext";
 import { API_BASE_URL } from '@env';
@@ -159,7 +158,7 @@ export default function DietaryGoalsScreen() {
       };
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={localStyles.container}>
             {/* Tab Selection */}
             <View style={localStyles.tabButtonContainer}>
                 <TouchableOpacity

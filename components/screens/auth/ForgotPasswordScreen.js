@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import api from '../../utils/api';
-import mainStyles from "../../../styles/MainStyles";
 import {API_BASE_URL} from '@env';
 const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
   const [email, setEmail] = useState('');
@@ -62,7 +60,7 @@ const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
         <Text style={styles.subtitle}>Enter your email to receive a reset link</Text>
         
         <TextInput
-          style={mainStyles.input}
+          style={styles.input}
           placeholder="Email address"
           value={email}
           onChangeText={setEmail}
@@ -136,6 +134,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
     color: '#333',
+  },
+  input: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    elevation: 3,
+    marginBottom: 10,
   },
   successSubtext: {
     fontSize: 16,

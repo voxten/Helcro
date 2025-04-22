@@ -425,7 +425,6 @@ export default function Menu() {
                 />
             </Modal>
 
-
             <Modal
                 visible={showMeal}
                 animationType="fade"

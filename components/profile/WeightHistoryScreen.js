@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, TextInput, Modal, StyleSheet, ScrollView,
 import { LineChart } from "react-native-chart-kit";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Icon from "react-native-vector-icons/FontAwesome";
-import mainStyles from "../../styles/MainStyles";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { API_BASE_URL } from '@env';
@@ -158,8 +157,8 @@ export default function WeightHistoryScreen() {
             </ScrollView>
 
             <Modal visible={modalVisible} transparent animationType="slide">
-                <View style={mainStyles.overlay}>
-                    <View style={mainStyles.modalContainer}>
+                <View style={styles.overlay}>
+                    <View style={styles.modalContainer}>
                         <Text style={styles.modalTitle}>Add Weight</Text>
 
                         <TouchableOpacity
@@ -184,7 +183,7 @@ export default function WeightHistoryScreen() {
                         )}
 
                         <TextInput
-                            style={mainStyles.input}
+                            style={styles.input}
                             value={newWeight}
                             onChangeText={setNewWeight}
                             placeholder="Enter weight (kg)"
@@ -212,6 +211,19 @@ export default function WeightHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
+    modalContainer: {
+        width: 300,
+        padding: 20,
+        backgroundColor: '#eee',
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    overlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
     container: {
         flex: 1,
         justifyContent: "flex-start",
@@ -309,5 +321,15 @@ const styles = StyleSheet.create({
         color: 'gray',
         textAlign: 'center',
         marginTop: 20
-    }
+    },
+    input: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 10,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        elevation: 3,
+        marginBottom: 10,
+    },
 });

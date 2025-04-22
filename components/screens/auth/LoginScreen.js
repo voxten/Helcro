@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome5";
 import api from '../../utils/api';
-import mainStyles from "../../../styles/MainStyles";
 import { useAuth } from '../../context/AuthContext';
 
 const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess }) => {
@@ -60,7 +59,7 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
       <Text style={styles.title}>Logging in</Text>
       
       <TextInput
-        style={mainStyles.input}
+        style={styles.input}
         placeholder="Email *"
         value={form.Email}
         onChangeText={(text) => handleChange('Email', text)}
@@ -69,7 +68,7 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
       />
       
       <TextInput
-        style={mainStyles.input}
+        style={styles.input}
         placeholder="Password *"
         value={form.Password}
         onChangeText={(text) => handleChange('Password', text)}
@@ -112,6 +111,16 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginBottom: 16,
     textAlign: 'center',
+  },
+  input: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    elevation: 3,
+    marginBottom: 10,
   },
   button: {
     flexDirection: "row",

@@ -126,6 +126,7 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
                         <Divider />
                     </>
                 )}
+
                 {hasProducts && (
                     <>
                         <Menu.Item
@@ -225,7 +226,12 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
                                 onClose={() => setCopyFromModalVisible(false)}
                                 onSubmit={handleCopyFrom}
                                 showCancel={true}
+                                isCopyAction={true}
+                                showOverlay={false}
                             />
+                        </View>
+                        <View style={[styles.modalContent2]}>
+
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
@@ -263,10 +269,14 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
                                     />
                                 )}
                             </View>
+
+                        </View>
+                        <View style={[styles.modalContent2]}>
                             <MealType
                                 onClose={() => setCopyToModalVisible(false)}
                                 onSubmit={handleCopyTo}
                                 isCopyAction={true}
+                                showOverlay={false}
                             />
                         </View>
                     </ScrollView>
@@ -285,15 +295,25 @@ const styles = StyleSheet.create({
     modalContainer: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center',
-        height: 500,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
     },
     modalContent: {
-        backgroundColor: 'white',
-        borderRadius: 10,
+        borderRadius: 15,
         width: '90%',
-        maxHeight: '100%',
+        maxWidth: 400,
+        padding: 25,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 10,
+    },
+    modalContent2: {
+        width: '100%',
+        marginVertical: 20,
     },
     scrollModalContent: {
         flexGrow: 1,
@@ -301,59 +321,101 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 15,
+        fontSize: 20,
+        fontWeight: '600',
+        marginBottom: 20,
+        color: '#333',
         textAlign: 'center',
     },
     input: {
+        width: '100%',
+        padding: 15,
+        borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 5,
-        padding: 10,
-        marginBottom: 15,
+        borderColor: '#e0e0e0',
+        backgroundColor: '#f8f8f8',
+        fontSize: 16,
+        color: '#333',
+        marginBottom: 20,
     },
     modalButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingBottom: 15,
+        width: '100%',
+        marginTop: 15,
     },
     cancelButton: {
-        backgroundColor: '#ccc',
-        padding: 10,
-        borderRadius: 5,
+        backgroundColor: '#e0e0e0',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
         flex: 1,
-        marginRight: 5,
+        marginRight: 10,
         alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
     },
     saveButton: {
-        backgroundColor: 'brown',
-        padding: 10,
-        borderRadius: 5,
+        backgroundColor: 'brown', // Brown color
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
         flex: 1,
-        marginLeft: 5,
+        marginLeft: 10,
         alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+        elevation: 3,
     },
     buttonText: {
         color: 'white',
-        fontWeight: 'bold',
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    cancelButtonText: {
+        color: '#333',
     },
     datePickerContainer: {
+        width: '100%',
         padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderRadius: 10,
+        backgroundColor: "#f8f8f8",
+        alignItems: "center",
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
     },
     datePickerButton: {
-        padding: 15,
-        backgroundColor: '#f0f0f0',
-        borderRadius: 5,
-        alignItems: 'center',
+        backgroundColor: "brown",
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        borderRadius: 8,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+        elevation: 3,
     },
     datePickerText: {
-        color: 'black',
+        fontSize: 16,
+        color: "#fff",
+        fontWeight: "500",
+    },
+    menuItem: {
+        padding: 10,
+    },
+    menuItemText: {
         fontSize: 16,
     },
+    deleteText: {
+        color: 'red',
+    },
 });
+
 
 export default MealActions;

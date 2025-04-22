@@ -1,6 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
+import { Image } from "react-native";
 import FontIcon from "react-native-vector-icons/FontAwesome";
 import Font5Icon from "react-native-vector-icons/FontAwesome5";
 import Menu from "./menu/Menu";
@@ -19,9 +20,17 @@ export default function BottomNav() {
         <NavigationContainer>
             <Tab.Navigator
                 screenOptions={{
-                    headerTitle: "HELCRO",
+                    headerTitle: () => (
+                        <Image
+                            source={require('../assets/logo.png')}
+                            style={{ width: 120, height: 40, resizeMode: 'contain' }}
+                        />
+                    ),
+                    headerTitleAlign: 'center',
                     headerTitleStyle: { color: 'white' },
-                    headerStyle: { backgroundColor: 'brown' },
+                    headerStyle: {
+                        backgroundColor: 'brown',
+                    },
                     tabBarStyle: { backgroundColor: "black", height: 60 },
                     tabBarActiveTintColor: "white",
                     tabBarInactiveTintColor: "gray",
