@@ -49,7 +49,7 @@ class IntakeLog {
 
             if (intakeLog.length === 0) return null;
 
-            // Get all products with their actual grams values
+            // Get all products with their actual grams values AND original product data
             const [products] = await connection.execute(
                 `SELECT
                      p.*,
@@ -66,7 +66,14 @@ class IntakeLog {
 
             return {
                 ...intakeLog[0],
-                products
+                products: products.map(product => ({
+                    ...product,
+                    // Calculate nutrition based on grams
+                    calculated_calories: (product.calories / 100) * product.grams,
+                    calculated_proteins: (product.proteins / 100) * product.grams,
+                    calculated_fats: (product.fats / 100) * product.grams,
+                    calculated_carbohydrates: (product.carbohydrates / 100) * product.grams
+                }))
             };
         } catch (error) {
             console.error('Error:', error);
@@ -89,6 +96,9 @@ class IntakeLog {
         try {
             await connection.beginTransaction();
 
+            // Ensure products is always an array
+            const productsArray = Array.isArray(products) ? products : [];
+
             if (MealId) {
                 // Delete existing products for this meal
                 await connection.execute(
@@ -97,11 +107,18 @@ class IntakeLog {
                 );
 
                 // Add new products
-                for (const product of products) {
-                    await connection.execute(
-                        'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId) VALUES (?, ?, ?)',
-                        [IntakeLogId, product.productId, MealId]
-                    );
+                for (const product of productsArray) {
+                    if (product && product.productId) {  // Additional safety check
+                        await connection.execute(
+                            'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, grams) VALUES (?, ?, ?, ?)',
+                            [
+                                IntakeLogId,
+                                product.productId,
+                                MealId,
+                                product.grams || 100  // Default to 100g if not specified
+                            ]
+                        );
+                    }
                 }
             } else {
                 // Delete all products for this intake log
@@ -111,11 +128,18 @@ class IntakeLog {
                 );
 
                 // Add new products
-                for (const product of products) {
-                    await connection.execute(
-                        'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId) VALUES (?, ?, ?)',
-                        [IntakeLogId, product.productId, product.MealId]
-                    );
+                for (const product of productsArray) {
+                    if (product && product.productId && product.MealId) {  // Additional safety check
+                        await connection.execute(
+                            'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, grams) VALUES (?, ?, ?, ?)',
+                            [
+                                IntakeLogId,
+                                product.productId,
+                                product.MealId,
+                                product.grams || 100  // Default to 100g if not specified
+                            ]
+                        );
+                    }
                 }
             }
 

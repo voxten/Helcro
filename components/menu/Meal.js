@@ -51,19 +51,19 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
   // Fetch IntakeLog when component mounts or date changes
   const fetchIntakeLog = async () => {
     try {
-        if(user && user.UserId) {
-          const formattedDate = selectedDate.toISOString().split('T')[0];
-          const response = await axios.get(`${apiUrl}/intakeLog`, {
-            params: {
-              userId: user.UserId,
-              date: formattedDate
-            }
-          });
-
-          if (response.data) {
-            return response.data.products || [];
+      if(user && user.UserId) {
+        const formattedDate = selectedDate.toISOString().split('T')[0];
+        const response = await axios.get(`${apiUrl}/intakeLog`, {
+          params: {
+            userId: user.UserId,
+            date: formattedDate
           }
+        });
+
+        if (response.data) {
+          return response.data.products || [];
         }
+      }
       return [];
     } catch (error) {
       console.log("error w meal");
@@ -85,40 +85,6 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
     });
 
     return uniqueProducts;
-  };
-  const saveIntakeLog = async (productsToSave) => {
-    try {
-      const cleanedProducts = cleanProductsBeforeSave(productsToSave);
-      const formattedDate = selectedDate.toISOString().split('T')[0];
-
-      // Prepare products with grams
-      const products = productsToSave.map(product => ({
-        productId: product.ProductId || product.productId,
-        grams: product.grams || 100 // Include grams from the product
-      }));
-
-      // Determine if we're editing an existing meal
-      const isEditing = existingProducts.length > 0;
-      const mealId = isEditing ? existingProducts[0]?.MealId : null;
-
-      const response = await axios.post(`${apiUrl}/intakeLog`, {
-        userId: user.UserId,
-        date: formattedDate,
-        mealType: mealType, // Use the prop passed from Menu
-        mealName: mealName || mealType, // Use the prop passed from Menu
-        products,
-        mealId // Include mealId if editing existing meal
-      });
-
-      if (onSave) {
-        onSave(productsToSave);
-      }
-
-      return response.data;
-    } catch (error) {
-      console.error("Error saving intake log:", error);
-      throw error;
-    }
   };
 
   const handleCreateProduct = () => {
@@ -153,44 +119,104 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
   };
 
   const handleSelectProduct = (product) => {
-    // Check if product already exists in the current meal
     const productExists = products.some(p =>
-        p.ProductId === product.ProductId ||
-        (p.productId === product.ProductId) ||
-        (p.product_name === product.product_name && !p.ProductId && !p.productId)
+        (p.ProductId || p.productId) === product.ProductId
     );
 
     if (!productExists) {
-      setProducts(prevProducts => [
-        ...prevProducts,
+      setProducts(prev => [
+        ...prev,
         {
           ...product,
-          grams: 100, // Default to 100g
-          originalValues: { ...product } // Store original values
+          productId: product.ProductId,
+          grams: 100, // Default
+          originalValues: {
+            calories: product.calories,
+            proteins: product.proteins,
+            fats: product.fats,
+            carbohydrates: product.carbohydrates
+          },
+          calories: product.calories, // Initial 100g value
+          proteins: product.proteins,
+          fats: product.fats,
+          carbohydrates: product.carbohydrates
         }
       ]);
-    } else {
-      // Optionally show a message that product already exists
-      alert('This product is already added to the meal');
     }
     setIsChoosingProduct(false);
   };
 
+  const handleGramsChange = (text, index) => {
+    const grams = parseFloat(text) || 0;
+    setProducts(prev => {
+      const updated = [...prev];
+      const product = updated[index];
+
+      // Ensure originalValues exist
+      const original = product.originalValues || {
+        calories: product.calories,
+        proteins: product.proteins,
+        fats: product.fats,
+        carbohydrates: product.carbohydrates
+      };
+
+      updated[index] = {
+        ...product,
+        grams,
+        calories: (parseFloat(original.calories || 0) / 100 * grams).toFixed(2),
+        proteins: (parseFloat(original.proteins || 0) / 100 * grams).toFixed(2),
+        fats: (parseFloat(original.fats || 0) / 100 * grams).toFixed(2),
+        carbohydrates: (parseFloat(original.carbohydrates || 0) / 100 * grams).toFixed(2),
+        originalValues: original // Preserve original values
+      };
+      return updated;
+    });
+  };
+
   const handleSave = async () => {
     try {
-      // First save to IntakeLog
-      await saveIntakeLog(products);
+      let mealId;
+      let mealTypeName;
 
-      // Then call the parent's onSave if provided
-      if (onSave) {
-        onSave(products);
+      // Resolve meal type and ID (existing code)
+      if (typeof mealType === 'number') {
+        const response = await axios.get(`${API_BASE_URL}/meals`);
+        const meal = response.data.find(m => m.MealId === mealType);
+        if (!meal) throw new Error(`Meal ID ${mealType} not found`);
+        mealTypeName = meal.MealType;
+        mealId = meal.MealId;
+      } else if (typeof mealType === 'string') {
+        mealTypeName = mealType;
+        const response = await axios.get(`${API_BASE_URL}/meals`);
+        const meal = response.data.find(m => m.MealType === mealType);
+        if (!meal) throw new Error(`Meal type '${mealType}' not found`);
+        mealId = meal.MealId;
       }
 
-      // Close the modal
-      onClose();
+      const payload = {
+        userId: user.UserId,
+        date: selectedDate.toISOString().split('T')[0],
+        mealType: mealTypeName,
+        mealName: mealName || mealTypeName,
+        products: products.map(p => ({
+          productId: p.ProductId || p.productId,
+          grams: p.grams || 100
+        })),
+        mealId
+      };
+
+      const response = await axios.post(`${API_BASE_URL}/intakeLog`, payload);
+
+      if (response.data.success) {
+        // Call onSave with the updated products and a refresh flag
+        if (onSave) {
+          onSave(response.data.products, true); // Add refresh flag
+        }
+        onClose();
+      }
     } catch (error) {
-      console.error("Failed to save:", error);
-      // You might want to show an error message to the user here
+      console.error("Save failed:", error);
+      alert(`Save failed: ${error.message}`);
     }
   };
 
@@ -287,69 +313,55 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
               </>
           )}
           {!isCreatingProduct && !isChoosingProduct ? (
-          <View style={localStyles.productListContainer}>
-            <FlatList
-                data={products}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item, index }) => (
-                    <View style={localStyles.productCard}>
-                      {/* X Button to remove the product */}
-                      <TouchableOpacity
-                          style={localStyles.removeButton}
-                          onPress={() => {
-                            const updatedProducts = [...products];
-                            updatedProducts.splice(index, 1);
-                            setProducts(updatedProducts);
-                          }}
-                      >
-                        <Text style={localStyles.removeButtonText}>X</Text>
-                      </TouchableOpacity>
-
-                      {item.image && <Image source={{ uri: item.image }} style={localStyles.productImage} />}
-
-                      <View style={localStyles.productInfo}>
-                        <Text style={localStyles.productName}>{item.product_name}</Text>
-
-                        {/* Input for grams */}
-                        <View style={localStyles.gramsInputContainer}>
-                          <TextInput
-                              style={localStyles.gramsInput}
-                              placeholder="Grams"
-                              keyboardType="numeric"
-                              value={item.grams?.toString() || ""}
-                              onChangeText={(text) => {
-                                const grams = parseFloat(text) || 0;
+              <View style={localStyles.productListContainer}>
+                <FlatList
+                    data={products}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item, index }) => (
+                        <View style={localStyles.productCard}>
+                          {/* X Button to remove the product */}
+                          <TouchableOpacity
+                              style={localStyles.removeButton}
+                              onPress={() => {
                                 const updatedProducts = [...products];
-
-                                updatedProducts[index] = {
-                                  ...item,
-                                  grams,
-                                  calories: ((item.originalValues.calories / 100) * grams).toFixed(2),
-                                  proteins: ((item.originalValues.proteins / 100) * grams).toFixed(2),
-                                  fats: ((item.originalValues.fats / 100) * grams).toFixed(2),
-                                  carbohydrates: ((item.originalValues.carbohydrates / 100) * grams).toFixed(2),
-                                };
-
+                                updatedProducts.splice(index, 1);
                                 setProducts(updatedProducts);
                               }}
-                          />
-                          <Text style={localStyles.gramsLabel}>grams</Text>
+                          >
+                            <Text style={localStyles.removeButtonText}>X</Text>
+                          </TouchableOpacity>
+
+                          {item.image && <Image source={{ uri: item.image }} style={localStyles.productImage} />}
+
+                          <View style={localStyles.productInfo}>
+                            <Text style={localStyles.productName}>{item.product_name}</Text>
+
+                            {/* Input for grams */}
+                            <View style={localStyles.gramsInputContainer}>
+                              <TextInput
+                                  style={localStyles.gramsInput}
+                                  value={item.grams?.toString()}
+                                  onChangeText={(text) => handleGramsChange(text, index)}
+                                  keyboardType="numeric"
+                              />
+                              <Text style={localStyles.gramsLabel}>grams</Text>
+                            </View>
+                            <Text style={localStyles.productDetails}>
+                              {(item.calories?.toString() || 0)} kcal |
+                              {(item.proteins?.toString() || 0)}g protein |
+                              {(item.fats?.toString() || 0)}g fat |
+                              {(item.carbohydrates?.toString() || 0)}g carbs
+                            </Text>
+                          </View>
                         </View>
+                    )}
+                />
 
-                        {/* Nutritional details */}
-                        <Text style={localStyles.productDetails}>
-                          {item.calories} kcal | {item.proteins}g protein | {item.fats}g fat | {item.carbohydrates}g carbs
-                        </Text>
-                      </View>
-                    </View>
-                )}
-            />
-
-          </View>
+              </View>
           ) : (
-                <>
+              <>
 
-                </>
+              </>
           )}
           {(isCreatingProduct || isChoosingProduct) && (
               <View style={styles.buttonContainer}>

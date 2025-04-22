@@ -1,23 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, TextInput, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from "@react-native-picker/picker";
 import mainStyles from "../../styles/MainStyles";
 import styles from "./MealStyles";
+import axios from 'axios';
+import { API_BASE_URL } from '@env';
+import { useAuth } from "../context/AuthContext";
 
-export default function MealType({ onClose, onSubmit }) {
-  const [selectedMeal, setSelectedMeal] = useState(null);
+export default function MealType({ onClose, onSubmit, isCopyAction = false }) {
+  const { user } = useAuth();
+  const [mealTypes, setMealTypes] = useState([]);
   const [mealTime, setMealTime] = useState(new Date());
   const [mealName, setMealName] = useState('');
-  const [isMealTimeVisible, setMealTimeVisible] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedMealId, setSelectedMealId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleMealClick = (meal) => {
-    if (selectedMeal === meal) {
-      setSelectedMeal(null);
-      setMealTimeVisible(false);
+  useEffect(() => {
+    const fetchMealTypes = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/meals`);
+        // Ensure we only use existing meal types from database
+        setMealTypes(response.data.map(meal => ({
+          MealId: meal.MealId,
+          MealType: meal.MealType
+        })));
+      } catch (error) {
+        console.error("Error fetching meal types:", error);
+        // Fallback to default types if API fails
+        setMealTypes([
+          { MealId: 1, MealType: 'Breakfast' },
+          { MealId: 2, MealType: 'Second Breakfast' },
+          { MealId: 3, MealType: 'Lunch' },
+          { MealId: 4, MealType: 'Afternoon Snack' },
+          { MealId: 5, MealType: 'Dinner' },
+          { MealId: 6, MealType: 'Other' }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMealTypes();
+  }, []);
+
+  const handleSubmit = () => {
+    if (isCopyAction) {
+      onSubmit(selectedMealId, null, null);
     } else {
-      setSelectedMeal(meal);
-      setMealTimeVisible(true);
+      const mealType = mealTypes.find(m => m.MealId === selectedMealId)?.MealType || 'Other';
+      onSubmit(mealType, mealTime, mealName);
     }
   };
 
@@ -30,34 +63,45 @@ export default function MealType({ onClose, onSubmit }) {
     setMealName(text);
   };
 
-  const handleSubmit = () => {
-    onSubmit(selectedMeal, mealTime, mealName);
-  };
+  const selectedMeal = mealTypes.find(m => m.MealId === selectedMealId)?.MealType || null;
 
-  const isNextButtonDisabled = !selectedMeal || (selectedMeal === 'Other' && mealName.trim() === '');
+  const isNextButtonDisabled = loading || !selectedMealId ||
+      (!isCopyAction && selectedMeal === 'Other' && mealName.trim() === '');
 
-  const buttonStyle = (meal) => ({
-    ...mainStyles.button,
-    backgroundColor: selectedMeal === meal ? 'brown' : '#ddd',
-  });
+  if (loading) {
+    return (
+        <View style={mainStyles.overlay}>
+          <View style={mainStyles.modalContainer}>
+            <Text>Loading meal types...</Text>
+          </View>
+        </View>
+    );
+  }
 
   return (
       <View style={mainStyles.overlay}>
         <View style={mainStyles.modalContainer}>
-          <Text style={mainStyles.header}>Select Meal Type</Text>
+          <Text style={mainStyles.header}>
+            {isCopyAction ? 'Select Target Meal Type' : 'Select Meal Type'}
+          </Text>
 
-          {["Breakfast", "Second Breakfast", "Lunch", "Afternoon Snack", "Dinner", "Other"].map((meal) => (
-              <TouchableOpacity
-                  key={meal}
-                  style={buttonStyle(meal)}
-                  onPress={() => handleMealClick(meal)}
-                  disabled={selectedMeal && selectedMeal !== meal}
-              >
-                <Text style={mainStyles.buttonText}>{meal}</Text>
-              </TouchableOpacity>
-          ))}
+          <View style={styles.pickerContainer}>
+            <Picker
+                selectedValue={selectedMealId}
+                onValueChange={(value) => setSelectedMealId(value)}
+            >
+              <Picker.Item label="Select a meal type..." value={null} />
+              {mealTypes.map(meal => (
+                  <Picker.Item
+                      key={meal.MealId}
+                      label={meal.MealType}
+                      value={meal.MealId}
+                  />
+              ))}
+            </Picker>
+          </View>
 
-          {selectedMeal === 'Other' && (
+          {!isCopyAction && selectedMeal === 'Other' && (
               <View style={styles.otherMealContainer}>
                 <TextInput
                     style={styles.input}
@@ -68,7 +112,7 @@ export default function MealType({ onClose, onSubmit }) {
               </View>
           )}
 
-          {isMealTimeVisible && selectedMeal && (
+          {!isCopyAction && selectedMeal && (
               <View style={styles.timeBox}>
                 <Text style={styles.timeText}>Select Time</Text>
                 <TouchableOpacity

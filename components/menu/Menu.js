@@ -1,10 +1,10 @@
-import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal, Image, Slider } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, TouchableOpacity, Modal, Image } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MealType from "./MealType";
-import styles from "../../styles/MainStyles";
 import Icon from "react-native-vector-icons/FontAwesome6";
 import Meal from "./Meal";
+import MealActions from './MealActions';
 import React, { useEffect, useState } from "react";
 import { useIsFocused } from '@react-navigation/native';
 
@@ -77,8 +77,11 @@ export default function Menu() {
 
                     setMeals(fetchedMeals.map(meal => ({
                         ...meal,
-                        time: new Date()
+                        id: meal.id || meal.mealId, // Ensure we have the id
+                        time: new Date(),
+                        date: formattedDate
                     })));
+
                 }
             } catch (error) {
                 console.error("Error fetching intake log:", {
@@ -109,22 +112,22 @@ export default function Menu() {
         setExpandedMeal(expandedMeal === mealId ? null : mealId);
     };
 
-// Update handleAddMeal to potentially save to database immediately
     const handleAddMeal = async (mealType, mealTime, mealName) => {
         const mealTitle = mealType === 'Other' ? mealName : mealType;
 
-        // Check if meal of this type already exists
+        // For "Other" meals, we need to check both type AND name
         const existingMealIndex = meals.findIndex(meal =>
             meal.type === mealType &&
             (mealType !== 'Other' || meal.name === mealName)
         );
 
         if (existingMealIndex >= 0) {
+            setExpandedMeal(mealType + existingMealIndex);
             setShowMealType(false);
             setShowMeal(true);
         } else {
             try {
-                // Create new meal object for local state first
+                // Create new meal object
                 const newMeal = {
                     type: mealType,
                     name: mealTitle,
@@ -132,72 +135,91 @@ export default function Menu() {
                     products: []
                 };
 
-                // Update local state immediately for better UX
                 setMeals([...meals, newMeal]);
                 setShowMealType(false);
+                setExpandedMeal(mealType + meals.length);
                 setShowMeal(true);
-
-                // The actual database save will happen when products are added
-                // via the saveIntakeLog function in the Meal component
             } catch (error) {
                 console.error("Error creating meal:", error);
-                // Rollback local state if needed
                 setMeals(meals.filter(m => m.name !== mealTitle));
             }
         }
     };
 
+    const handleAddProducts = (newProducts, shouldRefresh = false) => {
+        if (shouldRefresh) {
+            // If we need to refresh, refetch the data for the current date
+            const fetchData = async () => {
+                try {
+                    if (user && selectedDate) {
+                        const formattedDate = selectedDate.toISOString().split('T')[0];
+                        const response = await axios.get(`${API_BASE_URL}/intakeLog`, {
+                            params: {
+                                userId: user.UserId,
+                                date: formattedDate
+                            }
+                        });
 
-    const handleAddProducts = (newProducts) => {
-        setMeals(prevMeals => {
-            if (expandedMeal) {
-                // Update existing meal
-                return prevMeals.map(meal => {
-                    if (meal.type + prevMeals.indexOf(meal) === expandedMeal) {
-                        // Merge products, avoiding duplicates
-                        const existingProductIds = meal.products.map(p => p.ProductId || p.productId);
+                        const fetchedMeals = response.data?.meals || [];
+                        setMeals(fetchedMeals.map(meal => ({
+                            ...meal,
+                            id: meal.id || meal.mealId,
+                            time: new Date(),
+                            date: formattedDate
+                        })));
+                    }
+                } catch (error) {
+                    console.error("Error refreshing intake log:", error);
+                }
+            };
+            fetchData();
+        } else {
+            // Original logic for adding products without refresh
+            setMeals(prevMeals => {
+                if (expandedMeal) {
+                    return prevMeals.map(meal => {
+                        if (meal.type + prevMeals.indexOf(meal) === expandedMeal) {
+                            const existingProductIds = meal.products.map(p => p.ProductId || p.productId);
+                            const uniqueNewProducts = newProducts.filter(
+                                newProd => !existingProductIds.includes(newProd.ProductId || newProd.productId)
+                            );
+                            return {
+                                ...meal,
+                                products: [...meal.products, ...uniqueNewProducts]
+                            };
+                        }
+                        return meal;
+                    });
+                } else {
+                    const updatedMeals = [...prevMeals];
+                    if (updatedMeals.length > 0) {
+                        const lastMealIndex = updatedMeals.length - 1;
+                        const existingProductIds = updatedMeals[lastMealIndex].products.map(
+                            p => p.ProductId || p.productId
+                        );
                         const uniqueNewProducts = newProducts.filter(
                             newProd => !existingProductIds.includes(newProd.ProductId || newProd.productId)
                         );
-
-                        return {
-                            ...meal,
-                            products: [...meal.products, ...uniqueNewProducts]
+                        updatedMeals[lastMealIndex] = {
+                            ...updatedMeals[lastMealIndex],
+                            products: [...updatedMeals[lastMealIndex].products, ...uniqueNewProducts]
                         };
                     }
-                    return meal;
-                });
-            } else {
-                // Add to new meal
-                const updatedMeals = [...prevMeals];
-                if (updatedMeals.length > 0) {
-                    const lastMealIndex = updatedMeals.length - 1;
-                    const existingProductIds = updatedMeals[lastMealIndex].products.map(
-                        p => p.ProductId || p.productId
-                    );
-                    const uniqueNewProducts = newProducts.filter(
-                        newProd => !existingProductIds.includes(newProd.ProductId || newProd.productId)
-                    );
-
-                    updatedMeals[lastMealIndex] = {
-                        ...updatedMeals[lastMealIndex],
-                        products: [...updatedMeals[lastMealIndex].products, ...uniqueNewProducts]
-                    };
+                    return updatedMeals;
                 }
-                return updatedMeals;
-            }
-        });
+            });
+        }
         setShowMeal(false);
     };
 
     const calculateTotalNutrition = (products) => {
         return products.reduce((acc, product) => {
-            const grams = product.grams || 100;
+            // Use the pre-calculated values from the server
             return {
-                calories: acc.calories + (parseFloat(product.calories || 0) / 100 * grams),
-                proteins: acc.proteins + (parseFloat(product.proteins || 0) / 100 * grams),
-                fats: acc.fats + (parseFloat(product.fats || 0) / 100 * grams),
-                carbohydrates: acc.carbohydrates + (parseFloat(product.carbohydrates || 0) / 100 * grams)
+                calories: acc.calories + parseFloat(product.calories || 0),
+                proteins: acc.proteins + parseFloat(product.proteins || 0),
+                fats: acc.fats + parseFloat(product.fats || 0),
+                carbohydrates: acc.carbohydrates + parseFloat(product.carbohydrates || 0)
             };
         }, { calories: 0, proteins: 0, fats: 0, carbohydrates: 0 });
     };
@@ -206,19 +228,28 @@ export default function Menu() {
         meals.flatMap(meal => meal.products)
     );
 
+    const handleMealCopied = (products, newMeal) => {
+        setMeals(prevMeals =>
+            prevMeals.map(m =>
+                m.id === newMeal.id
+                    ? { ...m, products: products, name: newMeal.name }
+                    : m
+            )
+        );
+    };
 
     const NutritionSlider = ({ label, current, target }) => {
         const percentage = Math.min((current / target) * 100, 100);
-        const sliderWidth = 85; // Slightly wider to accommodate text
+        const sliderWidth = 85;
 
         return (
             <View style={[localStyles.sliderContainer, { width: sliderWidth }]}>
                 <Text
                     style={localStyles.sliderLabel}
-                    numberOfLines={1}  // Prevent text wrapping
-                    ellipsizeMode="tail"  // Add ... if text is too long
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                 >
-                    {`${label}: ${current.toFixed(0)}/${target}`}
+                    {`${label}: ${Math.round(current)}/${target}`}
                 </Text>
                 <View style={localStyles.sliderTrack}>
                     <View
@@ -304,19 +335,26 @@ export default function Menu() {
                                     </Text>
                                 </View>
                                 <View style={localStyles.mealHeaderRight}>
+                                    <MealActions
+                                        meal={meal}
+                                        onMealDeleted={(deletedMealId) => {
+                                            setMeals(meals.filter(m => m.id !== deletedMealId));
+                                        }}
+                                        onMealRenamed={(mealId, newName) => {
+                                            setMeals(meals.map(m =>
+                                                m.id === mealId ? {...m, name: newName} : m
+                                            ));
+                                        }}
+                                        onMealCopied={handleMealCopied}
+                                        hasProducts={meal.products && meal.products.length > 0}
+                                    />
                                     <TouchableOpacity
                                         style={localStyles.addButton}
                                         onPress={() => {
-                                            // Find the current expanded meal
-                                            const currentMeal = meals.find(meal =>
-                                                meal.type + meals.indexOf(meal) === expandedMeal
-                                            );
-
-                                            if (currentMeal) {
-                                                // Set the meal type to match the current meal
-                                                setShowMealType(false);
-                                                setShowMeal(true);
+                                            if (expandedMeal !== meal.type + index) {
+                                                setExpandedMeal(meal.type + index);
                                             }
+                                            setShowMeal(true);
                                         }}
                                     >
                                         <Text style={localStyles.addButtonText}>+</Text>
@@ -348,7 +386,7 @@ export default function Menu() {
                                                         {product.product_name} ({product.grams}g)
                                                     </Text>
                                                     <Text style={localStyles.productDetails}>
-                                                        {typeof product.calories === 'number' ? product.calories.toFixed(2) : '0.00'} kcal | {typeof product.proteins === 'number' ? product.proteins.toFixed(2) : '0.00'}g protein | {typeof product.fats === 'number' ? product.fats.toFixed(2) : '0.00'}g fat | {typeof product.carbohydrates === 'number' ? product.carbohydrates.toFixed(2) : '0.00'}g carbs
+                                                        {product.calories} kcal | {product.proteins}g protein | {product.fats}g fat | {product.carbohydrates}g carbs
                                                     </Text>
                                                 </View>
                                             </View>
@@ -361,7 +399,14 @@ export default function Menu() {
                 )}
             </ScrollView>
 
-            <TouchableOpacity style={localStyles.button} onPress={() => setShowMealType(true)}>
+            <TouchableOpacity
+                style={localStyles.button}
+                onPress={() => {
+                    setShowMealType(true);
+                    // Reset expanded meal when adding a new meal
+                    setExpandedMeal(null);
+                }}
+            >
                 <Icon name="bowl-food" size={20} color="white" style={localStyles.icon} />
                 <Text style={localStyles.buttonText}>Add Meal</Text>
             </TouchableOpacity>
@@ -389,20 +434,20 @@ export default function Menu() {
             >
                 <Meal
                     onClose={() => setShowMeal(false)}
-                    onSave={(newProducts) => handleAddProducts(newProducts)}
+                    onSave={(newProducts, shouldRefresh) => handleAddProducts(newProducts, shouldRefresh)}
                     existingProducts={
-                        expandedMeal ?
+                        expandedMeal !== null ?
                             meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.products || []
-                            : []
+                            : meals[meals.length - 1]?.products || []
                     }
                     selectedDate={selectedDate}
                     mealType={
-                        expandedMeal ?
+                        expandedMeal !== null ?
                             meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.type
                             : meals[meals.length - 1]?.type
                     }
                     mealName={
-                        expandedMeal ?
+                        expandedMeal !== null ?
                             meals.find(meal => meal.type + meals.indexOf(meal) === expandedMeal)?.name
                             : meals[meals.length - 1]?.name
                     }

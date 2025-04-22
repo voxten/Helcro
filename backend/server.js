@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const Weight = require('./models/Weight');
 dotenv.config();
 const app = express();
 app.use(cors());
@@ -16,9 +17,6 @@ require('dotenv').config();
 const path = require('path');
 
 const IntakeLog = require('./models/IntakeLog');
-
-//FOR UPLOAD IMAGES
-
 
 const uploadRoutes = require('./routes/uploadRoutes');
 app.use('/api', uploadRoutes);
@@ -566,6 +564,61 @@ app.post('/reset-password', async (req, res) => {
 });
 
 // ===== KONIEC NOWYCH ENDPOINTÓW ===== //
+// ===== PUBLIC ROUTES ===== //
+
+// Get all recipes (public access)
+app.get('/api/recipes', (req, res) => {
+    db.query(`
+        SELECT r.*, u.UserName, GROUP_CONCAT(c.Name) as categories
+        FROM Recipe r
+        JOIN user u ON r.UserId = u.UserId
+        LEFT JOIN Recipe_has_Category rc ON r.RecipeId = rc.RecipeId
+        LEFT JOIN Category c ON rc.CategoryId = c.CategoryId
+        GROUP BY r.RecipeId
+        ORDER BY r.Name
+    `, (err, recipes) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json(recipes.map(recipe => ({
+            ...recipe,
+            Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+            rating: 4.5,
+            categories: recipe.categories ? recipe.categories.split(',') : []
+        })));
+    });
+});
+
+// Get recipes by category (public access)
+app.get('/api/recipes/category/:categoryName', (req, res) => {
+    const { categoryName } = req.params;
+    
+    db.query(`
+        SELECT r.*, u.UserName 
+        FROM Recipe r
+        JOIN user u ON r.UserId = u.UserId
+        JOIN Recipe_has_Category rc ON r.RecipeId = rc.RecipeId
+        JOIN Category c ON rc.CategoryId = c.CategoryId
+        WHERE c.Name = ?
+        ORDER BY r.Name
+    `, [categoryName], (err, recipes) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json(recipes.map(recipe => ({
+            ...recipe,
+            Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+            rating: 4.5
+        })));
+    });
+});
+
+// Koniec Recipes Public
+
 // Sample endpoint to get data
 app.get('/users', (req, res) => {
     db.query('SELECT * FROM user', (err, results) => {
@@ -584,65 +637,97 @@ app.get('/products', (req, res) => {
         res.json(results);
     });
 });
-// GET /intakeLog - Fetch IntakeLog for a user and date
+
+app.get('/meals', async (req, res) => {
+    try {
+        const [meals] = await pool.execute(
+            'SELECT MealId, MealType FROM Meal ORDER BY MealId'
+        );
+        res.json(meals);
+    } catch (error) {
+        console.error('Error fetching meal types:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching meal types',
+            error: error.message
+        });
+    }
+});
+
 app.get('/intakeLog', async (req, res) => {
     try {
         const { userId, date } = req.query;
-
         if (!userId || !date) {
-            console.log('Missing userId or date');
             return res.status(400).json({
                 success: false,
                 message: 'User ID and date are required'
             });
         }
 
-        const intakeLog = await IntakeLog.findWithProducts(userId, date);
+        const connection = await pool.getConnection();
+        try {
+            // 1. Get IntakeLog
+            const [intakeLog] = await connection.execute(
+                'SELECT * FROM IntakeLog WHERE UserId = ? AND LogDate = ?',
+                [userId, date]
+            );
 
-        if (!intakeLog) {
-            console.log('No intake log found');
-            return res.status(200).json({
-                success: true,
-                meals: []
-            });
-        }
-
-        // Group products by meal
-        const mealsMap = new Map();
-        intakeLog.products.forEach(product => {
-            if (!mealsMap.has(product.MealId)) {
-                mealsMap.set(product.MealId, {
-                    MealId: product.MealId,
-                    MealType: product.MealType,
-                    MealName: product.MealName || product.MealType,
-                    products: []
-                });
+            if (intakeLog.length === 0) {
+                return res.json({ success: true, meals: [] });
             }
-            mealsMap.get(product.MealId).products.push(product);
-        });
 
-        const meals = Array.from(mealsMap.values()).map(meal => ({
-            id: meal.MealId,
-            type: meal.MealType,
-            name: meal.MealName,
-            products: meal.products.map(product => ({
-                ...product,
-                calories: (product.calories / 100) * (product.grams || 100),
-                proteins: (product.proteins / 100) * (product.grams || 100),
-                fats: (product.fats / 100) * (product.grams || 100),
-                carbohydrates: (product.carbohydrates / 100) * (product.grams || 100)
-            }))
-        }));
+            // 2. Get all products with calculations
+            const [products] = await connection.execute(`
+                SELECT
+                    p.*,
+                    ihp.grams,
+                    ihp.MealId,
+                    m.MealType,
+                    COALESCE(ihp.MealName, m.MealType) AS MealName
+                FROM IntakeLog_has_Product ihp
+                         JOIN Product p ON ihp.ProductId = p.ProductId
+                         JOIN Meal m ON ihp.MealId = m.MealId
+                WHERE ihp.IntakeLogId = ?
+                ORDER BY m.MealId
+            `, [intakeLog[0].IntakeLogId]);
 
-        res.json({
-            success: true,
-            meals
-        });
+            // 3. Group by meal
+            const mealsMap = new Map();
+            products.forEach(product => {
+                const grams = product.grams || 100;
+                if (!mealsMap.has(product.MealId)) {
+                    mealsMap.set(product.MealId, {
+                        id: product.MealId,
+                        MealId: product.MealId,
+                        type: product.MealType,
+                        name: product.MealName,
+                        products: []
+                    });
+                }
+                mealsMap.get(product.MealId).products.push({
+                    ...product,
+                    calories: (product.calories * grams / 100),
+                    proteins: (product.proteins * grams / 100),
+                    fats: (product.fats * grams / 100),
+                    carbohydrates: (product.carbohydrates * grams / 100),
+                    originalValues: {
+                        calories: product.calories,
+                        proteins: product.proteins,
+                        fats: product.fats,
+                        carbohydrates: product.carbohydrates
+                    }
+                });
+            });
+
+            res.json({
+                success: true,
+                meals: Array.from(mealsMap.values())
+            });
+        } finally {
+            connection.release();
+        }
     } catch (error) {
-        console.error('Error in /intakeLog:', {
-            message: error.message,
-            stack: error.stack
-        });
+        console.error('Error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error',
@@ -656,108 +741,93 @@ app.post('/intakeLog', async (req, res) => {
     try {
         const { userId, date, mealType, mealName, products, mealId } = req.body;
 
-        // Validate required fields
-        if (!userId || !date || !mealType) {
+        if (!userId || !date || !mealType || !mealId) {
             await connection.rollback();
             connection.release();
             return res.status(400).json({
                 success: false,
-                message: 'userId, date, and mealType are required'
+                message: 'userId, date, mealType and mealId are required'
             });
         }
 
         await connection.beginTransaction();
 
         try {
-            // 1. Find or create IntakeLog
+            // 1. Handle IntakeLog
             let IntakeLogId;
             const [existingLog] = await connection.execute(
                 'SELECT IntakeLogId FROM IntakeLog WHERE UserId = ? AND LogDate = ? FOR UPDATE',
                 [userId, date]
             );
 
-            if (existingLog.length > 0) {
-                IntakeLogId = existingLog[0].IntakeLogId;
-            } else {
-                const [intakeLogResult] = await connection.execute(
+            IntakeLogId = existingLog.length > 0 ? existingLog[0].IntakeLogId : (
+                await connection.execute(
                     'INSERT INTO IntakeLog (UserId, LogDate) VALUES (?, ?)',
                     [userId, date]
-                );
-                IntakeLogId = intakeLogResult.insertId;
+                )
+            )[0].insertId;
+
+            // 2. Verify meal exists (don't insert new ones)
+            const [mealCheck] = await connection.execute(
+                'SELECT MealId FROM Meal WHERE MealId = ?',
+                [mealId]
+            );
+
+            if (mealCheck.length === 0) {
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid MealId - meal type does not exist'
+                });
             }
 
-            // 2. Get or create Meal
-            let MealId = mealId;
-            const mealNameToUse = mealName || mealType;
+            // 3. Delete existing products for this meal
+            await connection.execute(
+                'DELETE FROM IntakeLog_has_Product WHERE IntakeLogId = ? AND MealId = ?',
+                [IntakeLogId, mealId]
+            );
 
-            if (!MealId) {
-                const [mealRows] = await connection.execute(
-                    'SELECT MealId FROM Meal WHERE MealType = ?',
-                    [mealType]
-                );
-
-                if (mealRows.length > 0) {
-                    MealId = mealRows[0].MealId;
-                } else {
-                    const [mealResult] = await connection.execute(
-                        'INSERT INTO Meal (MealType) VALUES (?)',
-                        [mealType]
-                    );
-                    MealId = mealResult.insertId;
-                }
-            }
-
-            // 3. Add/update products in IntakeLog_has_Product with grams
+            // 4. Insert new products
             for (const product of products) {
-                const grams = product.grams || 100; // Default to 100g if not specified
-
-                // Check if product already exists
-                const [existingProduct] = await connection.execute(
-                    'SELECT 1 FROM IntakeLog_has_Product WHERE IntakeLogId = ? AND ProductId = ? AND MealId = ?',
-                    [IntakeLogId, product.productId, MealId]
+                await connection.execute(
+                    'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, grams) VALUES (?, ?, ?, ?)',
+                    [IntakeLogId, product.productId, mealId, product.grams || 100]
                 );
-
-                if (existingProduct.length === 0) {
-                    await connection.execute(
-                        'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, MealName, grams) VALUES (?, ?, ?, ?, ?)',
-                        [IntakeLogId, product.productId, MealId, mealNameToUse, grams]
-                    );
-                } else {
-                    await connection.execute(
-                        'UPDATE IntakeLog_has_Product SET MealName = ?, grams = ? WHERE IntakeLogId = ? AND ProductId = ? AND MealId = ?',
-                        [mealNameToUse, grams, IntakeLogId, product.productId, MealId]
-                    );
-                }
             }
 
             await connection.commit();
-            connection.release();
+
+            // 5. Return the saved data
+            const [savedProducts] = await connection.execute(`
+                SELECT p.*, ihp.grams, ihp.MealId
+                FROM IntakeLog_has_Product ihp
+                         JOIN Product p ON ihp.ProductId = p.ProductId
+                WHERE ihp.IntakeLogId = ? AND ihp.MealId = ?
+            `, [IntakeLogId, mealId]);
 
             res.status(201).json({
                 success: true,
-                IntakeLogId,
-                MealId,
-                mealType,
-                mealName: mealNameToUse
+                products: savedProducts,
+                meal: {
+                    id: mealId,
+                    type: mealType,
+                    name: mealName || mealType
+                }
             });
         } catch (error) {
             await connection.rollback();
-            connection.release();
-            console.error('Transaction error:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Transaction failed',
-                error: error.message
-            });
+            throw error;
         }
     } catch (error) {
-        connection.release();
         console.error('Error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error',
             error: error.message
         });
+    } finally {
+        connection.release();
     }
 });
 // PUT /intakeLog/:id - Update existing IntakeLog
@@ -779,7 +849,189 @@ app.put('/intakeLog/:id', async (req, res) => {
     }
 });
 
-const Weight = require('./models/Weight');
+// Delete a meal and its products
+app.delete('/intakeLog/meal', async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const { userId, mealId } = req.body;
+
+        await connection.beginTransaction();
+
+        // First delete from IntakeLog_has_Product
+        await connection.execute(
+            'DELETE FROM IntakeLog_has_Product WHERE MealId = ?',
+            [mealId]
+        );
+
+        await connection.commit();
+        res.json({ success: true });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error deleting meal:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+// Rename a meal (only for "Other" meals)
+app.put('/intakeLog/meal', async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const { userId, mealId, newMealName } = req.body;
+
+        await connection.beginTransaction();
+
+        // 1. Update MealName in IntakeLog_has_Product for all products in this meal
+        await connection.execute(
+            'UPDATE IntakeLog_has_Product SET MealName = ? WHERE MealId = ?',
+            [newMealName, mealId]
+        );
+
+        // 2. (Optional) Update the Meal table if you store the name there too
+        // If you have a MealName column in the Meal table:
+        await connection.execute(
+            'UPDATE Meal SET MealName = ? WHERE MealId = ?',
+            [newMealName, mealId]
+        );
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            mealId,
+            newMealName
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error renaming meal:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+});
+
+app.post('/intakeLog/copyMeal', async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const { userId, fromDate, fromMealId, toDate, toMealId } = req.body;
+
+        console.log('Received copy request:', {
+            userId,
+            fromDate,
+            fromMealId,
+            toDate,
+            toMealId
+        });
+
+        // Validate required fields
+        if (!userId || !fromDate || !fromMealId || !toDate || !toMealId) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required'
+            });
+        }
+
+        await connection.beginTransaction();
+
+        // 1. Get source intake log and meal type
+        const [fromIntakeLog] = await connection.execute(
+            'SELECT IntakeLogId FROM IntakeLog WHERE UserId = ? AND LogDate = ?',
+            [userId, fromDate]
+        );
+
+        if (fromIntakeLog.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'Source intake log not found'
+            });
+        }
+
+        // 2. Get source meal type name
+        const [fromMealType] = await connection.execute(
+            'SELECT MealType FROM Meal WHERE MealId = ?',
+            [fromMealId]
+        );
+
+        // 3. Get target meal type name
+        const [toMealType] = await connection.execute(
+            'SELECT MealType FROM Meal WHERE MealId = ?',
+            [toMealId]
+        );
+
+        // 4. Get source products
+        const [products] = await connection.execute(
+            `SELECT ProductId, grams, MealName 
+             FROM IntakeLog_has_Product 
+             WHERE IntakeLogId = ? AND MealId = ?`,
+            [fromIntakeLog[0].IntakeLogId, fromMealId]
+        );
+
+        if (products.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'No products found in source meal'
+            });
+        }
+
+        // 5. Get or create target intake log
+        let toIntakeLogId;
+        const [toIntakeLog] = await connection.execute(
+            'SELECT IntakeLogId FROM IntakeLog WHERE UserId = ? AND LogDate = ? FOR UPDATE',
+            [userId, toDate]
+        );
+
+        toIntakeLogId = toIntakeLog.length > 0 ? toIntakeLog[0].IntakeLogId : (
+            await connection.execute(
+                'INSERT INTO IntakeLog (UserId, LogDate) VALUES (?, ?)',
+                [userId, toDate]
+            )
+        )[0].insertId;
+
+        // 6. Clear existing products in target meal (if any)
+        await connection.execute(
+            'DELETE FROM IntakeLog_has_Product WHERE IntakeLogId = ? AND MealId = ?',
+            [toIntakeLogId, toMealId]
+        );
+
+        // 7. Copy products to target meal with updated MealName
+        for (const product of products) {
+            // Use the target meal type as the new MealName, unless it's "Other"
+            const newMealName = toMealType[0].MealType === 'Other' ? product.MealName : toMealType[0].MealType;
+
+            await connection.execute(
+                'INSERT INTO IntakeLog_has_Product (IntakeLogId, ProductId, MealId, MealName, grams) VALUES (?, ?, ?, ?, ?)',
+                [toIntakeLogId, product.ProductId, toMealId, newMealName, product.grams]
+            );
+        }
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: 'Meal copied successfully',
+            meal: {
+                id: toMealId,
+                type: toMealType[0].MealType
+            }
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error copying meal:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+});
 
 // GET /weight - Get all weight entries for user
 app.get('/weight', async (req, res) => {
@@ -852,7 +1104,102 @@ app.delete('/weight/:id', async (req, res) => {
     }
 });
 // ===== RECIPE ENDPOINTS ===== //
+// Get recipe details (public access)
+app.get('/api/recipes/detail/:recipeId', (req, res) => {
+    const { recipeId } = req.params;
+    
+    // Get recipe basic info
+    db.query(`
+        SELECT r.*, u.UserName 
+        FROM Recipe r
+        JOIN user u ON r.UserId = u.UserId
+        WHERE r.RecipeId = ?
+    `, [recipeId], (err, recipeResults) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
 
+        if (recipeResults.length === 0) {
+            return res.status(404).json({ error: 'Recipe not found' });
+        }
+
+        const recipe = recipeResults[0];
+
+        // Get categories
+        db.query(`
+            SELECT c.Name 
+            FROM Recipe_has_Category rc 
+            JOIN Category c ON rc.CategoryId = c.CategoryId
+            WHERE rc.RecipeId = ?
+        `, [recipeId], (err, categoryResults) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+
+            // Get products with nutrition info
+            db.query(`
+                SELECT 
+                    p.ProductId, 
+                    p.product_name as name, 
+                    rp.Amount,
+                    p.calories,
+                    p.proteins,
+                    p.fats,
+                    p.carbohydrates
+                FROM Recipe_has_Product rp 
+                JOIN Product p ON rp.ProductId = p.ProductId
+                WHERE rp.RecipeId = ?
+            `, [recipeId], (err, productResults) => {
+                if (err) {
+                    console.error('Database error:', err);
+                    return res.status(500).json({ error: 'Database error' });
+                }
+
+                // Calculate total nutrition
+                let totalCalories = 0;
+                let totalProteins = 0;
+                let totalFats = 0;
+                let totalCarbs = 0;
+
+                productResults.forEach(product => {
+                    const amount = product.Amount || 100; // Default to 100g if amount not specified
+                    totalCalories += (product.calories / 100) * amount;
+                    totalProteins += (product.proteins / 100) * amount;
+                    totalFats += (product.fats / 100) * amount;
+                    totalCarbs += (product.carbohydrates / 100) * amount;
+                });
+
+                // Format the response
+                res.json({
+                    RecipeId: recipe.RecipeId,
+                    name: recipe.Name,
+                    description: recipe.Description,
+                    Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+                    rating: 4.5,
+                    UserName: recipe.UserName,
+                    steps: recipe.Steps ? recipe.Steps.split('||') : [], // Split steps by ||
+                    categories: categoryResults.map(c => c.Name),
+                    products: productResults.map(p => ({
+                        name: p.name,
+                        amount: p.Amount,
+                        calories: (p.calories / 100) * (p.Amount || 100),
+                        proteins: (p.proteins / 100) * (p.Amount || 100),
+                        fats: (p.fats / 100) * (p.Amount || 100),
+                        carbohydrates: (p.carbohydrates / 100) * (p.Amount || 100)
+                    })),
+                    totalNutrition: {
+                        calories: totalCalories || 0,
+                        proteins: totalProteins || 0,
+                        fats: totalFats || 0,
+                        carbohydrates: totalCarbs || 0
+                    }
+                });
+            });
+        });
+    });
+});
 // Get all categories
 app.get('/api/categories', (req, res) => {
     db.query('SELECT * FROM Category', (err, results) => {
@@ -1171,7 +1518,7 @@ app.get('/api/recipes', authenticateToken, (req, res) => {
 app.get('/api/user/:id', (req, res) => {
     const userId = req.params.id;
 
-    db.query('SELECT Height, Weight, Birthday FROM user WHERE UserId = ?', [userId], (err, results) => {
+  db.query('SELECT Height, Weight, Birthday FROM user WHERE UserId = ?', [userId], (err, results) => {
         if (err) {
             console.error("Error fetching user data:", err);
             return res.status(500).json({ error: "Database error" });
@@ -1268,6 +1615,80 @@ app.get('/api/goal/:id', (req, res) => {
         res.json(results[0]); // return the first (or only) goal
     });
 });
+
+// Get all categories (public access)
+app.get('/api/categories/public', (req, res) => {
+    db.query('SELECT * FROM Category', (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json(results);
+    });
+});
+
+// Get recipes by category (public access)
+app.get('/api/recipes/public/by-category', (req, res) => {
+    const { category } = req.query;
+    
+    if (!category) {
+        return res.status(400).json({ error: 'Category parameter is required' });
+    }
+
+    db.query(`
+        SELECT r.*, u.UserName 
+        FROM Recipe r
+        JOIN user u ON r.UserId = u.UserId
+        JOIN Recipe_has_Category rc ON r.RecipeId = rc.RecipeId
+        JOIN Category c ON rc.CategoryId = c.CategoryId
+        WHERE c.Name = ?
+        ORDER BY r.Name
+    `, [category], (err, recipeResults) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (recipeResults.length === 0) {
+            return res.json([]);
+        }
+
+        // Get products for these recipes
+        db.query(`
+            SELECT rp.RecipeId, p.product_name, rp.Amount 
+            FROM Recipe_has_Product rp
+            JOIN Product p ON rp.ProductId = p.ProductId
+            WHERE rp.RecipeId IN (?)
+        `, [recipeResults.map(r => r.RecipeId)], (err, productResults) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+
+            // Format the response
+            const recipes = recipeResults.map(recipe => ({
+                RecipeId: recipe.RecipeId,
+                Name: recipe.Name,
+                Description: recipe.Description,
+                Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+                rating: 4.5,
+                UserId: recipe.UserId,
+                UserName: recipe.UserName,
+                steps: recipe.Steps ? recipe.Steps.split('||') : [],
+                products: productResults
+                    .filter(p => p.RecipeId === recipe.RecipeId)
+                    .map(p => ({
+                        name: p.product_name,
+                        amount: p.Amount
+                    })),
+                categories: [category] // Since we're filtering by one category
+            }));
+
+            res.json(recipes);
+        });
+    });
+});
+
 /*
 app.get('/receptury', (req, res) => {
     db.query('SELECT r.Nazwa AS NazwaReceptury, p.id AS ProduktID, p.product_name AS products, rhp.Ilosc AS Ilosc FROM Receptury_has_Produkty rhp JOIN products p ON rhp.Produkty_idProduktu = p.id JOIN Receptury r ON rhp.Receptury_idReceptury = r.idReceptury  -- Corrected column name here WHERE rhp.Receptury_idReceptury = 1;', (err, results) => {

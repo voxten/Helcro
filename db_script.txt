@@ -60,6 +60,7 @@ CREATE TABLE IntakeLog_has_Product (
     ProductId INT NOT NULL,
     MealId INT NOT NULL,
     MealName VARCHAR(255),
+    MealDate DATETIME,
     grams DECIMAL(10,2) DEFAULT 100,
     PRIMARY KEY (IntakeLogId, ProductId ,MealId),
     FOREIGN KEY (IntakeLogId) REFERENCES IntakeLog(IntakeLogId) ON DELETE CASCADE,
