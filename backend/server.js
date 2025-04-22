@@ -262,7 +262,7 @@ app.post('/api/auth/delete-account', (req, res) => {
 // Rejestracja użytkownika
 app.post('/api/auth/register', async (req, res) => {
     
-    const { UserName, Email, Password, Height, Weight, Gender } = req.body;
+    const { UserName, Email, Password, Height, Weight, Gender, Birthday } = req.body;
 
     try {
         // Sprawdź czy użytkownik już istnieje
@@ -280,7 +280,7 @@ app.post('/api/auth/register', async (req, res) => {
 
                 // Dodanie nowego użytkownika
                 db.query('INSERT INTO user SET ?', 
-                    { UserName, Email, Password: hashedPassword, Height, Weight, Gender },
+                    { UserName, Email, Password: hashedPassword, Height, Weight, Gender, Birthday },
                     (err, result) => {
                         if (err) throw err;
                         res.status(201).json({ message: 'Registration completed successfully!', UserId: result.insertId });
@@ -329,7 +329,8 @@ app.post('/api/auth/login', async (req, res) => {
                     Email: user.Email,
                     Height: user.Height,
                     Weight: user.Weight,
-                    Gender: user.Gender
+                    Gender: user.Gender,
+                    Birthdat: user.Birthday
                 }
             });
             
@@ -1167,7 +1168,106 @@ app.get('/api/recipes', authenticateToken, (req, res) => {
         });
     });
 });
+app.get('/api/user/:id', (req, res) => {
+    const userId = req.params.id;
 
+    db.query('SELECT Height, Weight, Birthday FROM user WHERE UserId = ?', [userId], (err, results) => {
+        if (err) {
+            console.error("Error fetching user data:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json(results[0]);
+    });
+});
+app.post('/api/calculate-goals', (req, res) => {
+    const { age, weight, height, gender, goal } = req.body;
+
+    if (!age || !weight || !height || !gender || !goal) {
+        return res.status(400).json({ error: "Missing fields" });
+    }
+
+    // Mifflin-St Jeor Equation for BMR
+    let bmr;
+    if (gender === 'M') {
+        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else {
+        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+
+    let activityMultiplier = 1.2; // sedentary
+    let calories;
+
+    switch (goal) {
+        case 'weight_loss':
+            calories = bmr * activityMultiplier - 500;
+            break;
+        case 'muscle_gain':
+            calories = bmr * activityMultiplier + 300;
+            break;
+        case 'maintenance':
+        default:
+            calories = bmr * activityMultiplier;
+            break;
+    }
+
+    const proteins = weight * 2; // in grams
+    const fats = (calories * 0.25) / 9;
+    const carbs = (calories - (proteins * 4 + fats * 9)) / 4;
+
+    res.json({
+        DailyCalories: Math.round(calories),
+        DailyProteins: Math.round(proteins),
+        DailyFats: Math.round(fats),
+        DailyCarbs: Math.round(carbs)
+    });
+});
+app.post('/api/goal', (req, res) => {
+    const { UserId, DailyCalories, DailyProteins, DailyFats, DailyCarbs } = req.body;
+
+    if (!UserId || !DailyCalories || !DailyProteins || !DailyFats || !DailyCarbs) {
+        return res.status(400).json({ error: "Missing fields" });
+    }
+
+    const query = `
+        INSERT INTO Goal (UserId, DailyCalories, DailyProteins, DailyFats, DailyCarbs)
+        VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            DailyCalories = ?, DailyProteins = ?, DailyFats = ?, DailyCarbs = ?
+    `;
+    
+    db.query(query, [
+        UserId, DailyCalories, DailyProteins, DailyFats, DailyCarbs,
+        DailyCalories, DailyProteins, DailyFats, DailyCarbs
+    ], (err, results) => {
+        if (err) {
+            console.error("Error saving goal:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        res.json({ message: "Goal saved successfully" });
+    });
+});
+app.get('/api/goal/:id', (req, res) => {
+    const userId = req.params.id;
+
+    db.query('SELECT * FROM goal WHERE UserId = ?', [userId], (err, results) => {
+        if (err) {
+            console.error("Error fetching goal data:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "Goal not found" });
+        }
+
+        res.json(results[0]); // return the first (or only) goal
+    });
+});
 /*
 app.get('/receptury', (req, res) => {
     db.query('SELECT r.Nazwa AS NazwaReceptury, p.id AS ProduktID, p.product_name AS products, rhp.Ilosc AS Ilosc FROM Receptury_has_Produkty rhp JOIN products p ON rhp.Produkty_idProduktu = p.id JOIN Receptury r ON rhp.Receptury_idReceptury = r.idReceptury  -- Corrected column name here WHERE rhp.Receptury_idReceptury = 1;', (err, results) => {
