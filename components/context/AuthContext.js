@@ -15,7 +15,8 @@ export const AuthProvider = ({ children }) => {
       UserName: userData.UserName,
       Height: userData.Height,
       Weight: userData.Weight,
-      Gender: userData.Gender
+      Gender: userData.Gender,
+      Birthday: userData.Birthday
     };
   
     setToken(token);
