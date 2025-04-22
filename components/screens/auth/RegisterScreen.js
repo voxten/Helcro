@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import api from '../../utils/api';
 import Icon from "react-native-vector-icons/FontAwesome5";
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
   const [form, setForm] = useState({
@@ -21,13 +22,21 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
     PotwierdzPassword: '',
     Height: '',
     Weight: '',
-    Gender: 'M'
+    Gender: 'M',
+        Birthday: ''
   });
 
   const handleChange = (name, value) => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
-
+  const [showDatePicker, setShowDatePicker] = useState(false); // ✅ move here
+  const handleDateChange = (event, selectedDate) => { // ✅ move here too
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const isoDate = selectedDate.toISOString().split('T')[0];
+      handleChange('Birthday', isoDate);
+    }
+  };
   const handleRegister = async () => {
     // Walidacja
     if (form.Password !== form.PotwierdzPassword) {
@@ -47,7 +56,8 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         Password: form.Password,
         Height: form.Height ? parseFloat(form.Height) : null,
         Weight: form.Height ? parseFloat(form.Weight) : null,
-        Gender: form.Gender
+        Gender: form.Gender,
+        Birthday: form.Birthday
       });
 
       Alert.alert('Success', 'Account has been successfully created', [
@@ -134,6 +144,16 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
           onChangeText={(text) => handleChange('Weight', text)}
           keyboardType="numeric"
         />
+        <TouchableOpacity 
+          onPress={() => setShowDatePicker(true)} 
+          style={styles.input}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.birthdayText, !form.Birthday && styles.placeholderText]}>
+            {form.Birthday ? form.Birthday : 'Select Birthday *'}
+          </Text>
+        </TouchableOpacity>
+
         
         <View style={styles.radioGroup}>
           <Text style={styles.radioLabel}>Gender:</Text>
@@ -244,6 +264,16 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontSize: 14,
     marginTop: 10,
+  },
+  birthdayText: {
+    fontSize: 15,
+    color: '#000',
+    paddingVertical: 13,
+  },
+  
+  placeholderText: {
+    color: '#000',
+    fontSize: 15,
   },
 });
 
