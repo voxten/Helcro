@@ -154,6 +154,15 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
           </Text>
         </TouchableOpacity>
 
+        {showDatePicker && (
+            <DateTimePicker
+                value={form.Birthday ? new Date(form.Birthday) : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+            />
+        )}
         
         <View style={styles.radioGroup}>
           <Text style={styles.radioLabel}>Gender:</Text>

@@ -181,10 +181,10 @@ export default function DietaryGoalsScreen() {
 
             {/* Select Goal Tab */}
             {activeTab === "select" && (
-                <View style={styles.tabContent}>
+                <View style={localStyles.tabContent}>
                     <Text style={localStyles.label}>Weight (kg)</Text>
                     <TextInput
-                        style={styles.input}
+                        style={localStyles.input}
                         value={weight}
                         onChangeText={setWeight}
                         placeholder="Enter your weight"
@@ -193,7 +193,7 @@ export default function DietaryGoalsScreen() {
 
                     <Text style={localStyles.label}>Height (cm)</Text>
                     <TextInput
-                        style={styles.input}
+                        style={localStyles.input}
                         value={height}
                         onChangeText={setHeight}
                         placeholder="Enter your height"
@@ -201,7 +201,7 @@ export default function DietaryGoalsScreen() {
                     />
 
                     <Text style={localStyles.label}>Date of Birth</Text>
-                    <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
+                    <TouchableOpacity style={localStyles.input} onPress={() => setShowPicker(true)}>
                         <Text style={{ color: dob ? "black" : "gray" }}>
                             {dob ? dob : "Select your date of birth"}
                         </Text>
@@ -232,8 +232,8 @@ export default function DietaryGoalsScreen() {
                         </Picker>
                     </View>
 
-                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                        <Text style={styles.submitButtonText}>Submit</Text>
+                    <TouchableOpacity style={localStyles.submitButton} onPress={handleSubmit}>
+                        <Text style={localStyles.submitButtonText}>Submit</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -272,10 +272,10 @@ export default function DietaryGoalsScreen() {
                     
                     {goalsChanged() && (
                         <TouchableOpacity 
-                            style={styles.submitButton} 
+                            style={localStyles.submitButton}
                             onPress={handleSaveGoal}
                         >
-                            <Text style={styles.submitButtonText}>Save All Changes</Text>
+                            <Text style={localStyles.submitButtonText}>Save All Changes</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -359,11 +359,6 @@ const localStyles = StyleSheet.create({
       marginLeft: 10,
       justifyContent: "center",
     },
-    smallButtonText: {
-      color: "#fff",
-      fontSize: 14,
-      fontWeight: "bold",
-    },
     goalBlock: {
         marginBottom: 20,
       },
@@ -387,25 +382,6 @@ const localStyles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
       },
-      
-      input: {
-        backgroundColor: "#f2f2f2",
-        borderRadius: 10,
-        padding: 10,
-        fontSize: 16,
-        flex: 1,
-      },
-      
-      smallButton: {
-        backgroundColor: "#A31D1D",
-        paddingVertical: 8,
-        paddingHorizontal: 14,
-        borderRadius: 8,
-        alignItems: "center",
-        justifyContent: "center",
-        marginLeft: 12,
-      },
-      
       smallButtonText: {
         color: "#fff",
         fontSize: 14,
