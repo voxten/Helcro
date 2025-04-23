@@ -9,7 +9,7 @@ import { API_BASE_URL } from '@env';
 const apiUrl = `${API_BASE_URL}`;
 export default function DietaryGoalsScreen() {
     const { user } = useAuth();
-    const [goal, setGoal] = useState("");
+    const [goal, setGoal] = useState("weight_loss");
     const [weight, setWeight] = useState("");
     const [height, setHeight] = useState("");
     const [dob, setDob] = useState("");
@@ -131,31 +131,32 @@ export default function DietaryGoalsScreen() {
             alert("No goal data to save.");
         }
     };
-      
+
     const handleSubmit = () => {
-        if (age && weight && height && user.Gender && goal) {
-          axios
+        if (!age || !weight || !height || !user.Gender) {
+            alert("Please fill in all required fields first.");
+            return;
+        }
+
+        axios
             .post(`${apiUrl}/api/calculate-goals`, {
-              age,
-              weight: parseFloat(weight),
-              height: parseFloat(height),
-              gender: user.Gender,
-              goal,
+                age,
+                weight: parseFloat(weight),
+                height: parseFloat(height),
+                gender: user.Gender,
+                goal: goal || "weight_loss", // Fallback to weight_loss if somehow empty
             })
             .then((response) => {
                 setProposedGoals(response.data);
-                setEditableGoals(response.data); // ✅ Copy into editable state
+                setEditableGoals(response.data);
                 alert("Goals generated successfully!");
                 setActiveTab("result");
             })
             .catch((err) => {
-              console.error("Error calculating goals:", err);
-              alert("There was an error generating your goals.");
+                console.error("Error calculating goals:", err);
+                alert("There was an error generating your goals.");
             });
-        } else {
-          alert("Please fill in all fields first.");
-        }
-      };
+    };
 
     return (
         <ScrollView style={localStyles.container}>
@@ -182,14 +183,6 @@ export default function DietaryGoalsScreen() {
             {/* Select Goal Tab */}
             {activeTab === "select" && (
                 <View style={localStyles.tabContent}>
-                    <Text style={localStyles.label}>Weight (kg)</Text>
-                    <TextInput
-                        style={localStyles.input}
-                        value={weight}
-                        onChangeText={setWeight}
-                        placeholder="Enter your weight"
-                        keyboardType="numeric"
-                    />
 
                     <Text style={localStyles.label}>Height (cm)</Text>
                     <TextInput
@@ -197,6 +190,15 @@ export default function DietaryGoalsScreen() {
                         value={height}
                         onChangeText={setHeight}
                         placeholder="Enter your height"
+                        keyboardType="numeric"
+                    />
+
+                    <Text style={localStyles.label}>Weight (kg)</Text>
+                    <TextInput
+                        style={localStyles.input}
+                        value={weight}
+                        onChangeText={setWeight}
+                        placeholder="Enter your weight"
                         keyboardType="numeric"
                     />
 
@@ -284,108 +286,145 @@ export default function DietaryGoalsScreen() {
     );
 }
 const localStyles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: "#eee",
+        paddingHorizontal: 0,  // Remove horizontal padding to allow full width
+    },
     label: {
-      fontSize: 18,
-      marginBottom: 8,
-      color: "black",
-      alignSelf: "center",
+        fontSize: 18,
+        marginBottom: 8,
+        color: "black",
+        fontWeight: '600',
+        alignSelf: "flex-start",
+        marginLeft: 20,
+    },
+    submitButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    submitButton: {
+        backgroundColor: "#A31D1D",
+        paddingVertical: 15,
+        paddingHorizontal: 25,
+        borderRadius: 8,
+        marginVertical: 20,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+        elevation: 3,
+        alignSelf: 'center',
+        width: '100%',
     },
     pickerContainer: {
         backgroundColor: "#f2f2f2",
         borderRadius: 10,
         marginBottom: 15,
         paddingHorizontal: 10,
-        justifyContent: 'center', // Ensures text is vertically centered
-        
+        justifyContent: 'center',
     },
     picker: {
         height: 50,
         width: "100%",
         color: 'black',
-        textAlign: 'left', // Aligns the selected text to the left
-        paddingLeft: 0, // Removes any default padding
-        marginLeft: -8, // Compensates for default padding on some devices
     },
-    
-    
     tabContent: {
-      padding: 20,
-      backgroundColor: "#fff",
-      borderRadius: 10,
-      marginBottom: 15,
+        padding: 20,
+        backgroundColor: "#fff",
+        borderRadius: 10,
+        marginBottom: 15,
+        marginHorizontal: 10,  // Reduced margin for more width
     },
     tabButtonContainer: {
-      flexDirection: "row",
-      borderRadius: 10,
-      overflow: "hidden",
-      marginBottom: 10,
-      marginTop: 0,
-      width: "100%",
+        flexDirection: "row",
+        overflow: "hidden",
+        marginBottom: 10,
+        marginTop: 0,
+        width: "100%",
+        backgroundColor: '#fff',
+        paddingHorizontal: 0,  // Remove padding for full width
     },
     tabButton: {
-      flex: 1,
-      paddingVertical: 12,
-      alignItems: "center",
-      backgroundColor: "#d3d3d3",
+        flex: 1,
+        paddingVertical: 15,
+        alignItems: "center",
+        backgroundColor: "#f2f2f2",
+        borderBottomWidth: 3,
+        borderBottomColor: 'transparent',
     },
     activeTabButton: {
-      backgroundColor: "#A31D1D",
+        backgroundColor: "#fff",
+        borderBottomColor: '#A31D1D',
     },
     tabButtonText: {
-      fontWeight: "600",
-      color: "#333",
+        fontWeight: "600",
+        color: "#333",
+        fontSize: 14,
     },
     activeTabText: {
-      color: "white",
+        color: "#A31D1D",
     },
     goalsContainer: {
-      paddingHorizontal: 20,
-      paddingBottom: 30,
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        marginHorizontal: 10,  // Reduced margin for more width
     },
     input: {
-      backgroundColor: "#f2f2f2",
-      borderRadius: 10,
-      padding: 12,
-      fontSize: 16,
-      marginBottom: 10,
-      width: "100%",
+        backgroundColor: "#f2f2f2",
+        borderRadius: 10,
+        padding: 15,
+        fontSize: 16,
+        marginBottom: 15,
+        width: "100%",  // Full width of container
+        color: 'black',
     },
     smallButton: {
-      backgroundColor: "#A31D1D",
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-      alignItems: "center",
-      marginLeft: 10,
-      justifyContent: "center",
+        backgroundColor: "#A31D1D",
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: "center",
+        marginLeft: 10,
+        justifyContent: "center",
     },
     goalBlock: {
         marginBottom: 20,
-      },
-      
-      macroLabel: {
+        backgroundColor: '#f9f9f9',
+        padding: 15,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        width: '100%',  // Ensure full width
+    },
+    macroLabel: {
         fontSize: 16,
         fontWeight: "bold",
-        color: "black",
-        marginBottom: 4,
-      },
-      
-      currentValueText: {
+        color: "#A31D1D",
+        marginBottom: 8,
+    },
+    currentValueText: {
         fontSize: 14,
-        color: "black",
-        marginBottom: 6,
-        alignSelf: "flex-start",
-      },
-      
-      inputRow: {
+        color: "#555",
+        marginBottom: 10,
+    },
+    inputRow: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
-      },
-      smallButtonText: {
+        width: '100%',  // Full width
+    },
+    smallButtonText: {
         color: "#fff",
         fontSize: 14,
         fontWeight: "bold",
-      },
-      
-  });
+    },
+    unitText: {
+        fontSize: 14,
+        color: "#555",
+        marginLeft: 10,
+    },
+});
