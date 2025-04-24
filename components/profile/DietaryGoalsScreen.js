@@ -3,6 +3,7 @@ import {ScrollView, View, Text, TextInput, StyleSheet, TouchableOpacity } from "
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 import { useAuth } from "../context/AuthContext";
 import { API_BASE_URL } from '@env';
@@ -23,19 +24,19 @@ export default function DietaryGoalsScreen() {
         DailyProteins: "",
         DailyFats: "",
         DailyCarbs: "",
-      });
+    });
     const [currentGoals, setCurrentGoals] = useState({
         DailyCalories: "0",
         DailyProteins: "0",
         DailyFats: "0",
         DailyCarbs: "0",
-      });
+    });
     const goalsChanged = () => {
         return Object.keys(editableGoals).some(
-          key => editableGoals[key].toString() !== currentGoals[key].toString()
+            key => editableGoals[key].toString() !== currentGoals[key].toString()
         );
-      };
-      useEffect(() => {
+    };
+    useEffect(() => {
         axios.get(`${apiUrl}/api/user/${userId}`)
             .then(response => {
                 const { Height, Weight, Birthday } = response.data;
@@ -45,7 +46,7 @@ export default function DietaryGoalsScreen() {
                 if (Birthday) setAge(calculateAge(Birthday));
             })
             .catch(console.error);
-    
+
         // Check if user has goals already
         axios.get(`${apiUrl}/api/goal/${userId}`)
             .then(response => {
@@ -98,7 +99,7 @@ export default function DietaryGoalsScreen() {
             setAge(calculatedAge);
         }
     };
-    
+
 
     const handleSaveGoal = () => {
         if (editableGoals) {
@@ -106,27 +107,27 @@ export default function DietaryGoalsScreen() {
                 UserId: userId,
                 ...editableGoals,
             })
-            .then(response => {
-                alert("Goal saved successfully!");
-                
-                // Update all states with the new values
-                setCurrentGoals({
-                    DailyCalories: editableGoals.DailyCalories || "0",
-                    DailyProteins: editableGoals.DailyProteins || "0",
-                    DailyFats: editableGoals.DailyFats || "0",
-                    DailyCarbs: editableGoals.DailyCarbs || "0",
+                .then(response => {
+                    alert("Goal saved successfully!");
+
+                    // Update all states with the new values
+                    setCurrentGoals({
+                        DailyCalories: editableGoals.DailyCalories || "0",
+                        DailyProteins: editableGoals.DailyProteins || "0",
+                        DailyFats: editableGoals.DailyFats || "0",
+                        DailyCarbs: editableGoals.DailyCarbs || "0",
+                    });
+                    setProposedGoals({
+                        DailyCalories: editableGoals.DailyCalories || "0",
+                        DailyProteins: editableGoals.DailyProteins || "0",
+                        DailyFats: editableGoals.DailyFats || "0",
+                        DailyCarbs: editableGoals.DailyCarbs || "0",
+                    });
+                })
+                .catch(error => {
+                    console.error("Error saving goal:", error);
+                    alert("There was an error saving your goal.");
                 });
-                setProposedGoals({
-                    DailyCalories: editableGoals.DailyCalories || "0",
-                    DailyProteins: editableGoals.DailyProteins || "0",
-                    DailyFats: editableGoals.DailyFats || "0",
-                    DailyCarbs: editableGoals.DailyCarbs || "0",
-                });
-            })
-            .catch(error => {
-                console.error("Error saving goal:", error);
-                alert("There was an error saving your goal.");
-            });
         } else {
             alert("No goal data to save.");
         }
@@ -159,272 +160,283 @@ export default function DietaryGoalsScreen() {
     };
 
     return (
-        <ScrollView style={localStyles.container}>
+        <View style={styles.container}>
             {/* Tab Selection */}
-            <View style={localStyles.tabButtonContainer}>
+            <View style={styles.tabContainer}>
                 <TouchableOpacity
-                    style={[localStyles.tabButton, activeTab === "select" && localStyles.activeTabButton]}
+                    style={[styles.tabButton, activeTab === "select" && styles.activeTabButton]}
                     onPress={() => setActiveTab("select")}
                 >
-                    <Text style={[localStyles.tabButtonText, activeTab === "select" && localStyles.activeTabText]}>
-                        🎯 Generate Goals
+                    <Icon
+                        name="calculate"
+                        size={20}
+                        color={activeTab === "select" ? "#FFF" : "#8D6E63"}
+                    />
+                    <Text style={[styles.tabText, activeTab === "select" && styles.activeTabText]}>
+                        Generate Goals
                     </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                    style={[localStyles.tabButton, activeTab === "result" && localStyles.activeTabButton]}
+                    style={[styles.tabButton, activeTab === "result" && styles.activeTabButton]}
                     onPress={() => setActiveTab("result")}
                 >
-                    <Text style={[localStyles.tabButtonText, activeTab === "result" && localStyles.activeTabText]}>
-                        📊 View & Save Goals
+                    <Icon
+                        name="show-chart"
+                        size={20}
+                        color={activeTab === "result" ? "#FFF" : "#8D6E63"}
+                    />
+                    <Text style={[styles.tabText, activeTab === "result" && styles.activeTabText]}>
+                        View & Save
                     </Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Select Goal Tab */}
-            {activeTab === "select" && (
-                <View style={localStyles.tabContent}>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                {/* Select Goal Tab */}
+                {activeTab === "select" && (
+                    <View style={styles.card}>
+                        <View style={styles.inputGroup}>
+                            <Icon name="height" size={20} color="#5D4037" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                value={height}
+                                onChangeText={setHeight}
+                                placeholder="Height (cm)"
+                                placeholderTextColor="#A1887F"
+                                keyboardType="numeric"
+                            />
+                        </View>
 
-                    <Text style={localStyles.label}>Height (cm)</Text>
-                    <TextInput
-                        style={localStyles.input}
-                        value={height}
-                        onChangeText={setHeight}
-                        placeholder="Enter your height"
-                        keyboardType="numeric"
-                    />
+                        <View style={styles.inputGroup}>
+                            <Icon name="fitness-center" size={20} color="#5D4037" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                value={weight}
+                                onChangeText={setWeight}
+                                placeholder="Weight (kg)"
+                                placeholderTextColor="#A1887F"
+                                keyboardType="numeric"
+                            />
+                        </View>
 
-                    <Text style={localStyles.label}>Weight (kg)</Text>
-                    <TextInput
-                        style={localStyles.input}
-                        value={weight}
-                        onChangeText={setWeight}
-                        placeholder="Enter your weight"
-                        keyboardType="numeric"
-                    />
-
-                    <Text style={localStyles.label}>Date of Birth</Text>
-                    <TouchableOpacity style={localStyles.input} onPress={() => setShowPicker(true)}>
-                        <Text style={{ color: dob ? "black" : "gray" }}>
-                            {dob ? dob : "Select your date of birth"}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {showPicker && (
-                        <DateTimePicker
-                            value={dob ? new Date(dob) : new Date()}
-                            mode="date"
-                            display="default"
-                            onChange={handleDateChange}
-                            maximumDate={new Date()}
-                        />
-                    )}
-
-                    <Text style={localStyles.label}>Goal</Text>
-                    <View style={localStyles.pickerContainer}>
-                        <Picker
-                            selectedValue={goal}
-                            onValueChange={setGoal}
-                            style={localStyles.picker}
-                            dropdownIconColor="#A31D1D"
-                            mode="dropdown"
-                        >
-                            <Picker.Item label="Weight Loss" value="weight_loss" />
-                            <Picker.Item label="Muscle Gain" value="muscle_gain" />
-                            <Picker.Item label="Maintenance" value="maintenance" />
-                        </Picker>
-                    </View>
-
-                    <TouchableOpacity style={localStyles.submitButton} onPress={handleSubmit}>
-                        <Text style={localStyles.submitButtonText}>Submit</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-
-            {/* Proposed Goals Tab */}
-            {activeTab === "result" && (
-                <View style={localStyles.goalsContainer}>
-                    <Text style={localStyles.label}>Edit Daily Goals:</Text>
-                
-                    {["Calories", "Proteins", "Fats", "Carbs"].map((macro) => {
-                        const key = `Daily${macro}`;
-                        const unit = macro === "Calories" ? "kcal" : "g";
-                        const currentValue = currentGoals[key] || "0";
-                        const editableValue = editableGoals[key] || currentValue;
-                        
-                        return (
-                            <View key={key} style={localStyles.goalBlock}>
-                                <Text style={localStyles.macroLabel}>{macro}</Text>
-                                <Text style={localStyles.currentValueText}>
-                                    Current: {currentValue} {unit}
+                        <View style={styles.inputGroup}>
+                            <Icon name="cake" size={20} color="#5D4037" style={styles.inputIcon} />
+                            <TouchableOpacity
+                                style={styles.dateInput}
+                                onPress={() => setShowPicker(true)}
+                            >
+                                <Text style={[styles.dateText, !dob && { color: "#A1887F" }]}>
+                                    {dob || "Date of Birth"}
                                 </Text>
-                                <View style={localStyles.inputRow}>
-                                    <TextInput
-                                        style={localStyles.input}
-                                        keyboardType="numeric"
-                                        value={editableValue.toString()}
-                                        onChangeText={(text) =>
-                                            setEditableGoals((prev) => ({ ...prev, [key]: text }))
-                                        }
-                                        placeholder={`Enter ${macro.toLowerCase()} (${unit})`}
-                                    />
-                                </View>
-                            </View>
-                        );
-                    })}
-                    
-                    {goalsChanged() && (
-                        <TouchableOpacity 
-                            style={localStyles.submitButton}
-                            onPress={handleSaveGoal}
+                            </TouchableOpacity>
+                        </View>
+
+                        {showPicker && (
+                            <DateTimePicker
+                                value={dob ? new Date(dob) : new Date()}
+                                mode="date"
+                                display="spinner"
+                                onChange={handleDateChange}
+                                maximumDate={new Date()}
+                            />
+                        )}
+
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={goal}
+                                onValueChange={setGoal}
+                                dropdownIconColor="#5D4037"
+                                mode="dropdown"
+                            >
+                                <Picker.Item label="Weight Loss" value="weight_loss" />
+                                <Picker.Item label="Muscle Gain" value="muscle_gain" />
+                                <Picker.Item label="Maintenance" value="maintenance" />
+                            </Picker>
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.primaryButton}
+                            onPress={handleSubmit}
                         >
-                            <Text style={localStyles.submitButtonText}>Save All Changes</Text>
+                            <Text style={styles.buttonText}>Calculate Goals</Text>
                         </TouchableOpacity>
-                    )}
-                </View>
-            )}
-        </ScrollView>
+                    </View>
+                )}
+
+                {/* Proposed Goals Tab */}
+                {activeTab === "result" && (
+                    <View style={styles.card}>
+                        <Text style={styles.sectionTitle}>Edit Daily Goals</Text>
+
+                        {["Calories", "Proteins", "Fats", "Carbs"].map((macro) => {
+                            const key = `Daily${macro}`;
+                            const unit = macro === "Calories" ? "kcal" : "g";
+                            const currentValue = currentGoals[key] || "0";
+                            const editableValue = editableGoals[key] || currentValue;
+
+                            return (
+                                <View key={key} style={styles.goalCard}>
+                                    <View style={styles.macroHeader}>
+                                        <Text style={styles.macroTitle}>{macro}</Text>
+                                        <Text style={styles.currentValue}>Current: {currentValue}{unit}</Text>
+                                    </View>
+
+                                    <View style={styles.inputGroup}>
+                                        <TextInput
+                                            style={styles.input}
+                                            keyboardType="numeric"
+                                            value={editableValue.toString()}
+                                            onChangeText={(text) =>
+                                                setEditableGoals((prev) => ({ ...prev, [key]: text }))
+                                            }
+                                            placeholder={`Enter ${macro.toLowerCase()}`}
+                                            placeholderTextColor="#A1887F"
+                                        />
+                                        <Text style={styles.unitText}>{unit}</Text>
+                                    </View>
+                                </View>
+                            );
+                        })}
+
+                        {goalsChanged() && (
+                            <TouchableOpacity
+                                style={styles.primaryButton}
+                                onPress={handleSaveGoal}
+                            >
+                                <Text style={styles.buttonText}>Save All Changes</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
+            </ScrollView>
+        </View>
     );
 }
-const localStyles = StyleSheet.create({
+
+const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#eee",
-        paddingHorizontal: 0,  // Remove horizontal padding to allow full width
     },
-    label: {
-        fontSize: 18,
-        marginBottom: 8,
-        color: "black",
-        fontWeight: '600',
-        alignSelf: "flex-start",
-        marginLeft: 20,
-    },
-    submitButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    submitButton: {
-        backgroundColor: "#A31D1D",
-        paddingVertical: 15,
-        paddingHorizontal: 25,
-        borderRadius: 8,
-        marginVertical: 20,
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-        elevation: 3,
-        alignSelf: 'center',
-        width: '100%',
-    },
-    pickerContainer: {
-        backgroundColor: "#f2f2f2",
-        borderRadius: 10,
-        marginBottom: 15,
-        paddingHorizontal: 10,
-        justifyContent: 'center',
-    },
-    picker: {
-        height: 50,
-        width: "100%",
-        color: 'black',
-    },
-    tabContent: {
-        padding: 20,
-        backgroundColor: "#fff",
-        borderRadius: 10,
-        marginBottom: 15,
-        marginHorizontal: 10,  // Reduced margin for more width
-    },
-    tabButtonContainer: {
-        flexDirection: "row",
-        overflow: "hidden",
-        marginBottom: 10,
-        marginTop: 0,
-        width: "100%",
-        backgroundColor: '#fff',
-        paddingHorizontal: 0,  // Remove padding for full width
+    tabContainer: {
+        flexDirection: 'row',
+        marginHorizontal: 20,
+        marginTop: 20,
+        backgroundColor: '#EFEBE9',
+        borderRadius: 12,
+        overflow: 'hidden',
     },
     tabButton: {
         flex: 1,
-        paddingVertical: 15,
-        alignItems: "center",
-        backgroundColor: "#f2f2f2",
-        borderBottomWidth: 3,
-        borderBottomColor: 'transparent',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        backgroundColor: 'transparent',
     },
     activeTabButton: {
-        backgroundColor: "#fff",
-        borderBottomColor: '#A31D1D',
+        backgroundColor: 'brown',
     },
-    tabButtonText: {
-        fontWeight: "600",
-        color: "#333",
+    tabText: {
+        marginLeft: 8,
         fontSize: 14,
+        fontWeight: '500',
+        color: 'brown',
     },
     activeTabText: {
-        color: "#A31D1D",
+        color: '#FFF',
     },
-    goalsContainer: {
+    scrollContent: {
         paddingHorizontal: 20,
-        paddingVertical: 15,
-        backgroundColor: '#fff',
+        paddingBottom: 20,
+    },
+    card: {
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        padding: 20,
+        marginTop: 20,
+        elevation: 3,
+        shadowColor: '#5D4037',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+    },
+    inputGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
         borderRadius: 10,
-        marginHorizontal: 10,  // Reduced margin for more width
+        paddingHorizontal: 14,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#D7CCC8',
+    },
+    inputIcon: {
+        marginRight: 10,
     },
     input: {
-        backgroundColor: "#f2f2f2",
+        flex: 1,
+        paddingVertical: 14,
+        color: '#5D4037',
+        fontSize: 15,
+    },
+    dateInput: {
+        flex: 1,
+        paddingVertical: 14,
+    },
+    dateText: {
+        fontSize: 15,
+        color: '#5D4037',
+    },
+    pickerContainer: {
+        backgroundColor: 'white',
         borderRadius: 10,
-        padding: 15,
-        fontSize: 16,
-        marginBottom: 15,
-        width: "100%",  // Full width of container
-        color: 'black',
-    },
-    smallButton: {
-        backgroundColor: "#A31D1D",
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        alignItems: "center",
-        marginLeft: 10,
-        justifyContent: "center",
-    },
-    goalBlock: {
         marginBottom: 20,
-        backgroundColor: '#f9f9f9',
-        padding: 15,
-        borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#e0e0e0',
-        width: '100%',  // Ensure full width
+        borderColor: '#D7CCC8',
+        overflow: 'hidden',
     },
-    macroLabel: {
+    primaryButton: {
+        backgroundColor: 'brown',
+        padding: 16,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+    },
+    buttonText: {
+        color: '#FFF',
         fontSize: 16,
-        fontWeight: "bold",
-        color: "#A31D1D",
-        marginBottom: 8,
+        fontWeight: '500',
     },
-    currentValueText: {
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#5D4037',
+        marginBottom: 20,
+    },
+    goalCard: {
+        borderRadius: 10,
+        padding: 16,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#EFEBE9',
+    },
+    macroHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    macroTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#5D4037',
+    },
+    currentValue: {
         fontSize: 14,
-        color: "#555",
-        marginBottom: 10,
-    },
-    inputRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        width: '100%',  // Full width
-    },
-    smallButtonText: {
-        color: "#fff",
-        fontSize: 14,
-        fontWeight: "bold",
     },
     unitText: {
         fontSize: 14,
-        color: "#555",
         marginLeft: 10,
     },
 });

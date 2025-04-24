@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import {View, Text, Image, TouchableOpacity, Alert, StyleSheet} from "react-native";
+import { View, Text, Image, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
-import PasswordIcon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function ProfileScreen({ navigation }) {
     const [profilePic, setProfilePic] = useState(null);
@@ -56,147 +56,145 @@ export default function ProfileScreen({ navigation }) {
     };
 
     return (
-        <View style={localStyles.container}>
-            <View style={localStyles.profilePicContainer}>
-                <Image
-                    source={profilePic ? { uri: profilePic } : { uri: "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"}}
-                    style={localStyles.profilePic}
-                />
-            </View>
-            <Text style={localStyles.welcomeText}>
-                Welcome, {String(user.UserName)}!
-            </Text>
-
-            <View style={localStyles.buttons}>
-                <TouchableOpacity style={localStyles.closeButton} onPress={() => navigation.navigate("ChangePassword", { userId: user.UserId })}>
-                    <View style={localStyles.buttonContent}>
-                        <PasswordIcon name="form-textbox-password" size={20} color="white" />
-                        <Text style={localStyles.closeButtonText}>Change Password</Text>
+        <View style={styles.container}>
+            <View style={styles.card}>
+                <View style={styles.profileHeader}>
+                    <View style={styles.avatarContainer}>
+                        <Image
+                            source={profilePic ? { uri: profilePic } : { uri: "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" }}
+                            style={styles.avatar}
+                        />
+                        <TouchableOpacity style={styles.editIcon}>
+                            <MaterialCommunityIcons name="pencil" size={18} color="#fff" />
+                        </TouchableOpacity>
                     </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={localStyles.submitButton}
-                    onPress={handleDeleteAccount}
-                >
-                    <View style={localStyles.buttonContent}>
-                        <PasswordIcon name="account-off-outline" size={20} color="white" />
-                        <Text style={localStyles.submitButtonText}>Delete Account</Text>
-                    </View>
-                </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={localStyles.updateButton} onPress={handleUpdateProfile}>
-                <View style={localStyles.buttonContent}>
-                    <PasswordIcon name="account-check-outline" size={20} color="white" />
-                    <Text style={localStyles.updateButtonText}>Update Profile</Text>
+                    <Text style={styles.userName}>Welcome, {user.UserName}!</Text>
                 </View>
-            </TouchableOpacity>
+
+                <View style={styles.actionsContainer}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.shadow]}
+                        onPress={() => navigation.navigate("ChangePassword", { userId: user.UserId })}
+                    >
+                        <MaterialCommunityIcons name="lock-reset" size={22} color="#8D6E63" />
+                        <Text style={styles.actionButtonText}>Change Password</Text>
+                        <MaterialCommunityIcons name="chevron-right" size={22} color="#8D6E63" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.shadow]}
+                        onPress={handleUpdateProfile}
+                    >
+                        <MaterialCommunityIcons name="account-edit" size={22} color="#8D6E63" />
+                        <Text style={styles.actionButtonText}>Update Profile</Text>
+                        <MaterialCommunityIcons name="chevron-right" size={22} color="#8D6E63" />
+                    </TouchableOpacity>
+
+                    <View style={styles.divider} />
+
+                    <TouchableOpacity
+                        style={[styles.deleteButton, styles.shadow]}
+                        onPress={handleDeleteAccount}
+                    >
+                        <MaterialCommunityIcons name="account-remove" size={22} color="#fff" />
+                        <Text style={styles.deleteButtonText}>Delete Account</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
         </View>
     );
 }
 
-const localStyles = StyleSheet.create({
+const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#EFEBE9',
         padding: 20,
-        backgroundColor: "#eee",
-        alignItems: "center",
+        justifyContent: 'center',
     },
-    title: {
-        color: "white",
-        fontSize: 24,
-        marginBottom: 20,
-    },
-    profilePicContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        overflow: "hidden",
-        marginBottom: 20,
-    },
-    profilePic: {
-        width: "100%",
-        height: "100%",
-        resizeMode: "cover",
-    },
-    welcomeText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 20,
-    },
-    input: {
-        width: "100%",
-        padding: 10,
-        justifyContent: 'space-between',
-        marginBottom: 15,
-        backgroundColor: "#fff",
-        borderRadius: 10,
-        elevation: 3,
-    },
-    buttons: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        width: "100%",
-    },
-    closeButton: {
-        backgroundColor: "brown",
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-        flex: 1,
-        justifyContent: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    submitButton: {
-        backgroundColor: "brown",
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-        flex: 1,
-        marginLeft: 10,
-        justifyContent: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    buttonContent: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    closeButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginLeft: 8,
-    },
-    submitButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginLeft: 8,
-    },
-    updateButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: "bold",
-        marginLeft: 8,
-    },
-    updateButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "brown",
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 24,
         width: '100%',
-        paddingVertical: 15,
-        paddingHorizontal: 20,
-        marginVertical: 15,
-        borderRadius: 8,
+        elevation: 8,
+    },
+    profileHeader: {
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    avatarContainer: {
+        position: 'relative',
+        marginBottom: 24,
+    },
+    avatar: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: '#D7CCC8',
+    },
+    editIcon: {
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'brown',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    userName: {
+        fontSize: 22,
+        fontWeight: '600',
+        color: 'brown',
+        textAlign: 'center',
+    },
+    actionsContainer: {
+        width: '100%',
+    },
+    actionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 12,
+        justifyContent: 'space-between',
+        borderWidth: 1,
+        borderColor: '#EFEBE9',
+    },
+    shadow: {
+        elevation: 4,
+    },
+    actionButtonText: {
+        flex: 1,
+        marginLeft: 12,
+        fontSize: 16,
+        fontWeight: '500',
+        color: 'brown',
+    },
+    deleteButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'brown',
+        padding: 16,
+        borderRadius: 12,
+        marginTop: 16,
+        justifyContent: 'center',
+    },
+    deleteButtonText: {
+        marginLeft: 12,
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#fff',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#D7CCC8',
+        marginVertical: 16,
     },
 });

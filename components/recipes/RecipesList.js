@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  TextInput, 
-  TouchableOpacity, 
-  Modal, 
-  ActivityIndicator, 
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Dimensions 
+import {
+    View,
+    Text,
+    FlatList,
+    TextInput,
+    TouchableOpacity,
+    Modal,
+    ActivityIndicator,
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Dimensions
 } from "react-native";
 import RecipeCard from "./RecipeCard";
-import styles2 from "./RecipesStyles";
-import Icon from "react-native-vector-icons/FontAwesome6";
+import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { API_BASE_URL } from '@env';
@@ -32,7 +31,7 @@ const RecipesList = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [viewMode, setViewMode] = useState('grid');
-    
+
     const fetchRecipesWithCategories = async (category = null) => {
         try {
             setLoading(true);
@@ -43,13 +42,13 @@ const RecipesList = ({ navigation }) => {
             } else {
                 setViewMode('category');
             }
-            
+
             const response = await axios.get(url, {
                 headers: {
                     Authorization: `Bearer ${user?.token}`
                 }
             });
-            
+
             // No need to process categories here as the API now returns them
             setRecipes(response.data);
         } catch (error) {
@@ -60,7 +59,7 @@ const RecipesList = ({ navigation }) => {
             setRefreshing(false);
         }
     };
-    
+
     const fetchCategories = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/api/categories`, {
@@ -96,7 +95,7 @@ const RecipesList = ({ navigation }) => {
             fetchRecipesWithCategories(selectedCategory);
             return;
         }
-        const filtered = recipes.filter(recipe => 
+        const filtered = recipes.filter(recipe =>
             recipe.Name.toLowerCase().includes(searchQuery.toLowerCase())
         );
         setRecipes(filtered);
@@ -110,12 +109,12 @@ const RecipesList = ({ navigation }) => {
 
     const groupRecipesByCategory = () => {
         const grouped = {};
-        
+
         // Initialize with all known categories
         categories.forEach(category => {
             grouped[category.Name] = [];
         });
-        
+
         // Group recipes by their categories
         recipes.forEach(recipe => {
             if (recipe.categories && recipe.categories.length > 0) {
@@ -150,25 +149,25 @@ const RecipesList = ({ navigation }) => {
                 grouped["Uncategorized"].push(recipe);
             }
         });
-        
+
         // Filter out empty categories and sort by category name
         const filteredGroups = {};
-    Object.keys(grouped)
-        .sort()
-        .forEach(category => {
-            if (grouped[category].length > 0) {
-                filteredGroups[category] = grouped[category];
-            }
-        });
-    
-    return filteredGroups;
-};
+        Object.keys(grouped)
+            .sort()
+            .forEach(category => {
+                if (grouped[category].length > 0) {
+                    filteredGroups[category] = grouped[category];
+                }
+            });
+
+        return filteredGroups;
+    };
 
     const renderCategorySection = (category, recipes) => (
         <View key={category} style={styles.categorySection}>
             <Text style={styles.categoryTitle}>{category}</Text>
-            <ScrollView 
-                horizontal 
+            <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScrollContent}
             >
@@ -183,71 +182,80 @@ const RecipesList = ({ navigation }) => {
 
     if (loading && recipes.length === 0) {
         return (
-            <View style={styles2.loadingContainer}>
-                <ActivityIndicator size="large" color="#0000ff" />
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#5D4037" />
             </View>
         );
     }
 
     return (
-        <View style={styles2.container}>
-            <TextInput
-                style={styles2.searchInput}
-                placeholder="Search recipes..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                onSubmitEditing={handleSearch}
-            />
+        <View style={styles.container}>
+            {/* Search and Filter Bar */}
+            <View style={styles.searchContainer}>
+                <View style={styles.searchInputContainer}>
+                    <Icon name="search" size={16} color="#8D6E63" style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search recipes..."
+                        placeholderTextColor="#A1887F"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        onSubmitEditing={handleSearch}
+                    />
+                </View>
 
-            <TouchableOpacity 
-                style={styles2.button} 
-                onPress={() => setModalVisible(true)}
-            >
-                <Icon name="clipboard-list" size={20} color="white" style={styles2.icon} />
-                <Text style={styles2.buttonText}>
-                    {selectedCategory || "Categories"}
-                </Text>
-            </TouchableOpacity>
+                <View style={styles.buttonRow}>
+                    <TouchableOpacity
+                        style={styles.filterButton}
+                        onPress={() => setModalVisible(true)}
+                    >
+                        <Icon name="filter" size={16} color="#FFF" />
+                        <Text style={styles.filterButtonText}>
+                            {selectedCategory || "Categories"}
+                        </Text>
+                    </TouchableOpacity>
 
-            {user && (
-                <TouchableOpacity 
-                    style={styles2.button} 
-                    onPress={() => navigation.navigate("RecipesAdd")}
-                >
-                    <Icon name="plus" size={20} color="white" style={styles2.icon} />
-                    <Text style={styles2.buttonText}>Add Recipe</Text>
-                </TouchableOpacity>
-            )}
+                    {user && (
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={() => navigation.navigate("RecipesAdd")}
+                        >
+                            <Icon name="plus" size={16} color="#FFF" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
 
             {(selectedCategory || searchQuery) && (
-                <TouchableOpacity 
-                    style={styles2.clearButton}
+                <TouchableOpacity
+                    style={styles.clearButton}
                     onPress={handleClearFilters}
                 >
-                    <Text style={styles2.clearButtonText}>Clear Filters</Text>
+                    <Text style={styles.clearButtonText}>Clear Filters</Text>
+                    <Icon name="times" size={14} color="#FFF" />
                 </TouchableOpacity>
             )}
 
-            <Modal visible={modalVisible} transparent animationType="slide">
-                <View style={styles2.modalContainer}>
-                    <View style={[styles2.modalContent, { maxHeight: height * 0.7 }]}>
-                        <View style={styles2.modalHeader}>
-                            <Text style={styles2.modalTitle}>Choose a category</Text>
-                            <TouchableOpacity 
-                                style={styles2.modalCloseButton} 
+            {/* Category Modal */}
+            <Modal visible={modalVisible} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Select Category</Text>
+                            <TouchableOpacity
                                 onPress={() => setModalVisible(false)}
                             >
-                                <Icon name="times" size={20} color="#333" />
+                                <Icon name="times" size={20} color="#5D4037" />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView style={styles2.modalScroll}>
+                        <ScrollView style={styles.modalContent}>
                             {categories.map((category) => (
-                                <TouchableOpacity 
-                                    key={category.CategoryId} 
+                                <TouchableOpacity
+                                    key={category.CategoryId}
                                     onPress={() => handleCategorySelect(category.Name)}
-                                    style={styles2.modalItem}
+                                    style={styles.categoryItem}
                                 >
-                                    <Text style={styles2.modalButton}>{category.Name}</Text>
+                                    <Text style={styles.categoryText}>{category.Name}</Text>
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
@@ -255,41 +263,62 @@ const RecipesList = ({ navigation }) => {
                 </View>
             </Modal>
 
+            {/* Recipe List */}
             {viewMode === 'grid' ? (
                 <FlatList
                     key="grid"
                     data={recipes}
                     renderItem={({ item }) => (
-                        <View style={styles2.gridWrapper}>
+                        <View style={styles.gridItem}>
                             <RecipeCard recipe={item} />
                         </View>
                     )}
                     keyExtractor={(item) => item.RecipeId.toString()}
                     numColumns={2}
-                    columnWrapperStyle={styles2.gridRow}
+                    columnWrapperStyle={styles.gridRow}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={onRefresh}
+                            colors={['#5D4037']}
                         />
                     }
+                    contentContainerStyle={styles.listContent}
                 />
             ) : (
                 <FlatList
                     key="category"
                     data={Object.entries(groupRecipesByCategory())}
-                    renderItem={({ item: [category, categoryRecipes] }) => 
-                        renderCategorySection(category, categoryRecipes)
-                    }
+                    renderItem={({ item: [category, categoryRecipes] }) => (
+                        <View style={styles.categorySection}>
+                            <Text style={styles.categoryTitle}>{category}</Text>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.horizontalList}
+                            >
+                                {categoryRecipes.map(recipe => (
+                                    <View key={recipe.RecipeId} style={styles.horizontalItem}>
+                                        <RecipeCard recipe={recipe} />
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
                     keyExtractor={([category]) => category}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={onRefresh}
+                            colors={['#5D4037']}
                         />
                     }
+                    contentContainerStyle={styles.listContent}
                     ListEmptyComponent={
-                        <Text style={styles2.noRecipesText}>No recipes found</Text>
+                        <View style={styles.emptyState}>
+                            <Icon name="bowl-food" size={40} color="#BCAAA4" />
+                            <Text style={styles.emptyText}>No recipes found</Text>
+                        </View>
                     }
                 />
             )}
@@ -298,21 +327,157 @@ const RecipesList = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    searchContainer: {
+        padding: 16,
+        paddingBottom: 8,
+    },
+    searchInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF',
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#D7CCC8',
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        height: 48,
+        color: '#5D4037',
+        fontSize: 16,
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    filterButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'brown',
+        borderRadius: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        flex: 1,
+        marginRight: 10,
+    },
+    filterButtonText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '500',
+        marginLeft: 8,
+    },
+    addButton: {
+        backgroundColor: 'brown',
+        width: 48,
+        height: 48,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    clearButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#D32F2F',
+        padding: 10,
+        marginHorizontal: 16,
+        marginBottom: 12,
+        borderRadius: 8,
+    },
+    clearButtonText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '500',
+        marginRight: 6,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        width: '80%',
+        maxHeight: height * 0.7,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#EFEBE9',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#5D4037',
+    },
+    modalContent: {
+        padding: 8,
+    },
+    categoryItem: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#EFEBE9',
+    },
+    categoryText: {
+        fontSize: 16,
+        color: '#5D4037',
+    },
+    listContent: {
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+    },
+    gridRow: {
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    gridItem: {
+        width: '48%',
+    },
     categorySection: {
-        marginBottom: 10,
+        marginBottom: 24,
     },
     categoryTitle: {
         fontSize: 18,
-        fontWeight: 'bold',
-        marginLeft: 10,
-        marginBottom: 5,
-        color: '#333',
+        fontWeight: '600',
+        color: '#5D4037',
+        marginBottom: 12,
+        paddingLeft: 8,
     },
-    horizontalScrollContent: {
-        paddingHorizontal: 10,
+    horizontalList: {
+        paddingLeft: 8,
     },
-    horizontalCard: {
-        marginRight: 10,
+    horizontalItem: {
+        marginRight: 12,
+        width: 160,
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#8D6E63',
+        marginTop: 12,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#FFF8F6',
     },
 });
 

@@ -21,17 +21,17 @@ export default function RecipesStack() {
                 component={RecipeDetail} 
                 options={{ 
                     title: "Recipe Detail",
-                    headerStyle: { backgroundColor: 'brown' },
-                    headerTintColor: 'white' 
-                }} 
+                    headerStyle: { backgroundColor: 'white' },
+                    headerTintColor: 'black'
+                }}
             />
             <Stack.Screen 
                 name="RecipesAdd" 
                 component={RecipesAdd} 
                 options={{ 
                     title: 'Add Recipe',
-                    headerStyle: { backgroundColor: 'brown' },
-                    headerTintColor: 'white'
+                    headerStyle: { backgroundColor: 'white' },
+                    headerTintColor: 'black'
                 }} 
             />
         </Stack.Navigator>
