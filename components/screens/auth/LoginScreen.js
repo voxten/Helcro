@@ -3,6 +3,12 @@ import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity } from 'reac
 import Icon from "react-native-vector-icons/FontAwesome5";
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import { useEffect } from 'react';
+
+
+WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess }) => {
   const { login } = useAuth();
@@ -10,9 +16,68 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
     Email: '',
     Password: ''
   });
- 
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: '898455262269-6pa32s4us16i06cjlfk3dp2dhhlvooe3.apps.googleusercontent.com', // WŁAŚCIWY dla Expo Go
+    androidClientId: '898455262269-6pa32s4us16i06cjlfk3dp2dhhlvooe3.apps.googleusercontent.com',
+    scopes: ['profile', 'email'],
+    extraParams: {
+      prompt: 'select_account'
+    }
+  });
+  
   const [loading, setLoading] = useState(false);
 
+  
+  useEffect(() => {
+    const handleGoogleResponse = async () => {
+      if (response?.type === 'success') {
+        setLoading(true);
+        try {
+          const accessToken = response.authentication.accessToken;
+          
+          const userInfoResponse = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          
+          const userInfo = await userInfoResponse.json();
+          const res = await api.post('/api/auth/google-login', {
+            googleId: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+          });
+
+          if (res.data.token) {
+            login(res.data.token, res.data.user);
+            
+            if (!res.data.hasProfileData) {
+              navigation.navigate('CompleteProfile', {
+                userId: res.data.user.UserId,
+                email: userInfo.email,
+              });
+            } else {
+              onLoginSuccess?.();
+            }
+          }
+        } catch (error) {
+          console.error('Google login error:', error);
+          Alert.alert('Error', 'Failed to login with Google');
+        } finally {
+          setLoading(false);
+        }
+      }
+      
+      if (response?.type === 'error') {
+        Alert.alert(
+          'Authentication error',
+          response.error?.message || 'Something went wrong'
+        );
+      }
+    };
+
+    handleGoogleResponse();
+  }, [response]);
+
+  
   const handleChange = (name, value) => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
@@ -53,7 +118,6 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
       setLoading(false);
     }
   };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Logging in</Text>
@@ -97,11 +161,36 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
       >
         <Text style={styles.secondaryButtonText}>Forgot Password?</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity 
+        onPress={() => promptAsync()}
+        style={styles.googleButton}
+        disabled={!request || loading}
+      >
+        <Icon name="google" size={20} color="white" />
+        <Text style={styles.googleButtonText}>
+          {loading ? 'Processing...' : 'Sign in with Google'}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DB4437', // Kolor Google
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  googleButtonText: {
+    color: 'white',
+    marginLeft: 10,
+    fontWeight: 'bold',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

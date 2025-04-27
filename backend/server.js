@@ -60,6 +60,8 @@ db.connect(err => {
     console.log('Connected to MySQL');
 });
 
+
+
 app.post('/api/auth/verify-password', async (req, res) => {
     const { userId, password } = req.body;
 
@@ -290,7 +292,73 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
-
+app.post('/api/auth/google-login', async (req, res) => {
+    const { googleId, email, name } = req.body;
+  
+    try {
+      // 1. Sprawdź czy użytkownik istnieje
+      db.query('SELECT * FROM user WHERE google_id = ? OR email = ?', 
+        [googleId, email], 
+        async (err, results) => {
+          if (err) throw err;
+  
+          let user;
+          if (results.length > 0) {
+            user = results[0];
+          } else {
+            // 2. Jeśli nie, stwórz nowego użytkownika
+            db.query(
+              'INSERT INTO user (google_id, email, name) VALUES (?, ?, ?)',
+              [googleId, email, name],
+              (err, result) => {
+                if (err) throw err;
+                user = {
+                  UserId: result.insertId,
+                  email,
+                  name,
+                  google_id: googleId
+                };
+              }
+            );
+          }
+  
+          // 3. Generuj token
+          const token = jwt.sign(
+            { id: user.UserId },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+          );
+  
+          // 4. Sprawdź czy ma uzupełniony profil
+          const hasProfileData = user.Height && user.Weight && user.Birthday;
+  
+          res.json({
+            token,
+            user,
+            hasProfileData: !!hasProfileData
+          });
+        }
+      );
+    } catch (error) {
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  app.post('/api/auth/complete-profile', async (req, res) => {
+    const { userId, Height, Weight, Birthday, Gender } = req.body;
+  
+    try {
+      db.query(
+        'UPDATE user SET Height = ?, Weight = ?, Birthday = ?, Gender = ? WHERE UserId = ?',
+        [Height, Weight, Birthday, Gender, userId],
+        (err, result) => {
+          if (err) throw err;
+          res.json({ success: true });
+        }
+      );
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update profile' });
+    }
+  });
 // Logowanie użytkownika
 app.post('/api/auth/login', async (req, res) => {
     const { Email, Password } = req.body;

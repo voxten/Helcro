@@ -5,12 +5,13 @@ CREATE TABLE User (
     Password VARCHAR(255) NOT NULL,
     Height FLOAT,
     Weight FLOAT,
-    Gender ENUM('M', 'K', 'Inne'),
+    Gender ENUM('M', 'K'),
     Birthday Date,
     reset_token TEXT,
     reset_token_expires DATETIME,
     deletion_token TEXT,
     deletion_token_expires DATETIME
+    google_id VARCHAR(255) NULL
 );
 
 CREATE TABLE Goal (
