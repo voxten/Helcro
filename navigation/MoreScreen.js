@@ -8,7 +8,7 @@ export default function MoreScreen({ navigation }) {
         <View style={styles.container}>
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => navigation.navigate("Profile")}
+                onPress={() => navigation.navigate("User Profile")}
             >
                 <Icon name="user" size={20} color="white" style={styles.icon} />
                 <Text style={styles.buttonText}>Profile</Text>
@@ -28,6 +28,14 @@ export default function MoreScreen({ navigation }) {
             >
                 <Icon name="history" size={20} color="white" style={styles.icon} />
                 <Text style={styles.buttonText}>Weight History</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate("Export Data")}
+            >
+                <Icon name="download" size={20} color="white" style={styles.icon} />
+                <Text style={styles.buttonText}>Export Data</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
