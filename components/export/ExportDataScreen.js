@@ -280,20 +280,6 @@ export default function ExportDataScreen() {
                 </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-                style={styles.exportButton}
-                onPress={async () => {
-                    const exportsDir = `${FileSystem.documentDirectory}exports/`;
-                    Alert.alert(
-                        "Debug Info",
-                        `Files are stored at: ${exportsDir}\n\nUse Device File Explorer to access them.`
-                    );
-                    console.log("Full directory contents:", await FileSystem.readDirectoryAsync(exportsDir));
-                }}
-            >
-                <Text style={styles.exportButtonText}>Show Storage Path</Text>
-            </TouchableOpacity>
-
             <Text style={styles.subtitle}>Saved Exports</Text>
             {exports.length > 0 ? (
                 <FlatList
