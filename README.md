@@ -15,9 +15,12 @@
 ### Frontend
 `npm install react-native-dotenv`
 `npm install metro-react-native-babel-preset`
+`expo install expo-file-system expo-sharing`
+`expo install expo-file-system expo-sharing moment`
 
 ### Important Information!!!
 #### Go into .env and change `API_BASE_URL` !!!!
+
 
 ### Start app:
 `npx expo start`

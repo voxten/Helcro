@@ -32,7 +32,6 @@ export default function Menu() {
             if (!user?.UserId) return;
             
             try {
-                console.log("Fetching updated goals..."); // Debug log
                 const response = await axios.get(`${API_BASE_URL}/api/goal/${user.UserId}`);
                 if (response.data) {
                     console.log("Received goals:", response.data); // Debug log

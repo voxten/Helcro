@@ -1171,6 +1171,180 @@ app.delete('/weight/:id', async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
+
+// Add these to your server.js
+
+// Helper function to format date for SQL
+function formatDateForSQL(date) {
+    return date.toISOString().split('T')[0];
+}
+
+// Update the export endpoint in server.js
+app.get('/api/export/nutrition-data', (req, res) => {
+    const { startDate, endDate, format, userId } = req.query;
+
+    if (!startDate || !endDate || !format || !userId) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    db.query(`
+        SELECT
+            p.product_name,
+            p.calories,
+            p.proteins,
+            p.fats,
+            p.carbohydrates,
+            ilhp.grams,
+            m.MealType,
+            ilhp.MealDate,
+            (p.calories * ilhp.grams / 100) AS calculated_calories,
+            (p.proteins * ilhp.grams / 100) AS calculated_proteins,
+            (p.fats * ilhp.grams / 100) AS calculated_fats,
+            (p.carbohydrates * ilhp.grams / 100) AS calculated_carbs
+        FROM IntakeLog_has_Product ilhp
+                 JOIN Product p ON ilhp.ProductId = p.ProductId
+                 JOIN Meal m ON ilhp.MealId = m.MealId
+                 JOIN IntakeLog il ON ilhp.IntakeLogId = il.IntakeLogId
+        WHERE il.LogDate BETWEEN ? AND ?
+          AND il.UserId = ?
+        ORDER BY ilhp.MealDate
+    `, [startDate, endDate, userId], (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'No data found for the selected date range' });
+        }
+
+        try {
+            switch (format) {
+                case 'csv':
+                    return exportAsCSV(res, results);
+                case 'excel':
+                    return exportAsExcel(res, results);
+                case 'pdf':
+                    return exportAsPDF(res, results);
+                case 'txt':
+                    return exportAsTXT(res, results);
+                default:
+                    return res.status(400).json({ error: 'Invalid export format' });
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            return res.status(500).json({ error: 'Export failed' });
+        }
+    });
+});
+
+// Helper functions for different export formats
+function exportAsCSV(res, data) {
+    let csv = 'Product,Calories,Proteins,Fats,Carbohydrates,Grams,MealType,MealDate,Calculated Calories,Calculated Proteins,Calculated Fats,Calculated Carbs\n';
+
+    data.forEach(row => {
+        csv += `"${row.product_name}",${row.calories},${row.proteins},${row.fats},${row.carbohydrates},${row.grams},${row.MealType},"${row.MealDate}",${row.calculated_calories},${row.calculated_proteins},${row.calculated_fats},${row.calculated_carbs}\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=nutrition-data.csv');
+    res.send(csv);
+}
+
+function exportAsExcel(res, data) {
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Nutrition Data');
+
+    // Add headers
+    worksheet.columns = [
+        { header: 'Product', key: 'product_name' },
+        { header: 'Calories', key: 'calories' },
+        { header: 'Proteins', key: 'proteins' },
+        { header: 'Fats', key: 'fats' },
+        { header: 'Carbohydrates', key: 'carbohydrates' },
+        { header: 'Grams', key: 'grams' },
+        { header: 'Meal Type', key: 'MealType' },
+        { header: 'Meal Date', key: 'MealDate' },
+        { header: 'Calculated Calories', key: 'calculated_calories' },
+        { header: 'Calculated Proteins', key: 'calculated_proteins' },
+        { header: 'Calculated Fats', key: 'calculated_fats' },
+        { header: 'Calculated Carbs', key: 'calculated_carbs' }
+    ];
+
+    // Add data
+    worksheet.addRows(data);
+
+    // Write to response
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=nutrition-data.xlsx');
+
+    workbook.xlsx.write(res)
+        .then(() => res.end())
+        .catch(err => {
+            console.error('Excel export error:', err);
+            res.status(500).json({ error: 'Excel export failed' });
+        });
+}
+
+function exportAsPDF(res, data) {
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=nutrition-data.pdf');
+
+    doc.pipe(res);
+
+    // Add title
+    doc.fontSize(20).text('Nutrition Data Export', { align: 'center' });
+    doc.moveDown();
+
+    // Add table headers
+    doc.fontSize(12);
+    doc.text('Product', 50, 100);
+    doc.text('Calories', 200, 100);
+    doc.text('Proteins', 250, 100);
+    doc.text('Fats', 300, 100);
+    doc.text('Carbs', 350, 100);
+    doc.text('Grams', 400, 100);
+    doc.text('Meal', 450, 100);
+
+    // Add data rows
+    let y = 120;
+    data.forEach(row => {
+        doc.text(row.product_name.substring(0, 20), 50, y);
+        doc.text(row.calories.toString(), 200, y);
+        doc.text(row.proteins.toString(), 250, y);
+        doc.text(row.fats.toString(), 300, y);
+        doc.text(row.carbohydrates.toString(), 350, y);
+        doc.text(row.grams.toString(), 400, y);
+        doc.text(row.MealType, 450, y);
+        y += 20;
+
+        // Add new page if we're at the bottom
+        if (y > 700) {
+            doc.addPage();
+            y = 100;
+        }
+    });
+
+    doc.end();
+}
+
+function exportAsTXT(res, data) {
+    let text = 'Nutrition Data Export\n\n';
+    text += 'Product\tCalories\tProteins\tFats\tCarbs\tGrams\tMeal Type\tMeal Date\n';
+
+    data.forEach(row => {
+        text += `${row.product_name}\t${row.calories}\t${row.proteins}\t${row.fats}\t${row.carbohydrates}\t${row.grams}\t${row.MealType}\t${row.MealDate}\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', 'attachment; filename=nutrition-data.txt');
+    res.send(text);
+}
+
 // ===== RECIPE ENDPOINTS ===== //
 // Get recipe details (public access)
 app.get('/api/recipes/detail/:recipeId', (req, res) => {
