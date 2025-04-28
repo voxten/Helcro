@@ -10,7 +10,7 @@ CREATE TABLE User (
     reset_token TEXT,
     reset_token_expires DATETIME,
     deletion_token TEXT,
-    deletion_token_expires DATETIME
+    deletion_token_expires DATETIME,
     google_id VARCHAR(255) NULL
 );
 
@@ -64,6 +64,8 @@ CREATE TABLE IntakeLog_has_Product (
     MealName VARCHAR(255),
     MealDate DATETIME,
     grams DECIMAL(10,2) DEFAULT 100,
+    AverageRating DECIMAL(2,1) DEFAULT 0.0,
+    RatingCount INT DEFAULT 0,
     PRIMARY KEY (IntakeLogId, ProductId ,MealId),
     FOREIGN KEY (IntakeLogId) REFERENCES IntakeLog(IntakeLogId) ON DELETE CASCADE,
     FOREIGN KEY (ProductId) REFERENCES Product(ProductId) ON DELETE CASCADE,
@@ -143,4 +145,16 @@ CREATE TABLE Weight_History (
     WeightDate DATE NOT NULL,
     Weight DECIMAL(10,2),
     FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE
+);
+
+CREATE TABLE RecipeRating (
+    RatingId INT PRIMARY KEY AUTO_INCREMENT,
+    RecipeId INT NOT NULL,
+    UserId INT NOT NULL,
+    Rating DECIMAL(2,1) NOT NULL CHECK (Rating >= 0.5 AND Rating <= 5 AND Rating % 0.5 = 0),
+    Comment TEXT,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (RecipeId) REFERENCES Recipe(RecipeId) ON DELETE CASCADE,
+    FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE,
+    UNIQUE KEY (RecipeId, UserId) -- Każdy użytkownik może ocenić przepis tylko raz
 );
