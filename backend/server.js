@@ -298,7 +298,7 @@ app.post('/api/auth/request-account-deletion', (req, res) => {
 
         // 4. Send email with deletion link
         const mailOptions = {
-            from: `"Support" <${process.env.SMTP_USER}>`,
+            from: `"Helcro-Support" <${process.env.SMTP_USER}>`,
             to: email,
             subject: 'Confirm Account Deletion',
             html: `
@@ -1302,11 +1302,6 @@ app.delete('/weight/:id', async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
-
-// Helper function to format date for SQL
-function formatDateForSQL(date) {
-    return date.toISOString().split('T')[0];
-}
 
 // Update the export endpoint in server.js
 app.get('/api/export/nutrition-data', (req, res) => {
