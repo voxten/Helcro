@@ -79,6 +79,8 @@ CREATE TABLE Recipe (
     Description TEXT,
     Steps TEXT,
     Image VARCHAR(255),
+    AverageRating DECIMAL(2,1) DEFAULT 0.0,
+    RatingCount INT DEFAULT 0,
     FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE
 );
 
@@ -156,5 +158,5 @@ CREATE TABLE RecipeRating (
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (RecipeId) REFERENCES Recipe(RecipeId) ON DELETE CASCADE,
     FOREIGN KEY (UserId) REFERENCES User(UserId) ON DELETE CASCADE,
-    UNIQUE KEY (RecipeId, UserId) -- Każdy użytkownik może ocenić przepis tylko raz
+    UNIQUE KEY (RecipeId, UserId)
 );
