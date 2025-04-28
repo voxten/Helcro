@@ -58,7 +58,7 @@ const CompleteProfileScreen = ({ route, navigation }) => {
       } catch (error) {
         Alert.alert('Error', 'Failed to save profile data');
       }
-    };
+    }; 
 
   return (
     <KeyboardAvoidingView
