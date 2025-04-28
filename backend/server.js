@@ -61,6 +61,137 @@ db.connect(err => {
 });
 
 
+app.get('/api/recipes/rating', async (req, res) => {
+    const { recipeId, userId } = req.query;
+    
+    try {
+        const [ratings] = await pool.execute(
+            `SELECT Rating, Comment 
+             FROM RecipeRating 
+             WHERE RecipeId = ? AND UserId = ?`,
+            [recipeId, userId]
+        );
+        
+        res.json({
+            rating: ratings[0] || null
+        });
+    } catch (error) {
+        console.error('Get rating error:', error);
+        res.status(500).json({ error: 'Failed to get rating' });
+    }
+});
+
+// Dodaj/aktualizuj ocenę
+app.post('/api/recipes/rate', async (req, res) => {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      await connection.beginTransaction();
+  
+      const { recipeId, userId, rating, comment } = req.body;
+  
+      // 1. Dodaj/aktualizuj ocenę
+      await connection.execute(
+        `INSERT INTO RecipeRating (RecipeId, UserId, Rating, Comment)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+         Rating = VALUES(Rating), Comment = VALUES(Comment)`,
+        [recipeId, userId, rating, comment]
+      );
+  
+      // 2. Oblicz nową średnią
+      const [avgResult] = await connection.execute(
+        `SELECT AVG(Rating) as averageRating, COUNT(*) as ratingCount
+         FROM RecipeRating
+         WHERE RecipeId = ?`,
+        [recipeId]
+      );
+  
+      // 3. Zaktualizuj przepis
+      await connection.execute(
+        `UPDATE Recipe
+         SET AverageRating = ?, RatingCount = ?
+         WHERE RecipeId = ?`,
+        [
+          parseFloat(avgResult[0].averageRating).toFixed(1),
+          avgResult[0].ratingCount,
+          recipeId
+        ]
+      );
+  
+      await connection.commit();
+  
+      res.json({
+        success: true,
+        averageRating: parseFloat(avgResult[0].averageRating).toFixed(1),
+        ratingCount: avgResult[0].ratingCount,
+        userRating: rating // Dodajemy ocenę użytkownika w odpowiedzi
+      });
+  
+    } catch (error) {
+      if (connection) await connection.rollback();
+      console.error('Rating error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to rate recipe'
+      });
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+// Usuń ocenę
+app.delete('/api/recipes/rating', async (req, res) => {
+    const { recipeId, userId } = req.body;
+    let connection;
+
+    try {
+        connection = await pool.getConnection(); // <-- get a connection
+
+        await connection.beginTransaction();
+        
+        // 1. Usuń ocenę
+        await connection.execute(
+            `DELETE FROM RecipeRating
+             WHERE RecipeId = ? AND UserId = ?`,
+            [recipeId, userId]
+        );
+        
+        // 2. Oblicz nową średnią
+        const [avgResult] = await connection.execute(
+            `SELECT AVG(Rating) as averageRating, COUNT(*) as ratingCount
+             FROM RecipeRating
+             WHERE RecipeId = ?`,
+            [recipeId]
+        );
+        
+        // 3. Zaktualizuj przepis
+        await connection.execute(
+            `UPDATE Recipe
+             SET AverageRating = ?, RatingCount = ?
+             WHERE RecipeId = ?`,
+            [
+                avgResult[0].ratingCount > 0 ? parseFloat(avgResult[0].averageRating).toFixed(1) : 0,
+                avgResult[0].ratingCount || 0,
+                recipeId
+            ]
+        );
+        
+        await connection.commit();
+        
+        res.json({
+            success: true,
+            averageRating: avgResult[0].ratingCount > 0 ? parseFloat(avgResult[0].averageRating).toFixed(1) : 0,
+            ratingCount: avgResult[0].ratingCount || 0
+        });
+    } catch (error) {
+        if (connection) await connection.rollback(); // use connection.rollback() instead of pool
+        console.error('Delete rating error:', error);
+        res.status(500).json({ error: 'Failed to delete rating' });
+    } finally {
+        if (connection) connection.release(); // Always release the connection back to the pool
+    }
+});
 
 app.post('/api/auth/verify-password', async (req, res) => {
     const { userId, password } = req.body;
@@ -1171,102 +1302,113 @@ app.delete('/weight/:id', async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
+
 // ===== RECIPE ENDPOINTS ===== //
 // Get recipe details (public access)
-app.get('/api/recipes/detail/:recipeId', (req, res) => {
+app.get('/api/recipes/detail/:recipeId', async (req, res) => {
     const { recipeId } = req.params;
-    
-    // Get recipe basic info
-    db.query(`
-        SELECT r.*, u.UserName 
-        FROM Recipe r
-        JOIN user u ON r.UserId = u.UserId
-        WHERE r.RecipeId = ?
-    `, [recipeId], (err, recipeResults) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ error: 'Database error' });
-        }
-
+    try {
+        // 1. Pobierz podstawowe dane przepisu + średnia ocena + liczba ocen
+        const [recipeResults] = await pool.execute(
+            `SELECT r.*, 
+                    u.UserName, 
+                    AVG(rr.Rating) as averageRating,
+                    COUNT(rr.Rating) as ratingCount
+             FROM Recipe r
+             JOIN user u ON r.UserId = u.UserId
+             LEFT JOIN RecipeRating rr ON r.RecipeId = rr.RecipeId
+             WHERE r.RecipeId = ?
+             GROUP BY r.RecipeId`,
+            [recipeId]
+        );
+        const [commentResults] = await pool.execute(
+            `SELECT rr.Rating, rr.Comment, u.UserName
+             FROM RecipeRating rr
+             JOIN user u ON rr.UserId = u.UserId
+             WHERE rr.RecipeId = ?`,
+            [recipeId]
+        );
         if (recipeResults.length === 0) {
             return res.status(404).json({ error: 'Recipe not found' });
         }
-
+        
         const recipe = recipeResults[0];
 
-        // Get categories
-        db.query(`
-            SELECT c.Name 
-            FROM Recipe_has_Category rc 
-            JOIN Category c ON rc.CategoryId = c.CategoryId
-            WHERE rc.RecipeId = ?
-        `, [recipeId], (err, categoryResults) => {
-            if (err) {
-                console.error('Database error:', err);
-                return res.status(500).json({ error: 'Database error' });
-            }
+        // 2. Pobierz kategorie
+        const [categoryResults] = await pool.execute(
+            `SELECT c.Name 
+             FROM Recipe_has_Category rc 
+             JOIN Category c ON rc.CategoryId = c.CategoryId
+             WHERE rc.RecipeId = ?`,
+            [recipeId]
+        );
 
-            // Get products with nutrition info
-            db.query(`
-                SELECT 
-                    p.ProductId, 
-                    p.product_name as name, 
-                    rp.Amount,
-                    p.calories,
-                    p.proteins,
-                    p.fats,
-                    p.carbohydrates
-                FROM Recipe_has_Product rp 
-                JOIN Product p ON rp.ProductId = p.ProductId
-                WHERE rp.RecipeId = ?
-            `, [recipeId], (err, productResults) => {
-                if (err) {
-                    console.error('Database error:', err);
-                    return res.status(500).json({ error: 'Database error' });
-                }
+        // 3. Pobierz produkty (z makro składnikami)
+        const [productResults] = await pool.execute(
+            `SELECT 
+                p.ProductId, 
+                p.product_name as name, 
+                rp.Amount,
+                p.calories,
+                p.proteins,
+                p.fats,
+                p.carbohydrates
+             FROM Recipe_has_Product rp 
+             JOIN Product p ON rp.ProductId = p.ProductId
+             WHERE rp.RecipeId = ?`,
+            [recipeId]
+        );
 
-                // Calculate total nutrition
-                let totalCalories = 0;
-                let totalProteins = 0;
-                let totalFats = 0;
-                let totalCarbs = 0;
+        // 4. Oblicz sumaryczną wartość odżywczą
+        let totalCalories = 0;
+        let totalProteins = 0;
+        let totalFats = 0;
+        let totalCarbs = 0;
 
-                productResults.forEach(product => {
-                    const amount = product.Amount || 100; // Default to 100g if amount not specified
-                    totalCalories += (product.calories / 100) * amount;
-                    totalProteins += (product.proteins / 100) * amount;
-                    totalFats += (product.fats / 100) * amount;
-                    totalCarbs += (product.carbohydrates / 100) * amount;
-                });
-
-                // Format the response
-                res.json({
-                    RecipeId: recipe.RecipeId,
-                    name: recipe.Name,
-                    description: recipe.Description,
-                    Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
-                    rating: 4.5,
-                    UserName: recipe.UserName,
-                    steps: recipe.Steps ? recipe.Steps.split('||') : [], // Split steps by ||
-                    categories: categoryResults.map(c => c.Name),
-                    products: productResults.map(p => ({
-                        name: p.name,
-                        amount: p.Amount,
-                        calories: (p.calories / 100) * (p.Amount || 100),
-                        proteins: (p.proteins / 100) * (p.Amount || 100),
-                        fats: (p.fats / 100) * (p.Amount || 100),
-                        carbohydrates: (p.carbohydrates / 100) * (p.Amount || 100)
-                    })),
-                    totalNutrition: {
-                        calories: totalCalories || 0,
-                        proteins: totalProteins || 0,
-                        fats: totalFats || 0,
-                        carbohydrates: totalCarbs || 0
-                    }
-                });
-            });
+        productResults.forEach(product => {
+            const amount = product.Amount || 100; // zakładamy 100g domyślnie
+            totalCalories += (product.calories / 100) * amount;
+            totalProteins += (product.proteins / 100) * amount;
+            totalFats += (product.fats / 100) * amount;
+            totalCarbs += (product.carbohydrates / 100) * amount;
         });
-    });
+
+        // 5. Zwróć wszystkie dane
+        res.json({
+            RecipeId: recipe.RecipeId,
+            name: recipe.Name,
+            description: recipe.Description,
+            Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+            UserName: recipe.UserName,
+            averageRating: parseFloat(recipe.averageRating) || 0,
+            ratingCount: recipe.ratingCount || 0,
+            steps: recipe.Steps ? recipe.Steps.split('||') : [],
+            categories: categoryResults.map(c => c.Name),
+            products: productResults.map(p => ({
+                name: p.name,
+                amount: p.Amount,
+                calories: (p.calories / 100) * (p.Amount || 100),
+                proteins: (p.proteins / 100) * (p.Amount || 100),
+                fats: (p.fats / 100) * (p.Amount || 100),
+                carbohydrates: (p.carbohydrates / 100) * (p.Amount || 100)
+            })),
+            totalNutrition: {
+                calories: totalCalories || 0,
+                proteins: totalProteins || 0,
+                fats: totalFats || 0,
+                carbohydrates: totalCarbs || 0
+            },
+            comments: commentResults.map(c => ({
+                userName: c.UserName,
+                rating: c.Rating,
+                comment: c.Comment
+            }))           
+        });
+
+    } catch (error) {
+        console.error('Error fetching recipe details:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 // Get all categories
 app.get('/api/categories', (req, res) => {
