@@ -8,6 +8,7 @@ import Menu from "./menu/Menu";
 import MoreStack from "../navigation/MoreStack";
 import AuthNavigator from "../navigation/AuthNavigator";
 import RecipesStack from "../navigation/RecipesStack";
+import DietStack from "../navigation/DietStack";
 
 const Tab = createBottomTabNavigator();
 
@@ -35,7 +36,7 @@ export default function BottomNav() {
             >
                 <Tab.Screen
                     name="Diet"
-                    component={Menu}
+                    component={DietStack}
                     options={{
                         tabBarIcon: ({ color }) => (
                             <Icon name="silverware" size={26} color={color} />
