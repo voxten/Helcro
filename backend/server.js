@@ -1474,7 +1474,7 @@ function exportAsTXT(res, data) {
 app.get('/api/recipes/detail/:recipeId', async (req, res) => {
     const { recipeId } = req.params;
     try {
-        // 1. Pobierz podstawowe dane przepisu + średnia ocena + liczba ocen
+        // 1. Get basic recipe data + average rating + rating count
         const [recipeResults] = await pool.execute(
             `SELECT r.*, 
                     u.UserName, 
@@ -1500,7 +1500,7 @@ app.get('/api/recipes/detail/:recipeId', async (req, res) => {
         
         const recipe = recipeResults[0];
 
-        // 2. Pobierz kategorie
+        // 2. Get categories
         const [categoryResults] = await pool.execute(
             `SELECT c.Name 
              FROM Recipe_has_Category rc 
@@ -1509,11 +1509,12 @@ app.get('/api/recipes/detail/:recipeId', async (req, res) => {
             [recipeId]
         );
 
-        // 3. Pobierz produkty (z makro składnikami)
+        // 3. Get products (with macros and images)
         const [productResults] = await pool.execute(
             `SELECT 
                 p.ProductId, 
                 p.product_name as name, 
+                p.image,
                 rp.Amount,
                 p.calories,
                 p.proteins,
@@ -1525,21 +1526,21 @@ app.get('/api/recipes/detail/:recipeId', async (req, res) => {
             [recipeId]
         );
 
-        // 4. Oblicz sumaryczną wartość odżywczą
+        // 4. Calculate total nutritional values
         let totalCalories = 0;
         let totalProteins = 0;
         let totalFats = 0;
         let totalCarbs = 0;
 
         productResults.forEach(product => {
-            const amount = product.Amount || 100; // zakładamy 100g domyślnie
+            const amount = product.Amount || 100; // default to 100g
             totalCalories += (product.calories / 100) * amount;
             totalProteins += (product.proteins / 100) * amount;
             totalFats += (product.fats / 100) * amount;
             totalCarbs += (product.carbohydrates / 100) * amount;
         });
 
-        // 5. Zwróć wszystkie dane
+        // 5. Return all data
         res.json({
             RecipeId: recipe.RecipeId,
             name: recipe.Name,
@@ -1551,7 +1552,9 @@ app.get('/api/recipes/detail/:recipeId', async (req, res) => {
             steps: recipe.Steps ? recipe.Steps.split('||') : [],
             categories: categoryResults.map(c => c.Name),
             products: productResults.map(p => ({
+                ProductId: p.ProductId,
                 name: p.name,
+                image: p.image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
                 amount: p.Amount,
                 calories: (p.calories / 100) * (p.Amount || 100),
                 proteins: (p.proteins / 100) * (p.Amount || 100),
@@ -1598,7 +1601,7 @@ app.get('/api/recipe-products', (req, res) => {
         params.push(`%${search}%`);
     }
     
-    query += ' ORDER BY product_name LIMIT 50';
+    query += ' ORDER BY product_name ';
     
     db.query(query, params, (err, results) => {
         if (err) {

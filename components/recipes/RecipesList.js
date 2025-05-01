@@ -132,7 +132,6 @@ const RecipesList = ({ navigation }) => {
         });
         // Then populate with recipes
         recipes.forEach(recipe => {
-            console.log("recipe.categories:", recipe.categories, "isArray?", Array.isArray(recipe.categories));
             if (recipe.categories && recipe.categories.length > 0) {
                 recipe.categories.forEach(category => {
                     const categoryName = category.Name || category; // Obsługuje przypadki gdy to string lub obiekt

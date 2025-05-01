@@ -25,6 +25,13 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
   const [isButtonsDisabled, setIsButtonsDisabled] = useState(false);
   const [isChoosingProduct, setIsChoosingProduct] = useState(false);
 
+  const [isChoosingRecipe, setIsChoosingRecipe] = useState(false);
+  const [recipes, setRecipes] = useState([]);
+  const [filteredRecipes, setFilteredRecipes] = useState([]);
+  const [recipeSearchQuery, setRecipeSearchQuery] = useState("");
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [recipeProducts, setRecipeProducts] = useState([]);
+
   useEffect(() => {
     axios.get(apiUrl + "/products")
         .then(response => {
@@ -32,6 +39,13 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
           setFilteredProducts(response.data);
         })
         .catch(error => console.error("Error fetching data:", error.response.data));
+
+        axios.get(`${API_BASE_URL}/api/recipes`)
+      .then(response => {
+        setRecipes(response.data);
+        setFilteredRecipes(response.data);
+      })
+      .catch(error => console.error("Error fetching recipes:", error));
   }, []);
 
   useEffect(() => {
@@ -47,6 +61,8 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
     loadData();
   }, [selectedDate, existingProducts]);
 
+  
+  
   const fetchIntakeLog = async () => {
     try {
       if (user && user.UserId) {
@@ -73,19 +89,29 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
   const handleCreateProduct = () => {
     setIsCreatingProduct(true);
     setIsChoosingProduct(false);
+    setIsChoosingRecipe(false);
     setIsButtonsDisabled(true);
   };
 
   const handleChooseProduct = () => {
     setIsChoosingProduct(true);
     setIsCreatingProduct(false);
+    setIsChoosingRecipe(false);
+  };
+  const handleChooseRecipe = () => {
+    setIsChoosingRecipe(true);
+    setIsCreatingProduct(false);
+    setIsChoosingProduct(false);
   };
 
   const handleCancel = () => {
     setIsCreatingProduct(false);
     setIsChoosingProduct(false);
+    setIsChoosingRecipe(false);
     setSearchQuery("");
+    setRecipeSearchQuery("");
     setFilteredProducts(databaseProducts);
+    setFilteredRecipes(recipes);
     setNewProduct({
       product_name: '',
       calories: '',
@@ -93,6 +119,8 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
       fats: '',
       carbohydrates: ''
     });
+    setSelectedRecipe(null);
+    setRecipeProducts([]);
     setIsButtonsDisabled(false);
   };
 
@@ -127,6 +155,71 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
       ]);
     }
     setIsChoosingProduct(false);
+  };
+  const handleSelectRecipe = async (recipe) => {
+    try {
+      // Fetch recipe details to get the products
+      const response = await axios.get(`${API_BASE_URL}/api/recipes/detail/${recipe.RecipeId}`);
+      const recipeDetails = response.data;
+      
+      // Format the recipe products for display
+      const formattedProducts = recipeDetails.products.map(product => ({
+        ...product,
+        productId: product.ProductId || product.productId,
+        product_name: product.name,
+        grams: product.amount || 100,
+        originalValues: {
+          calories: (product.calories / (product.amount || 100)) * 100,
+          proteins: (product.proteins / (product.amount || 100)) * 100,
+          fats: (product.fats / (product.amount || 100)) * 100,
+          carbohydrates: (product.carbohydrates / (product.amount || 100)) * 100
+        },
+        calories: product.calories,
+        proteins: product.proteins,
+        fats: product.fats,
+        carbohydrates: product.carbohydrates,
+        isFromRecipe: true,
+        recipeName: recipe.Name || recipe.name,
+        recipeImage: recipe.Image || recipe.photo
+      }));
+      
+      setSelectedRecipe(recipe);
+      setRecipeProducts(formattedProducts);
+    } catch (error) {
+      console.error("Error fetching recipe details:", error);
+      Alert.alert("Error", "Failed to load recipe details");
+    }
+  };
+  const handleAddRecipe = () => {
+    setProducts(prev => [...prev, ...recipeProducts]);
+    setSelectedRecipe(null);
+    setRecipeProducts([]);
+    setIsChoosingRecipe(false);
+  };
+  const handleRecipeGramsChange = (text, index) => {
+    const grams = parseFloat(text) || 0;
+    setRecipeProducts(prev => {
+      const updated = [...prev];
+      const product = updated[index];
+
+      const original = product.originalValues || {
+        calories: product.calories,
+        proteins: product.proteins,
+        fats: product.fats,
+        carbohydrates: product.carbohydrates
+      };
+
+      updated[index] = {
+        ...product,
+        grams,
+        calories: (parseFloat(original.calories || 0) / 100 * grams).toFixed(2),
+        proteins: (parseFloat(original.proteins || 0) / 100 * grams).toFixed(2),
+        fats: (parseFloat(original.fats || 0) / 100 * grams).toFixed(2),
+        carbohydrates: (parseFloat(original.carbohydrates || 0) / 100 * grams).toFixed(2),
+        originalValues: original
+      };
+      return updated;
+    });
   };
 
   const handleGramsChange = (text, index) => {
@@ -207,6 +300,13 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
     );
     setFilteredProducts(filtered);
   };
+  const handleRecipeSearch = (text) => {
+    setRecipeSearchQuery(text);
+    const filtered = recipes.filter(recipe =>
+      (recipe.Name || recipe.name).toLowerCase().includes(text.toLowerCase())
+    );
+    setFilteredRecipes(filtered);
+  };
 
   const renderProductItem = ({ item, index }) => (
       <View style={localStyles.productCard}>
@@ -247,18 +347,90 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
         </View>
       </View>
   );
+  const renderRecipeItem = ({ item }) => (
+    <TouchableOpacity
+      style={localStyles.productListItem}
+      onPress={() => handleSelectRecipe(item)}
+    >
+      <Image
+        source={{ uri: item.Image || item.photo || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
+        style={localStyles.productImage}
+      />
+      <View style={localStyles.productTextContainer}>
+        <Text style={localStyles.productName}>{item.Name || item.name}</Text>
+        <Text style={localStyles.productDetails}>
+          {item.categories?.join(', ')}
+        </Text>
+        <Text style={localStyles.productDetails}>
+          Rating: {item.AverageRating || item.averageRating || 0} ({item.RatingCount || item.ratingCount || 0} ratings)
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
+  const renderRecipeProducts = () => (
+    <View style={localStyles.recipeContainer}>
+      <View style={localStyles.recipeHeader}>
+        <Image
+          source={{ uri: selectedRecipe.Image || selectedRecipe.photo || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
+          style={localStyles.recipeImage}
+        />
+        <Text style={localStyles.recipeName}>{selectedRecipe.Name || selectedRecipe.name}</Text>
+      </View>
+      
+      <Text style={localStyles.recipeSubtitle}>Ingredients:</Text>
+      
+      {recipeProducts.map((product, index) => (
+        <View key={index} style={localStyles.recipeProductCard}>
+          <View style={localStyles.productContent}>
+            {product.image && <Image source={{ uri: product.image }} style={localStyles.productImage} />}
+
+            <View style={localStyles.productMainInfo}>
+              <View style={localStyles.productNameRow}>
+                <Text style={localStyles.productName} numberOfLines={1}>{product.product_name}</Text>
+                <View style={localStyles.gramsInputContainer}>
+                  <TextInput
+                    style={localStyles.gramsInput}
+                    value={product.grams?.toString()}
+                    onChangeText={(text) => handleRecipeGramsChange(text, index)}
+                    keyboardType="numeric"
+                  />
+                  <Text style={localStyles.gramsLabel}>g</Text>
+                </View>
+              </View>
+              <Text style={localStyles.productDetails}>
+                {(product.calories?.toString() || 0)} kcal |
+                {(product.proteins?.toString() || 0)}g protein |
+                {(product.fats?.toString() || 0)}g fat |
+                {(product.carbohydrates?.toString() || 0)}g carbs
+              </Text>
+            </View>
+          </View>
+        </View>
+      ))}
+      
+      <View style={localStyles.buttonContainer}>
+        <TouchableOpacity style={localStyles.closeButton} onPress={() => setSelectedRecipe(null)}>
+          <Icon name="back" size={20} color="white" style={localStyles.icon} />
+          <Text style={localStyles.closeButtonText}>Back</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={localStyles.closeButton} onPress={handleAddRecipe}>
+          <Text style={localStyles.closeButtonText}>Add Recipe</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
   return (
       <View style={localStyles.overlay}>
         <View style={localStyles.mainModalContainer}>
           <Text style={localStyles.header}>Choose a product or create your own</Text>
 
-          {!isCreatingProduct && !isChoosingProduct ? (
+          {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe ? (
               <>
                 <TouchableOpacity style={localStyles.button} onPress={handleChooseProduct}>
                   <Text style={localStyles.buttonText}>Choose a product</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={localStyles.button}>
+                <TouchableOpacity style={localStyles.button} onPress= {handleChooseRecipe}> 
                   <Text style={localStyles.buttonText}>Choose a recipe</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={localStyles.button} onPress={handleCreateProduct}>
@@ -299,7 +471,29 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
                     contentContainerStyle={localStyles.productListContainer}
                 />
               </View>
-          ) : (
+          ) : isChoosingRecipe ? (
+            selectedRecipe ? (
+              renderRecipeProducts()
+            ): (
+              <View style={localStyles.modalContainer}>
+              <View style={localStyles.searchContainer}>
+                <TextInput
+                  style={localStyles.searchInput}
+                  placeholder="Search recipes..."
+                  value={recipeSearchQuery}
+                  onChangeText={handleRecipeSearch}
+                />
+              </View>
+
+              <FlatList
+                data={filteredRecipes}
+                keyExtractor={(item) => item.RecipeId.toString()}
+                renderItem={renderRecipeItem}
+                contentContainerStyle={localStyles.productListContainer}
+              />
+            </View>
+          )
+        ) : (
               <>
                 <TextInput
                     style={localStyles.input}
@@ -337,8 +531,9 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
                 />
               </>
           )}
+          
 
-          {!isCreatingProduct && !isChoosingProduct && (
+          {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe && (
               <View style={localStyles.scrollContainer}>
                 <FlatList
                     data={products}
@@ -350,7 +545,7 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
               </View>
           )}
 
-          {(isCreatingProduct || isChoosingProduct) && (
+          {(isCreatingProduct || isChoosingProduct || isChoosingRecipe) && (
               <View style={localStyles.buttonContainer}>
                 <TouchableOpacity style={localStyles.closeButton} onPress={handleCancel}>
                   <Icon name="back" size={20} color="white" style={localStyles.icon} />
@@ -365,7 +560,7 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
               </View>
           )}
 
-          {!isCreatingProduct && !isChoosingProduct && (
+          {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe && (
               <View style={localStyles.buttonContainer}>
                 <TouchableOpacity style={localStyles.closeButton} onPress={onClose} disabled={isButtonsDisabled}>
                   <Icon name="back" size={20} color="white" style={localStyles.icon} />
@@ -561,5 +756,36 @@ const localStyles = StyleSheet.create({
   gramsInputContainer: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  recipeListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  recipeImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 5,
+    marginRight: 15,
+    backgroundColor: '#f5f5f5',
+  },
+  recipeTextContainer: {
+    flex: 1,
+  },
+  recipeName: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 5,
+  },
+  recipeCategories: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+  },
+  recipeRating: {
+    fontSize: 12,
+    color: '#FFC107',
   },
 });
