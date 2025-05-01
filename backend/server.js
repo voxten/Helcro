@@ -60,6 +60,139 @@ db.connect(err => {
     console.log('Connected to MySQL');
 });
 
+
+app.get('/api/recipes/rating', async (req, res) => {
+    const { recipeId, userId } = req.query;
+    
+    try {
+        const [ratings] = await pool.execute(
+            `SELECT Rating, Comment 
+             FROM RecipeRating 
+             WHERE RecipeId = ? AND UserId = ?`,
+            [recipeId, userId]
+        );
+        
+        res.json({
+            rating: ratings[0] || null
+        });
+    } catch (error) {
+        console.error('Get rating error:', error);
+        res.status(500).json({ error: 'Failed to get rating' });
+    }
+});
+
+// Dodaj/aktualizuj ocenę
+app.post('/api/recipes/rate', async (req, res) => {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      await connection.beginTransaction();
+  
+      const { recipeId, userId, rating, comment } = req.body;
+  
+      // 1. Dodaj/aktualizuj ocenę
+      await connection.execute(
+        `INSERT INTO RecipeRating (RecipeId, UserId, Rating, Comment)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+         Rating = VALUES(Rating), Comment = VALUES(Comment)`,
+        [recipeId, userId, rating, comment]
+      );
+  
+      // 2. Oblicz nową średnią
+      const [avgResult] = await connection.execute(
+        `SELECT AVG(Rating) as averageRating, COUNT(*) as ratingCount
+         FROM RecipeRating
+         WHERE RecipeId = ?`,
+        [recipeId]
+      );
+  
+      // 3. Zaktualizuj przepis
+      await connection.execute(
+        `UPDATE Recipe
+         SET AverageRating = ?, RatingCount = ?
+         WHERE RecipeId = ?`,
+        [
+          parseFloat(avgResult[0].averageRating).toFixed(1),
+          avgResult[0].ratingCount,
+          recipeId
+        ]
+      );
+  
+      await connection.commit();
+  
+      res.json({
+        success: true,
+        averageRating: parseFloat(avgResult[0].averageRating).toFixed(1),
+        ratingCount: avgResult[0].ratingCount,
+        userRating: rating // Dodajemy ocenę użytkownika w odpowiedzi
+      });
+  
+    } catch (error) {
+      if (connection) await connection.rollback();
+      console.error('Rating error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to rate recipe'
+      });
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+// Usuń ocenę
+app.delete('/api/recipes/rating', async (req, res) => {
+    const { recipeId, userId } = req.body;
+    let connection;
+
+    try {
+        connection = await pool.getConnection(); // <-- get a connection
+
+        await connection.beginTransaction();
+        
+        // 1. Usuń ocenę
+        await connection.execute(
+            `DELETE FROM RecipeRating
+             WHERE RecipeId = ? AND UserId = ?`,
+            [recipeId, userId]
+        );
+        
+        // 2. Oblicz nową średnią
+        const [avgResult] = await connection.execute(
+            `SELECT AVG(Rating) as averageRating, COUNT(*) as ratingCount
+             FROM RecipeRating
+             WHERE RecipeId = ?`,
+            [recipeId]
+        );
+        
+        // 3. Zaktualizuj przepis
+        await connection.execute(
+            `UPDATE Recipe
+             SET AverageRating = ?, RatingCount = ?
+             WHERE RecipeId = ?`,
+            [
+                avgResult[0].ratingCount > 0 ? parseFloat(avgResult[0].averageRating).toFixed(1) : 0,
+                avgResult[0].ratingCount || 0,
+                recipeId
+            ]
+        );
+        
+        await connection.commit();
+        
+        res.json({
+            success: true,
+            averageRating: avgResult[0].ratingCount > 0 ? parseFloat(avgResult[0].averageRating).toFixed(1) : 0,
+            ratingCount: avgResult[0].ratingCount || 0
+        });
+    } catch (error) {
+        if (connection) await connection.rollback(); // use connection.rollback() instead of pool
+        console.error('Delete rating error:', error);
+        res.status(500).json({ error: 'Failed to delete rating' });
+    } finally {
+        if (connection) connection.release(); // Always release the connection back to the pool
+    }
+});
+
 app.post('/api/auth/verify-password', async (req, res) => {
     const { userId, password } = req.body;
 
@@ -165,7 +298,7 @@ app.post('/api/auth/request-account-deletion', (req, res) => {
 
         // 4. Send email with deletion link
         const mailOptions = {
-            from: `"Support" <${process.env.SMTP_USER}>`,
+            from: `"Helcro-Support" <${process.env.SMTP_USER}>`,
             to: email,
             subject: 'Confirm Account Deletion',
             html: `
@@ -290,7 +423,73 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
-
+app.post('/api/auth/google-login', async (req, res) => {
+    const { googleId, email, name } = req.body;
+  
+    try {
+      // 1. Sprawdź czy użytkownik istnieje
+      db.query('SELECT * FROM user WHERE google_id = ? OR email = ?', 
+        [googleId, email], 
+        async (err, results) => {
+          if (err) throw err;
+  
+          let user;
+          if (results.length > 0) {
+            user = results[0];
+          } else {
+            // 2. Jeśli nie, stwórz nowego użytkownika
+            db.query(
+              'INSERT INTO user (google_id, email, name) VALUES (?, ?, ?)',
+              [googleId, email, name],
+              (err, result) => {
+                if (err) throw err;
+                user = {
+                  UserId: result.insertId,
+                  email,
+                  name,
+                  google_id: googleId
+                };
+              }
+            );
+          }
+  
+          // 3. Generuj token
+          const token = jwt.sign(
+            { id: user.UserId },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+          );
+  
+          // 4. Sprawdź czy ma uzupełniony profil
+          const hasProfileData = user.Height && user.Weight && user.Birthday;
+  
+          res.json({
+            token,
+            user,
+            hasProfileData: !!hasProfileData
+          });
+        }
+      );
+    } catch (error) {
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  app.post('/api/auth/complete-profile', async (req, res) => {
+    const { userId, Height, Weight, Birthday, Gender } = req.body;
+  
+    try {
+      db.query(
+        'UPDATE user SET Height = ?, Weight = ?, Birthday = ?, Gender = ? WHERE UserId = ?',
+        [Height, Weight, Birthday, Gender, userId],
+        (err, result) => {
+          if (err) throw err;
+          res.json({ success: true });
+        }
+      );
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update profile' });
+    }
+  });
 // Logowanie użytkownika
 app.post('/api/auth/login', async (req, res) => {
     const { Email, Password } = req.body;
@@ -1103,102 +1302,279 @@ app.delete('/weight/:id', async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
-// ===== RECIPE ENDPOINTS ===== //
-// Get recipe details (public access)
-app.get('/api/recipes/detail/:recipeId', (req, res) => {
-    const { recipeId } = req.params;
-    
-    // Get recipe basic info
+
+// Update the export endpoint in server.js
+app.get('/api/export/nutrition-data', (req, res) => {
+    const { startDate, endDate, format, userId } = req.query;
+
+    if (!startDate || !endDate || !format || !userId) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
     db.query(`
-        SELECT r.*, u.UserName 
-        FROM Recipe r
-        JOIN user u ON r.UserId = u.UserId
-        WHERE r.RecipeId = ?
-    `, [recipeId], (err, recipeResults) => {
+        SELECT
+            p.product_name,
+            p.calories,
+            p.proteins,
+            p.fats,
+            p.carbohydrates,
+            ilhp.grams,
+            m.MealType,
+            ilhp.MealDate,
+            (p.calories * ilhp.grams / 100) AS calculated_calories,
+            (p.proteins * ilhp.grams / 100) AS calculated_proteins,
+            (p.fats * ilhp.grams / 100) AS calculated_fats,
+            (p.carbohydrates * ilhp.grams / 100) AS calculated_carbs
+        FROM IntakeLog_has_Product ilhp
+                 JOIN Product p ON ilhp.ProductId = p.ProductId
+                 JOIN Meal m ON ilhp.MealId = m.MealId
+                 JOIN IntakeLog il ON ilhp.IntakeLogId = il.IntakeLogId
+        WHERE il.LogDate BETWEEN ? AND ?
+          AND il.UserId = ?
+        ORDER BY ilhp.MealDate
+    `, [startDate, endDate, userId], (err, results) => {
         if (err) {
             console.error('Database error:', err);
             return res.status(500).json({ error: 'Database error' });
         }
 
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'No data found for the selected date range' });
+        }
+
+        try {
+            switch (format) {
+                case 'csv':
+                    return exportAsCSV(res, results);
+                case 'excel':
+                    return exportAsExcel(res, results);
+                case 'pdf':
+                    return exportAsPDF(res, results);
+                case 'txt':
+                    return exportAsTXT(res, results);
+                default:
+                    return res.status(400).json({ error: 'Invalid export format' });
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            return res.status(500).json({ error: 'Export failed' });
+        }
+    });
+});
+
+// Helper functions for different export formats
+function exportAsCSV(res, data) {
+    let csv = 'Product,Calories,Proteins,Fats,Carbohydrates,Grams,MealType,MealDate,Calculated Calories,Calculated Proteins,Calculated Fats,Calculated Carbs\n';
+
+    data.forEach(row => {
+        csv += `"${row.product_name}",${row.calories},${row.proteins},${row.fats},${row.carbohydrates},${row.grams},${row.MealType},"${row.MealDate}",${row.calculated_calories},${row.calculated_proteins},${row.calculated_fats},${row.calculated_carbs}\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=nutrition-data.csv');
+    res.send(csv);
+}
+
+function exportAsExcel(res, data) {
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Nutrition Data');
+
+    // Add headers
+    worksheet.columns = [
+        { header: 'Product', key: 'product_name' },
+        { header: 'Calories', key: 'calories' },
+        { header: 'Proteins', key: 'proteins' },
+        { header: 'Fats', key: 'fats' },
+        { header: 'Carbohydrates', key: 'carbohydrates' },
+        { header: 'Grams', key: 'grams' },
+        { header: 'Meal Type', key: 'MealType' },
+        { header: 'Meal Date', key: 'MealDate' },
+        { header: 'Calculated Calories', key: 'calculated_calories' },
+        { header: 'Calculated Proteins', key: 'calculated_proteins' },
+        { header: 'Calculated Fats', key: 'calculated_fats' },
+        { header: 'Calculated Carbs', key: 'calculated_carbs' }
+    ];
+
+    // Add data
+    worksheet.addRows(data);
+
+    // Write to response
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=nutrition-data.xlsx');
+
+    workbook.xlsx.write(res)
+        .then(() => res.end())
+        .catch(err => {
+            console.error('Excel export error:', err);
+            res.status(500).json({ error: 'Excel export failed' });
+        });
+}
+
+function exportAsPDF(res, data) {
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=nutrition-data.pdf');
+
+    doc.pipe(res);
+
+    // Add title
+    doc.fontSize(20).text('Nutrition Data Export', { align: 'center' });
+    doc.moveDown();
+
+    // Add table headers
+    doc.fontSize(12);
+    doc.text('Product', 50, 100);
+    doc.text('Calories', 200, 100);
+    doc.text('Proteins', 250, 100);
+    doc.text('Fats', 300, 100);
+    doc.text('Carbs', 350, 100);
+    doc.text('Grams', 400, 100);
+    doc.text('Meal', 450, 100);
+
+    // Add data rows
+    let y = 120;
+    data.forEach(row => {
+        doc.text(row.product_name.substring(0, 20), 50, y);
+        doc.text(row.calories.toString(), 200, y);
+        doc.text(row.proteins.toString(), 250, y);
+        doc.text(row.fats.toString(), 300, y);
+        doc.text(row.carbohydrates.toString(), 350, y);
+        doc.text(row.grams.toString(), 400, y);
+        doc.text(row.MealType, 450, y);
+        y += 20;
+
+        // Add new page if we're at the bottom
+        if (y > 700) {
+            doc.addPage();
+            y = 100;
+        }
+    });
+
+    doc.end();
+}
+
+function exportAsTXT(res, data) {
+    let text = 'Nutrition Data Export\n\n';
+    text += 'Product\tCalories\tProteins\tFats\tCarbs\tGrams\tMeal Type\tMeal Date\n';
+
+    data.forEach(row => {
+        text += `${row.product_name}\t${row.calories}\t${row.proteins}\t${row.fats}\t${row.carbohydrates}\t${row.grams}\t${row.MealType}\t${row.MealDate}\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', 'attachment; filename=nutrition-data.txt');
+    res.send(text);
+}
+
+// ===== RECIPE ENDPOINTS ===== //
+// Get recipe details (public access)
+app.get('/api/recipes/detail/:recipeId', async (req, res) => {
+    const { recipeId } = req.params;
+    try {
+        // 1. Pobierz podstawowe dane przepisu + średnia ocena + liczba ocen
+        const [recipeResults] = await pool.execute(
+            `SELECT r.*, 
+                    u.UserName, 
+                    AVG(rr.Rating) as averageRating,
+                    COUNT(rr.Rating) as ratingCount
+             FROM Recipe r
+             JOIN user u ON r.UserId = u.UserId
+             LEFT JOIN RecipeRating rr ON r.RecipeId = rr.RecipeId
+             WHERE r.RecipeId = ?
+             GROUP BY r.RecipeId`,
+            [recipeId]
+        );
+        const [commentResults] = await pool.execute(
+            `SELECT rr.Rating, rr.Comment, u.UserName
+             FROM RecipeRating rr
+             JOIN user u ON rr.UserId = u.UserId
+             WHERE rr.RecipeId = ?`,
+            [recipeId]
+        );
         if (recipeResults.length === 0) {
             return res.status(404).json({ error: 'Recipe not found' });
         }
-
+        
         const recipe = recipeResults[0];
 
-        // Get categories
-        db.query(`
-            SELECT c.Name 
-            FROM Recipe_has_Category rc 
-            JOIN Category c ON rc.CategoryId = c.CategoryId
-            WHERE rc.RecipeId = ?
-        `, [recipeId], (err, categoryResults) => {
-            if (err) {
-                console.error('Database error:', err);
-                return res.status(500).json({ error: 'Database error' });
-            }
+        // 2. Pobierz kategorie
+        const [categoryResults] = await pool.execute(
+            `SELECT c.Name 
+             FROM Recipe_has_Category rc 
+             JOIN Category c ON rc.CategoryId = c.CategoryId
+             WHERE rc.RecipeId = ?`,
+            [recipeId]
+        );
 
-            // Get products with nutrition info
-            db.query(`
-                SELECT 
-                    p.ProductId, 
-                    p.product_name as name, 
-                    rp.Amount,
-                    p.calories,
-                    p.proteins,
-                    p.fats,
-                    p.carbohydrates
-                FROM Recipe_has_Product rp 
-                JOIN Product p ON rp.ProductId = p.ProductId
-                WHERE rp.RecipeId = ?
-            `, [recipeId], (err, productResults) => {
-                if (err) {
-                    console.error('Database error:', err);
-                    return res.status(500).json({ error: 'Database error' });
-                }
+        // 3. Pobierz produkty (z makro składnikami)
+        const [productResults] = await pool.execute(
+            `SELECT 
+                p.ProductId, 
+                p.product_name as name, 
+                rp.Amount,
+                p.calories,
+                p.proteins,
+                p.fats,
+                p.carbohydrates
+             FROM Recipe_has_Product rp 
+             JOIN Product p ON rp.ProductId = p.ProductId
+             WHERE rp.RecipeId = ?`,
+            [recipeId]
+        );
 
-                // Calculate total nutrition
-                let totalCalories = 0;
-                let totalProteins = 0;
-                let totalFats = 0;
-                let totalCarbs = 0;
+        // 4. Oblicz sumaryczną wartość odżywczą
+        let totalCalories = 0;
+        let totalProteins = 0;
+        let totalFats = 0;
+        let totalCarbs = 0;
 
-                productResults.forEach(product => {
-                    const amount = product.Amount || 100; // Default to 100g if amount not specified
-                    totalCalories += (product.calories / 100) * amount;
-                    totalProteins += (product.proteins / 100) * amount;
-                    totalFats += (product.fats / 100) * amount;
-                    totalCarbs += (product.carbohydrates / 100) * amount;
-                });
-
-                // Format the response
-                res.json({
-                    RecipeId: recipe.RecipeId,
-                    name: recipe.Name,
-                    description: recipe.Description,
-                    Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
-                    rating: 4.5,
-                    UserName: recipe.UserName,
-                    steps: recipe.Steps ? recipe.Steps.split('||') : [], // Split steps by ||
-                    categories: categoryResults.map(c => c.Name),
-                    products: productResults.map(p => ({
-                        name: p.name,
-                        amount: p.Amount,
-                        calories: (p.calories / 100) * (p.Amount || 100),
-                        proteins: (p.proteins / 100) * (p.Amount || 100),
-                        fats: (p.fats / 100) * (p.Amount || 100),
-                        carbohydrates: (p.carbohydrates / 100) * (p.Amount || 100)
-                    })),
-                    totalNutrition: {
-                        calories: totalCalories || 0,
-                        proteins: totalProteins || 0,
-                        fats: totalFats || 0,
-                        carbohydrates: totalCarbs || 0
-                    }
-                });
-            });
+        productResults.forEach(product => {
+            const amount = product.Amount || 100; // zakładamy 100g domyślnie
+            totalCalories += (product.calories / 100) * amount;
+            totalProteins += (product.proteins / 100) * amount;
+            totalFats += (product.fats / 100) * amount;
+            totalCarbs += (product.carbohydrates / 100) * amount;
         });
-    });
+
+        // 5. Zwróć wszystkie dane
+        res.json({
+            RecipeId: recipe.RecipeId,
+            name: recipe.Name,
+            description: recipe.Description,
+            Image: recipe.Image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg",
+            UserName: recipe.UserName,
+            averageRating: parseFloat(recipe.averageRating) || 0,
+            ratingCount: recipe.ratingCount || 0,
+            steps: recipe.Steps ? recipe.Steps.split('||') : [],
+            categories: categoryResults.map(c => c.Name),
+            products: productResults.map(p => ({
+                name: p.name,
+                amount: p.Amount,
+                calories: (p.calories / 100) * (p.Amount || 100),
+                proteins: (p.proteins / 100) * (p.Amount || 100),
+                fats: (p.fats / 100) * (p.Amount || 100),
+                carbohydrates: (p.carbohydrates / 100) * (p.Amount || 100)
+            })),
+            totalNutrition: {
+                calories: totalCalories || 0,
+                proteins: totalProteins || 0,
+                fats: totalFats || 0,
+                carbohydrates: totalCarbs || 0
+            },
+            comments: commentResults.map(c => ({
+                userName: c.UserName,
+                rating: c.Rating,
+                comment: c.Comment
+            }))           
+        });
+
+    } catch (error) {
+        console.error('Error fetching recipe details:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 // Get all categories
 app.get('/api/categories', (req, res) => {

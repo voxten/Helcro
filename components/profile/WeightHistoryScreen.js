@@ -116,59 +116,74 @@ export default function WeightHistoryScreen() {
 
     return (
         <View style={styles.container}>
-            {weights.length > 0 && weightHistory.datasets[0].data.length > 0 ? (
-                <LineChart
-                    data={weightHistory}
-                    width={400}
-                    height={250}
-                    chartConfig={{
-                        backgroundGradientFrom: "#eee",
-                        backgroundGradientTo: "#eee",
-                        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                        decimalPlaces: 1, // Ensure consistent decimal formatting
-                    }}
-                    bezier
-                    fromZero={true}
-                    yAxisSuffix=" kg"
-                    yAxisMin={Math.min(...weightHistory.datasets[0].data) - 5}
-                    yAxisMax={Math.max(...weightHistory.datasets[0].data) + 5}
-                />
-            ) : (
-                <Text style={styles.noDataText}>No weight data available</Text>
-            )}
+            <View style={styles.chartContainer}>
+                {weights.length > 0 && weightHistory.datasets[0].data.length > 0 ? (
+                    <LineChart
+                        data={weightHistory}
+                        width={350}
+                        height={220}
+                        chartConfig={{
+                            backgroundGradientFrom: "white",
+                            backgroundGradientTo: "white",
+                            decimalPlaces: 1,
+                            color: (opacity = 1) => `rgba(165, 42, 42, ${opacity})`,
+                            labelColor: (opacity = 1) => `rgba(165, 42, 42, ${opacity})`,
+                            propsForDots: {
+                                r: "5",
+                                strokeWidth: "2",
+                                stroke: "#8B4513"
+                            }
+                        }}
+                        bezier
+                        style={{
+                            borderRadius: 16,
+                            paddingRight: 45
+                        }}
+                    />
+                ) : (
+                    <View style={styles.noDataContainer}>
+                        <Icon name="exclamation-circle" size={24} color="#8B4513" />
+                        <Text style={styles.noDataText}>No weight data available</Text>
+                    </View>
+                )}
+            </View>
 
             <TouchableOpacity
                 style={styles.addButton}
                 onPress={() => setModalVisible(true)}
             >
-                <Icon name="plus" size={20} color="white" />
-                <Text style={styles.addButtonText}>Add Weight</Text>
+                <Icon name="plus" size={18} color="white" />
+                <Text style={styles.addButtonText}>Add New Weight</Text>
             </TouchableOpacity>
 
             <ScrollView style={styles.scrollContainer}>
                 {weights.map((item, index) => (
                     <View key={index} style={styles.listItem}>
+                        <Icon name="balance-scale" size={16} color="#5D4037" style={styles.listIcon} />
                         <Text style={styles.listText}>
-                            {new Date(item.WeightDate).toLocaleDateString()}: {item.Weight} kg
+                            {new Date(item.WeightDate).toLocaleDateString()}
                         </Text>
+                        <Text style={styles.listWeight}>{item.Weight} kg</Text>
                     </View>
                 ))}
             </ScrollView>
 
-            <Modal visible={modalVisible} transparent animationType="slide">
+            <Modal visible={modalVisible} transparent animationType="fade">
                 <View style={styles.overlay}>
                     <View style={styles.modalContainer}>
-                        <Text style={styles.modalTitle}>Add Weight</Text>
+                        <Text style={styles.modalTitle}>Add Weight Record</Text>
 
-                        <TouchableOpacity
-                            onPress={() => setShowDatePicker(true)}
-                            style={styles.datePickerButton}
-                        >
-                            <Text style={styles.dateText}>
-                                {selectedDate.toLocaleDateString()}
-                            </Text>
-                        </TouchableOpacity>
+                        <View style={styles.inputContainer}>
+                            <Icon name="calendar" size={18} color="#5D4037" style={styles.inputIcon} />
+                            <TouchableOpacity
+                                onPress={() => setShowDatePicker(true)}
+                                style={styles.dateInput}
+                            >
+                                <Text style={styles.dateText}>
+                                    {selectedDate.toLocaleDateString()}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
 
                         {showDatePicker && (
                             <DateTimePicker
@@ -182,25 +197,29 @@ export default function WeightHistoryScreen() {
                             />
                         )}
 
-                        <TextInput
-                            style={styles.input}
-                            value={newWeight}
-                            onChangeText={setNewWeight}
-                            placeholder="Enter weight (kg)"
-                            keyboardType="numeric"
-                        />
-                        <View style={styles.buttons}>
+                        <View style={styles.inputContainer}>
+                            <Icon name="balance-scale" size={18} color="#5D4037" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                value={newWeight}
+                                onChangeText={setNewWeight}
+                                placeholder="Weight in kg"
+                                keyboardType="numeric"
+                            />
+                        </View>
+
+                        <View style={styles.modalButtons}>
                             <TouchableOpacity
-                                style={styles.closeButton}
+                                style={[styles.modalButton, styles.cancelButton]}
                                 onPress={() => setModalVisible(false)}
                             >
-                                <Text style={styles.closeButtonText}>Close</Text>
+                                <Text style={styles.modalButtonText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={styles.submitButton}
+                                style={[styles.modalButton, styles.submitButton]}
                                 onPress={handleAddWeight}
                             >
-                                <Text style={styles.submitButtonText}>Submit</Text>
+                                <Text style={styles.modalButtonText}>Save</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -211,12 +230,74 @@ export default function WeightHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-    modalContainer: {
-        width: 300,
-        padding: 20,
-        backgroundColor: '#eee',
-        borderRadius: 10,
+    container: {
+        flex: 1,
+    },
+    chartContainer: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 16,
+        elevation: 3,
+        shadowColor: 'brown',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+    },
+    noDataContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    noDataText: {
+        fontSize: 16,
+        color: 'brown',
+        marginLeft: 10,
+    },
+    addButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'brown',
+        padding: 14,
+        borderRadius: 12,
+        marginHorizontal: 20,
+        marginBottom: 10,
+        elevation: 3,
+    },
+    addButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '500',
+        marginLeft: 10,
+    },
+    scrollContainer: {
+        flex: 1,
+        marginHorizontal: 20,
+        marginTop: 10,
+    },
+    listItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        padding: 16,
+        marginBottom: 10,
+        borderRadius: 12,
+        elevation: 2,
+    },
+    listIcon: {
+        marginRight: 12,
+    },
+    listText: {
+        flex: 1,
+        fontSize: 15,
+        color: 'brown',
+    },
+    listWeight: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: 'brown',
     },
     overlay: {
         flex: 1,
@@ -224,112 +305,68 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
-    container: {
-        flex: 1,
-        justifyContent: "flex-start",
-        alignItems: "center",
-        backgroundColor: "#f4f4f4",
-        paddingBottom: 20,
-    },
-    addButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "brown",
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 8,
-        marginVertical: 10,
-    },
-    addButtonText: {
-        color: "white",
-        fontSize: 18,
-        marginLeft: 8,
-        fontWeight: "bold"
-    },
-    scrollContainer: {
-        flex: 1,
-        width: "90%",
-        marginTop: 10,
-        marginBottom: 20,
-    },
-    listItem: {
-        backgroundColor: "#fff",
-        padding: 10,
-        marginVertical: 5,
-        borderRadius: 5,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
-    },
-    listText: {
-        fontSize: 16,
-        color: "black",
+    modalContainer: {
+        width: '85%',
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 24,
+        elevation: 5,
     },
     modalTitle: {
         fontSize: 20,
-        marginBottom: 15,
-        color: "brown",
-        fontWeight: "bold",
-    },
-    datePickerButton: {
-        backgroundColor: '#fff',
-        padding: 10,
-        marginBottom: 15,
-        borderRadius: 10,
-    },
-    dateText: {
-        color: "black",
-        fontSize: 16,
-    },
-    submitButton: {
-        backgroundColor: "#156dc9",
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 5,
-        flex: 1,
-        marginLeft: 5,
-        alignItems: "center",
-    },
-    submitButtonText: {
-        color: 'white',
-        fontSize: 16,
-    },
-    closeButton: {
-        backgroundColor: "brown",
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 5,
-        flex: 1,
-        marginRight: 5,
-        alignItems: "center",
-    },
-    closeButtonText: {
-        color: 'white',
-        fontSize: 16,
-    },
-    buttons: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        width: "100%",
-        marginTop: 10,
-    },
-    noDataText: {
-        fontSize: 16,
-        color: 'gray',
+        fontWeight: '600',
+        color: 'black',
+        marginBottom: 20,
         textAlign: 'center',
-        marginTop: 20
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#D7CCC8',
+    },
+    inputIcon: {
+        marginRight: 10,
+    },
+    dateInput: {
+        flex: 1,
+        paddingVertical: 14,
     },
     input: {
+        flex: 1,
+        paddingVertical: 14,
+        color: 'brown',
+    },
+    dateText: {
+        fontSize: 15,
+    },
+    modalButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: '#fff',
+        marginTop: 10,
+    },
+    modalButton: {
+        flex: 1,
+        padding: 14,
         borderRadius: 10,
-        elevation: 3,
-        marginBottom: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cancelButton: {
+        backgroundColor: 'brown',
+        marginRight: 8,
+    },
+    submitButton: {
+        backgroundColor: 'brown',
+        marginLeft: 8,
+    },
+    modalButtonText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: 'white',
     },
 });

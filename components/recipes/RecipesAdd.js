@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, Modal, FlatList, ActivityIndicator } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import Icon from "react-native-vector-icons/FontAwesome6";
+import Icon2 from "react-native-vector-icons/FontAwesome";
 import { launchImageLibraryAsync, requestMediaLibraryPermissionsAsync } from 'expo-image-picker';
 import axios from "axios";
 import { API_BASE_URL } from '@env';
@@ -369,7 +370,7 @@ const uploadImage = async () => {
                     setSelectedCategories(selectedCategories.filter(id => id !== catId));
                   }}
                 >
-                <Text style={{ color: 'white' }}>X</Text>
+                    <Icon2 name="times" size={20} color="white" />
                 </TouchableOpacity>
               </View>
             );
@@ -444,7 +445,7 @@ const uploadImage = async () => {
               style={styles.closeModalButton}
               onPress={() => setIsProductModalVisible(false)}
             >
-                <Text>X</Text>
+                <Icon2 name="times" size={20} color="#5D4037" />
             </TouchableOpacity>
           </View>
           

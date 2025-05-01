@@ -159,32 +159,36 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
             </Menu>
 
             {/* Rename Modal */}
+            {/* Rename Modal with custom styling */}
             <Modal
                 visible={renameModalVisible}
                 transparent={true}
+                animationType="fade"
                 onRequestClose={() => setRenameModalVisible(false)}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Rename Meal</Text>
+                <View style={styles.renamingModalContainer}>
+                    <View style={styles.renamingModalContent}>
+                        <Text style={styles.renamingModalTitle}>Rename Meal</Text>
                         <TextInput
-                            style={styles.input}
+                            style={styles.renamingInput}
                             value={newMealName}
                             onChangeText={setNewMealName}
                             placeholder="Enter new meal name"
+                            placeholderTextColor="#999"
+                            autoFocus={true}
                         />
-                        <View style={styles.modalButtons}>
+                        <View style={styles.renamingModalButtons}>
                             <TouchableOpacity
-                                style={styles.cancelButton}
+                                style={styles.renamingCancelButton}
                                 onPress={() => setRenameModalVisible(false)}
                             >
-                                <Text style={styles.buttonText}>Cancel</Text>
+                                <Text style={styles.renamingCancelButtonText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={styles.saveButton}
+                                style={styles.renamingSaveButton}
                                 onPress={handleRenameMeal}
                             >
-                                <Text style={styles.buttonText}>Save</Text>
+                                <Text style={styles.renamingButtonText}>Save Changes</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -414,6 +418,90 @@ const styles = StyleSheet.create({
     },
     deleteText: {
         color: 'red',
+    },
+    renamingModalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    },
+    renamingModalContent: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        width: '85%',
+        maxWidth: 380,
+        padding: 22,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 5,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        elevation: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(165, 42, 42, 0.1)',
+    },
+    renamingModalTitle: {
+        fontSize: 20,
+        fontWeight: '600',
+        marginBottom: 18,
+        color: 'brown',
+        textAlign: 'center',
+        letterSpacing: 0.5,
+    },
+    renamingInput: {
+        width: '100%',
+        padding: 14,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        backgroundColor: '#fafafa',
+        fontSize: 16,
+        color: '#333',
+        marginBottom: 22,
+        fontWeight: '500',
+    },
+    renamingModalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginTop: 10,
+    },
+    renamingCancelButton: {
+        backgroundColor: '#f5f5f5',
+        paddingVertical: 12,
+        paddingHorizontal: 22,
+        borderRadius: 8,
+        flex: 1,
+        marginRight: 8,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+    },
+    renamingSaveButton: {
+        backgroundColor: 'brown',
+        paddingVertical: 12,
+        paddingHorizontal: 22,
+        borderRadius: 8,
+        flex: 1,
+        marginLeft: 8,
+        alignItems: 'center',
+        shadowColor: "brown",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    renamingButtonText: {
+        color: 'white',
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    renamingCancelButtonText: {
+        color: '#555',
+        fontSize: 15,
+        fontWeight: '500',
     },
 });
 

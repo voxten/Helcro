@@ -178,18 +178,7 @@ const styles2 = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold'
     },
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    modalContent: {
-        width: '80%',
-        backgroundColor: 'white',
-        borderRadius: 10,
-        overflow: 'hidden',
-    },
+
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -205,14 +194,7 @@ const styles2 = StyleSheet.create({
     modalScroll: {
         maxHeight: '80%',
     },
-    modalItem: {
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f5f5f5',
-    },
-    modalButton: {
-        fontSize: 16,
-    },
+
     modalCloseButton: {
         padding: 5,
     },

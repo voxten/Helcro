@@ -12,7 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { API_BASE_URL } from '@env';
 
-export default function Menu() {
+export default function Menu({ navigation }) {
     const { user } = useAuth();
     const isFocused = useIsFocused();
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -21,6 +21,8 @@ export default function Menu() {
     const [showMeal, setShowMeal] = useState(false);
     const [meals, setMeals] = useState([]);
     const [expandedMeal, setExpandedMeal] = useState(null);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [showProductDetail, setShowProductDetail] = useState(false);
     const [targetNutrition, setTargetNutrition] = useState({
         calories: 1500,
         proteins: 100,
@@ -32,7 +34,6 @@ export default function Menu() {
             if (!user?.UserId) return;
             
             try {
-                console.log("Fetching updated goals..."); // Debug log
                 const response = await axios.get(`${API_BASE_URL}/api/goal/${user.UserId}`);
                 if (response.data) {
                     console.log("Received goals:", response.data); // Debug log
@@ -373,10 +374,14 @@ export default function Menu() {
                                         <Text style={localStyles.noProductsText}>No products added</Text>
                                     ) : (
                                         meal.products.map((product, productIndex) => (
-                                            <View key={`${index}-${productIndex}`} style={localStyles.productItem}>
+                                            <TouchableOpacity
+                                                key={`${index}-${productIndex}`}
+                                                style={localStyles.productItem}
+                                                onPress={() => navigation.navigate('ProductDetail', { product })}
+                                            >
                                                 {product.image && (
                                                     <Image
-                                                        source={{ uri: product.image }}
+                                                        source={{ uri: product.image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
                                                         style={localStyles.productImage}
                                                         resizeMode="contain"
                                                     />
@@ -389,7 +394,7 @@ export default function Menu() {
                                                         {product.calories} kcal | {product.proteins}g protein | {product.fats}g fat | {product.carbohydrates}g carbs
                                                     </Text>
                                                 </View>
-                                            </View>
+                                            </TouchableOpacity>
                                         ))
                                     )}
                                 </View>

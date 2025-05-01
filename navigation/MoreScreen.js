@@ -3,12 +3,15 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Icon2 from "react-native-vector-icons/FontAwesome5";
 import Icon3 from "react-native-vector-icons/AntDesign"
+import Icon4 from "react-native-vector-icons/MaterialIcons";
+import Icon5 from "react-native-vector-icons/Feather";
+
 export default function MoreScreen({ navigation }) {
     return (
         <View style={styles.container}>
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => navigation.navigate("Profile")}
+                onPress={() => navigation.navigate("User Profile")}
             >
                 <Icon name="user" size={20} color="white" style={styles.icon} />
                 <Text style={styles.buttonText}>Profile</Text>
@@ -28,6 +31,30 @@ export default function MoreScreen({ navigation }) {
             >
                 <Icon name="history" size={20} color="white" style={styles.icon} />
                 <Text style={styles.buttonText}>Weight History</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate("Export Data")}
+            >
+                <Icon name="download" size={20} color="white" style={styles.icon} />
+                <Text style={styles.buttonText}>Export Data</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate("About Us")}
+            >
+                <Icon4 name="info" size={20} color="white" style={styles.icon} />
+                <Text style={styles.buttonText}>About Us</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate("Help")}
+            >
+                <Icon5 name="help-circle" size={20} color="white" style={styles.icon} />
+                <Text style={styles.buttonText}>Help</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
