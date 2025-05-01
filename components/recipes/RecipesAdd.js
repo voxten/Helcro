@@ -88,7 +88,7 @@ const uploadImage = async () => {
       name: `recipe-${Date.now()}.${fileExt}`
     });
 
-    console.log('Uploading image...', formData); // Debug log
+    
 
     // Make the upload request
     const response = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
@@ -99,7 +99,7 @@ const uploadImage = async () => {
       transformRequest: (data) => data, // Don't transform the FormData
     });
 
-    console.log('Image upload response:', response.data); // Debug log
+    
 
     // Return the image URL from the response
     return response.data.imageUrl;
@@ -189,18 +189,8 @@ const uploadImage = async () => {
         // Upload image if exists
         let imageUrl = null;
         if (imageUri) {
-            console.log('Starting image upload...');
             imageUrl = await uploadImage();
-            console.log('Image upload result:', imageUrl);
         }
-
-        console.log('Creating recipe with:', {
-            UserId: user.UserId,
-            Name: name,
-            Description: description,
-            Steps: steps.filter(step => step.trim() !== "").join('||'),
-            Image: imageUrl
-        });
         
         // Create the recipe with UserId
         const recipeResponse = await axios.post(`${API_BASE_URL}/api/recipes`, {
@@ -216,13 +206,10 @@ const uploadImage = async () => {
             },
         });
 
-        console.log('Recipe created:', recipeResponse.data);
-
         const recipeId = recipeResponse.data.RecipeId;
 
         // Add categories if any selected
         if (selectedCategories.length > 0) {
-            console.log('Adding categories:', selectedCategories);
             await axios.post(`${API_BASE_URL}/api/recipes/${recipeId}/categories`, {
                 categoryIds: selectedCategories
             }, {
@@ -231,7 +218,7 @@ const uploadImage = async () => {
         }
 
         // Add products
-        console.log('Adding products:', products);
+        
         await axios.post(`${API_BASE_URL}/api/recipes/${recipeId}/products`, {
             products: products.map(p => ({
                 ProductId: p.ProductId,

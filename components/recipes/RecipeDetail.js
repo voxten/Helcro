@@ -80,7 +80,7 @@ const RecipeDetail = () => {
     }
 };
     useEffect(() => {
-        console.log("Initial recipe data:", initialRecipe);
+        
         if (!initialRecipe && recipeId) {
             fetchRecipeDetails(recipeId);
         }
@@ -98,7 +98,7 @@ const RecipeDetail = () => {
                     Authorization: `Bearer ${user?.token}`
                 }
             });
-            console.log("Fetched recipe details:", response.data);
+            
             setRecipe(response.data);
             setLoading(false);
         } catch (err) {
