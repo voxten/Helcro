@@ -75,7 +75,9 @@ export default function DietaryGoalsScreen() {
                 }
             })
             .catch(error => {
+                if (error.response?.status !== 404) {
                 console.error("Error fetching saved goals:", error);
+            }
             });
     }, [userId]);  // Add userId as dependency
 
@@ -132,20 +134,29 @@ export default function DietaryGoalsScreen() {
             alert("No goal data to save.");
         }
     };
-
+    const updateUserInfo = () => {
+        return axios.put(`${apiUrl}/api/user/${userId}`, {
+            Height: parseFloat(height),
+            Weight: parseFloat(weight),
+            Birthday: dob,
+        });
+    };
+    
     const handleSubmit = () => {
         if (!age || !weight || !height || !user.Gender) {
             alert("Please fill in all required fields first.");
             return;
         }
-
-        axios
-            .post(`${apiUrl}/api/calculate-goals`, {
-                age,
-                weight: parseFloat(weight),
-                height: parseFloat(height),
-                gender: user.Gender,
-                goal: goal || "weight_loss", // Fallback to weight_loss if somehow empty
+    
+        updateUserInfo()
+            .then(() => {
+                return axios.post(`${apiUrl}/api/calculate-goals`, {
+                    age,
+                    weight: parseFloat(weight),
+                    height: parseFloat(height),
+                    gender: user.Gender,
+                    goal: goal || "weight_loss",
+                });
             })
             .then((response) => {
                 setProposedGoals(response.data);
@@ -154,8 +165,8 @@ export default function DietaryGoalsScreen() {
                 setActiveTab("result");
             })
             .catch((err) => {
-                console.error("Error calculating goals:", err);
-                alert("There was an error generating your goals.");
+                console.error("Error updating or generating goals:", err);
+                alert("There was an error saving your information or generating goals.");
             });
     };
 

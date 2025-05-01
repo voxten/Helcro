@@ -26,7 +26,7 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         Birthday: ''
   });
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  
 
   const handleChange = (name, value) => {
     setForm(prev => ({ ...prev, [name]: value }));
