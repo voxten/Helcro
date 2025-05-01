@@ -36,7 +36,6 @@ export default function Menu({ navigation }) {
             try {
                 const response = await axios.get(`${API_BASE_URL}/api/goal/${user.UserId}`);
                 if (response.data) {
-                    console.log("Received goals:", response.data); // Debug log
                     setTargetNutrition({
                         calories: parseFloat(response.data.DailyCalories) || 1500,
                         proteins: parseFloat(response.data.DailyProteins) || 100,
@@ -44,10 +43,23 @@ export default function Menu({ navigation }) {
                         carbohydrates: parseFloat(response.data.DailyCarbs) || 200
                     });
                 } else {
-                    console.log("No goals data received"); // Debug log
+                    setTargetNutrition({
+                        calories: 1500,
+                        proteins: 100,
+                        fats: 50,
+                        carbohydrates: 200
+                    });
                 }
             } catch (error) {
-                console.error("Error fetching user goals:", error);
+                if (error.response?.status !== 404) {
+                    console.error("Error fetching user goals:", error);
+                }
+                setTargetNutrition({
+                    calories: 1500,
+                    proteins: 100,
+                    fats: 50,
+                    carbohydrates: 200
+                });
             }
         };
     

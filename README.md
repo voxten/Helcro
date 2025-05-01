@@ -11,6 +11,8 @@
 `npm install` 
 `npm install express mysql2 cors body-parser dotenv` 
 `node server.js`
+`npm install cloudinary multer multer-storage-cloudinary dotenv`
+
 
 ### Frontend
 `npm install react-native-dotenv`

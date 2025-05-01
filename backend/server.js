@@ -1994,6 +1994,37 @@ app.get('/api/goal/:id', (req, res) => {
         res.json(results[0]); // return the first (or only) goal
     });
 });
+app.put('/api/user/:id', (req, res) => {
+    const userId = req.params.id;
+    const { Height, Weight, Birthday } = req.body;
+    if (
+        Height === undefined || Height === null ||
+        Weight === undefined || Weight === null ||
+        !Birthday // this one should still be a non-empty string
+    ) {
+        return res.status(400).json({ error: "Height, weight, and birthday are required" });
+    }
+
+    const sql = `
+        UPDATE user 
+        SET Height = ?, Weight = ?, Birthday = ? 
+        WHERE UserId = ?
+    `;
+
+    db.query(sql, [Height, Weight, Birthday, userId], (err, result) => {
+        if (err) {
+            console.error("Error updating user:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({ message: "User updated successfully" });
+    });
+});
+
 
 // Get all categories (public access)
 app.get('/api/categories/public', (req, res) => {

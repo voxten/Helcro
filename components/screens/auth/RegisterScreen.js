@@ -26,6 +26,8 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         Birthday: ''
   });
 
+  
+
   const handleChange = (name, value) => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
