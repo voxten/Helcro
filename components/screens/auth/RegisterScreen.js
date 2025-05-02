@@ -23,7 +23,7 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
     Height: '',
     Weight: '',
     Gender: 'M',
-        Birthday: ''
+    Birthday: ''
   });
 
   
@@ -59,7 +59,8 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         Height: form.Height ? parseFloat(form.Height) : null,
         Weight: form.Height ? parseFloat(form.Weight) : null,
         Gender: form.Gender,
-        Birthday: form.Birthday
+        Birthday: form.Birthday,
+        AvatarImage: "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y",
       });
 
       Alert.alert('Success', 'Account has been successfully created', [

@@ -88,14 +88,9 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
         Email: form.Email,
         Password: form.Password
       });
-  
-      console.log('Server response:', response.data); // Debug
-  
+
       // Przekaż wszystkie dane użytkownika otrzymane z backendu
       login(response.data.token, response.data.user); // Zmiana tutaj
-      
-      console.log('Full API response:', response.data);
-      Alert.alert('Logged in successfully');
       
       // Wywołaj callback po udanym logowaniu
       onLoginSuccess?.();
