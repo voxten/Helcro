@@ -7,6 +7,7 @@ CREATE TABLE User (
     Weight FLOAT,
     Gender ENUM('M', 'K'),
     Birthday Date,
+    AvatarImage VARCHAR(255),
     reset_token TEXT,
     reset_token_expires DATETIME,
     deletion_token TEXT,

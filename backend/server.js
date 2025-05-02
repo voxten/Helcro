@@ -527,7 +527,8 @@ app.post('/api/auth/login', async (req, res) => {
                     Height: user.Height,
                     Weight: user.Weight,
                     Gender: user.Gender,
-                    Birthdat: user.Birthday
+                    Birthday: user.Birthday,
+                    AvatarImage: user.AvatarImage
                 }
             });
             
@@ -554,7 +555,7 @@ function authenticateToken(req, res, next) {
 // Przykładowy chroniony endpoint
 // server.js - zaktualizowany endpoint
 app.get('/api/user/profile', authenticateToken, (req, res) => {
-    db.query('SELECT UserId, UserName, Email, Height, Weight, Gender FROM user WHERE UserId = ?', 
+    db.query('SELECT UserId, UserName, Email, Height, Weight, Gender, AvatarImage FROM user WHERE UserId = ?',
         [req.user.id], // Zmienione z req.user.UserId na req.user.id
         (err, results) => {
             if (err) {
@@ -826,6 +827,79 @@ app.get('/users', (req, res) => {
         }
         res.json(results);
     });
+});
+
+app.put('/api/users/:userId/avatar', authenticateToken, (req, res) => {
+    const userId = req.params.userId;
+    const { avatarUrl } = req.body;
+
+    // Validate inputs
+    if (!avatarUrl) {
+        return res.status(400).json({
+            success: false,
+            error: 'Avatar URL is required'
+        });
+    }
+
+    db.query(
+        'UPDATE User SET AvatarImage = ? WHERE UserId = ?',
+        [avatarUrl, userId],
+        (err, result) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database error',
+                    details: err.message
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'User not found'
+                });
+            }
+
+            res.json({
+                success: true,
+                message: 'Avatar updated successfully',
+                avatarUrl: avatarUrl
+            });
+        }
+    );
+});
+
+// Get user's current avatar
+app.get('/api/users/:userId/avatar', authenticateToken, (req, res) => {
+    const userId = req.params.userId;
+
+    db.query(
+        'SELECT AvatarImage FROM User WHERE UserId = ?',
+        [userId],
+        (err, results) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database error',
+                    details: err.message
+                });
+            }
+
+            if (results.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'User not found'
+                });
+            }
+
+            res.json({
+                success: true,
+                avatarUrl: results[0].AvatarImage
+            });
+        }
+    );
 });
 
 app.get('/products', (req, res) => {
@@ -1249,8 +1323,6 @@ app.get('/weight', async (req, res) => {
     }
 });
 
-// POST /weight - Add new weight entry
-// In server.js
 app.post('/weight', async (req, res) => {
     try {
         const { userId, date, weight } = req.body;
@@ -1286,7 +1358,6 @@ app.post('/weight', async (req, res) => {
     }
 });
 
-// DELETE /weight/:id - Delete weight entry
 app.delete('/weight/:id', async (req, res) => {
     try {
         const { id } = req.params;
