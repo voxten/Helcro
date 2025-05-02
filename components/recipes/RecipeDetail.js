@@ -501,24 +501,13 @@ const RecipeDetail = () => {
 };
 
 const styles = StyleSheet.create({
-    commentItem: {
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 1,
-    shadowColor: '#5D4037',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-},
-readMoreText: {
-    color: '#5D4037',
-    fontSize: 12,
-    marginTop: 8,
-    fontWeight: '500',
-    textAlign: 'right',
-},
+    readMoreText: {
+        color: '#5D4037',
+        fontSize: 12,
+        marginTop: 8,
+        fontWeight: '500',
+        textAlign: 'right',
+    },
     commentsSection: {
         padding: 24,
         paddingTop: 0,

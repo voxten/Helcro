@@ -86,7 +86,7 @@ export default function WeightHistoryScreen() {
             const response = await axios.post(`${API_BASE_URL}/weight`, {
                 userId: user.UserId,
                 date: formattedDate,
-                weight: weightValue.toFixed(1) // Ensure consistent decimal format
+                weight: weightValue.toFixed(1)
             }, {
                 headers: {
                     'Content-Type': 'application/json'

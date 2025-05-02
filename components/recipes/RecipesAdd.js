@@ -91,7 +91,7 @@ const uploadImage = async () => {
     
 
     // Make the upload request
-    const response = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+    const response = await axios.post(`${API_BASE_URL}/api/upload/recipe`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         'Authorization': `Bearer ${token}`
