@@ -17,6 +17,8 @@ import { API_BASE_URL } from '@env';
 import { useAuth } from "../context/AuthContext";
 import detailStyles from "./RecipesDetailStyles";
 import Icon from "react-native-vector-icons/AntDesign";
+import Icon2 from "react-native-vector-icons/FontAwesome5";
+import Icon3 from "react-native-vector-icons/Ionicons";
 import StarRating from 'react-native-star-rating-widget';
 const RecipeDetail = () => {
     const route = useRoute();
@@ -245,9 +247,10 @@ const RecipeDetail = () => {
                             style={styles.rateButton}
                             onPress={hasUserRated ? handleEditRating : () => setRatingModalVisible(true)}
                         >
-                            <Text style={styles.rateButtonText}>
-                                {hasUserRated ? 'Edit Rating' : 'Rate Recipe'}
-                            </Text>
+                            {hasUserRated ?
+                                <Icon2 name="edit" size={20} color='#5D4037' solid />
+                                :
+                                <Icon3 name="add-circle" size={20} color='#5D4037' solid />}
                         </TouchableOpacity>
                     )}
                 </View>
@@ -786,7 +789,6 @@ const styles = StyleSheet.create({
         marginLeft: 12,
         paddingHorizontal: 12,
         paddingVertical: 6,
-        backgroundColor: '#5D4037',
         borderRadius: 16,
     },
     rateButtonText: {
@@ -878,10 +880,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cancelButton: {
-        backgroundColor: '#E0E0E0',
+        backgroundColor: 'brown',
     },
     submitButton: {
-        backgroundColor: '#5D4037',
+        backgroundColor: 'brown',
     },
     disabledButton: {
         backgroundColor: '#CCCCCC',
