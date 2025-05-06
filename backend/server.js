@@ -11,8 +11,7 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-const pool = require("./config/db");
-
+const pool = require('./config/db');
 require('dotenv').config();
 const path = require('path');
 
@@ -30,7 +29,8 @@ const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT
 });
 // Konfiguracja mailera
 const transporter = nodemailer.createTransport({
@@ -903,7 +903,7 @@ app.get('/api/users/:userId/avatar', authenticateToken, (req, res) => {
 });
 
 app.get('/products', (req, res) => {
-    db.query('SELECT * FROM product', (err, results) => {
+    db.query('SELECT * FROM Product', (err, results) => {
         if (err) {
             return res.status(500).json({ error: err });
         }
@@ -2052,7 +2052,7 @@ app.post('/api/goal', (req, res) => {
 app.get('/api/goal/:id', (req, res) => {
     const userId = req.params.id;
 
-    db.query('SELECT * FROM goal WHERE UserId = ?', [userId], (err, results) => {
+    db.query('SELECT * FROM Goal WHERE UserId = ?', [userId], (err, results) => {
         if (err) {
             console.error("Error fetching goal data:", err);
             return res.status(500).json({ error: "Database error" });
