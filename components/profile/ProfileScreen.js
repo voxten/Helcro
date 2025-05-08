@@ -144,10 +144,6 @@ export default function ProfileScreen({ navigation }) {
         );
     };
 
-    const handleUpdateProfile = () => {
-        navigation.navigate("UpdateProfile");
-    };
-
     return (
         <View style={styles.container}>
             <View style={styles.card}>
@@ -181,16 +177,6 @@ export default function ProfileScreen({ navigation }) {
                         <Text style={styles.actionButtonText}>Change Password</Text>
                         <MaterialCommunityIcons name="chevron-right" size={22} color="#8D6E63" />
                     </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.shadow]}
-                        onPress={handleUpdateProfile}
-                    >
-                        <MaterialCommunityIcons name="account-edit" size={22} color="#8D6E63" />
-                        <Text style={styles.actionButtonText}>Update Profile</Text>
-                        <MaterialCommunityIcons name="chevron-right" size={22} color="#8D6E63" />
-                    </TouchableOpacity>
-
                     <View style={styles.divider} />
 
                     <TouchableOpacity
