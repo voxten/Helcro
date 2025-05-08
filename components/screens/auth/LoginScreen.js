@@ -156,7 +156,7 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
       >
         <Text style={styles.secondaryButtonText}>Forgot Password?</Text>
       </TouchableOpacity>
-
+      {/* TODO: Google Sign In
       <TouchableOpacity 
         onPress={() => promptAsync()}
         style={styles.googleButton}
@@ -167,6 +167,7 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
           {loading ? 'Processing...' : 'Sign in with Google'}
         </Text>
       </TouchableOpacity>
+      */}
     </View>
   );
 };
