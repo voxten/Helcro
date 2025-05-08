@@ -113,7 +113,7 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
                         <Icon name="dots-vertical" size={24} color="brown" />
                     </TouchableOpacity>
                 }
-            >
+            >{/* TODO: Make it work
                 {!hasProducts && (
                     <>
                         <Menu.Item
@@ -126,7 +126,7 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
                         <Divider />
                     </>
                 )}
-
+                */}
                 {hasProducts && (
                     <>
                         <Menu.Item
@@ -139,6 +139,7 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
                         <Divider />
                     </>
                 )}
+                {/* TODO: Make rename actually save renaming to the database
                 {meal.type === 'Other' && (
                     <>
                         <Menu.Item
@@ -151,6 +152,7 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
                         <Divider />
                     </>
                 )}
+                */}
                 <Menu.Item
                     onPress={handleDeleteMeal}
                     title="Delete"

@@ -160,7 +160,7 @@ export default function ExportDataScreen() {
     };
 
     const getMimeType = (format) => {
-        switch (format) {
+        switch (format.toLowerCase()) {
             case 'excel': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
             case 'pdf': return 'application/pdf';
             case 'txt': return 'text/plain';
@@ -169,7 +169,7 @@ export default function ExportDataScreen() {
     };
 
     const getUTI = (format) => {
-        switch (format) {
+        switch (format.toLowerCase()) {
             case 'excel': return 'com.microsoft.excel.xlsx';
             case 'pdf': return 'com.adobe.pdf';
             case 'txt': return 'public.plain-text';
@@ -192,6 +192,9 @@ export default function ExportDataScreen() {
                 </Text>
             </View>
             <View style={styles.exportActions}>
+                <TouchableOpacity onPress={() => downloadExport(item.uri, item.name)}>
+                    <Icon name="download" size={20} color="green" style={styles.exportIcon} />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => shareFile(item.uri)}>
                     <Icon name="share" size={20} color="brown" style={styles.exportIcon} />
                 </TouchableOpacity>
@@ -201,6 +204,47 @@ export default function ExportDataScreen() {
             </View>
         </View>
     );
+
+    const downloadExport = async (fileUri, fileName) => {
+        try {
+            if (Platform.OS === 'android') {
+                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+
+                if (!permissions.granted) {
+                    return;
+                }
+
+                const fileContent = await FileSystem.readAsStringAsync(fileUri, {
+                    encoding: FileSystem.EncodingType.Base64,
+                });
+
+                await FileSystem.StorageAccessFramework.createFileAsync(
+                    permissions.directoryUri,
+                    fileName,
+                    getMimeType(fileName.split('.').pop())
+                )
+                    .then(async (newUri) => {
+                        await FileSystem.writeAsStringAsync(newUri, fileContent, {
+                            encoding: FileSystem.EncodingType.Base64,
+                        });
+                        Alert.alert('Success', 'File downloaded successfully');
+                    })
+                    .catch(e => {
+                        Alert.alert('Error', 'Failed to save file');
+                    });
+            } else {
+                // On iOS, we can use the sharing dialog as a download option
+                await Sharing.shareAsync(fileUri, {
+                    mimeType: getMimeType(fileName.split('.').pop()),
+                    dialogTitle: 'Download Nutrition Data',
+                    UTI: getUTI(fileName.split('.').pop())
+                });
+            }
+        } catch (error) {
+            console.error('Download failed:', error);
+            Alert.alert('Error', 'Failed to download file');
+        }
+    };
 
     return (
         <View style={styles.container}>

@@ -35,7 +35,7 @@ export default function AboutUsScreen() {
                 </View>
                 <View style={styles.infoItem}>
                     <Icon name="calendar-today" size={18} color="brown" />
-                    <Text style={styles.infoText}>Release Date: June 2025</Text>
+                    <Text style={styles.infoText}>Release Date: May 2025</Text>
                 </View>
 
                 <Text style={styles.subtitle}>Development Team</Text>
