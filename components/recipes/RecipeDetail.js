@@ -219,291 +219,348 @@ const RecipeDetail = () => {
     }
 
     return (
-        <ScrollView style={styles.container}>
-            {/* Recipe Header */}
-            <View style={styles.header}>
-                <Text style={styles.title}>{recipe.name || recipe.Name}</Text>
-                <Text style={styles.author}>By {recipe.UserName}</Text>
-            </View>
-
-            {/* Hero Image */}
-            <Image
-                source={{ uri: recipe.Image }}
-                style={styles.image}
-                resizeMode="cover"
-            />
-
-            {/* Rating and Categories */}
-            <View style={styles.metaContainer}>
-                <View style={styles.ratingContainer}>
-                    <Icon name="star" size={20} color="#FFC107" solid />
-                    <Text style={styles.ratingText}>
-                    {recipe.averageRating ? parseFloat(recipe.averageRating).toFixed(1) : "0.0"}
-                    </Text>
-                    <Text style={styles.ratingCount}>({recipe.ratingCount || 0})</Text>
-                    
-                    {user && (
-                        <TouchableOpacity 
-                            style={styles.rateButton}
-                            onPress={hasUserRated ? handleEditRating : () => setRatingModalVisible(true)}
-                        >
-                            {hasUserRated ?
-                                <Icon2 name="edit" size={20} color='#5D4037' solid />
-                                :
-                                <Icon3 name="add-circle" size={20} color='#5D4037' solid />}
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoriesContainer}
-                >
-                    {(recipe.categories || []).map((category, index) => (
-                        <View key={index} style={styles.categoryPill}>
-                            <Text style={styles.categoryText}>{category}</Text>
-                        </View>
-                    ))}
-                </ScrollView>
-            </View>
-               {/* User Rating Section */}
-               {checkingRating ? (
-    <View style={styles.userRatingContainer}>
-        <ActivityIndicator size="small" color="#5D4037" />
+        <ScrollView style={[styles.container, highContrast && styles.highContrastBackground]}>
+    {/* Recipe Header */}
+    <View style={[styles.header, highContrast && styles.highContrastBorderBottom]}>
+        <Text style={[styles.title, highContrast && styles.highContrastText]}>{recipe.name || recipe.Name}</Text>
+        <Text style={[styles.author, highContrast && styles.highContrastSecondaryText]}>By {recipe.UserName}</Text>
     </View>
-) : hasUserRated ? (
-    <View style={styles.userRatingContainer}>
-        <Text style={styles.userRatingTitle}>Your Rating:</Text>
-        <View style={styles.userRatingContent}>
-            <StarRating
-                rating={userRating}
-                onChange={() => {}}
-                starSize={24}
-                color="#FFC107"
-                enableHalfStar={true}
-                maxStars={5}
-                starStyle={{ marginHorizontal: 2 }}
-                disabled={true}
-            />
-            {userComment && (
-                <Text style={styles.userComment}>{userComment}</Text>
-            )}
-        </View>
-        <TouchableOpacity 
-            style={styles.deleteRatingButton}
-            onPress={handleDeleteRating}
-            disabled={isRatingLoading}
-        >
-            <Text style={styles.deleteRatingButtonText}>
-                {isRatingLoading ? 'Removing...' : 'Remove Rating'}
+
+    {/* Hero Image */}
+    <Image
+        source={{ uri: recipe.Image }}
+        style={styles.image}
+        resizeMode="cover"
+    />
+
+    {/* Rating and Categories */}
+    <View style={[styles.metaContainer, highContrast && styles.highContrastBorder]}>
+        <View style={styles.ratingContainer}>
+            <Icon name="star" size={20} color={highContrast ? "#FFFFFF" : "#FFC107"} solid />
+            <Text style={[styles.ratingText, highContrast && styles.highContrastText]}>
+            {recipe.averageRating ? parseFloat(recipe.averageRating).toFixed(1) : "0.0"}
             </Text>
-        </TouchableOpacity>
-    </View>
-) : null}
-            {/* Description */}
-            {recipe.description && (
-                <View style={styles.section}>
-                    <Text style={styles.description}>{recipe.description}</Text>
-                </View>
-            )}
-
-            {/* Nutrition Summary */}
-            {recipe.totalNutrition && (
-                <View style={styles.nutritionCard}>
-                    <Text style={styles.sectionTitle}>Nutrition Facts</Text>
-                    <View style={styles.divider} />
-
-                    <View style={styles.nutritionGrid}>
-                        <View style={styles.nutritionItem}>
-                            <Text style={styles.nutritionValue}>
-                                {Math.round(recipe.totalNutrition.calories || 0)}
-                            </Text>
-                            <Text style={styles.nutritionLabel}>Calories</Text>
-                        </View>
-
-                        <View style={styles.nutritionItem}>
-                            <Text style={styles.nutritionValue}>
-                                {Math.round(recipe.totalNutrition.proteins || 0)}g
-                            </Text>
-                            <Text style={styles.nutritionLabel}>Protein</Text>
-                        </View>
-
-                        <View style={styles.nutritionItem}>
-                            <Text style={styles.nutritionValue}>
-                                {Math.round(recipe.totalNutrition.fats || 0)}g
-                            </Text>
-                            <Text style={styles.nutritionLabel}>Fat</Text>
-                        </View>
-
-                        <View style={styles.nutritionItem}>
-                            <Text style={styles.nutritionValue}>
-                                {Math.round(recipe.totalNutrition.carbohydrates || 0)}g
-                            </Text>
-                            <Text style={styles.nutritionLabel}>Carbs</Text>
-                        </View>
-                    </View>
-                </View>
-            )}
+            <Text style={[styles.ratingCount, highContrast && styles.highContrastSecondaryText]}>({recipe.ratingCount || 0})</Text>
             
-            {/* Ingredients */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Ingredients</Text>
-                <View style={styles.divider} />
-
-                <View style={styles.ingredientsList}>
-                    {(recipe.products || []).map((product, index) => (
-                        <View key={index} style={styles.ingredientItem}>
-                            <View style={styles.ingredientBullet} />
-                            <Text style={styles.ingredientText}>
-                                {product.name} <Text style={styles.ingredientAmount}>({product.amount}g)</Text>
-                            </Text>
-                        </View>
-                    ))}
-                </View>
-            </View>
-
-            {/* Instructions */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Instructions</Text>
-                <View style={styles.divider} />
-
-                <View style={styles.instructionsList}>
-                    {(recipe.steps || []).map((step, index) => (
-                        <View key={index} style={styles.stepItem}>
-                            <View style={styles.stepNumberContainer}>
-                                <Text style={styles.stepNumber}>{index + 1}</Text>
-                            </View>
-                            <Text style={styles.stepText}>{step}</Text>
-                        </View>
-                    ))}
-                </View>
-            </View>
-                
-             {/* Rating Modal */}
-<Modal
-    animationType="slide"
-    transparent={true}
-    visible={ratingModalVisible}
-    onRequestClose={() => setRatingModalVisible(false)}
->
-    <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Rate This Recipe</Text>
-            
-            <StarRating
-                rating={userRating}
-                onChange={setUserRating}
-                starSize={32}
-                color="#FFD700"
-                enableHalfStar={true}
-                maxStars={5}
-                starStyle={{ marginHorizontal: 4 }}
-            />
-            
-            <View style={styles.commentContainer}>
-                <TextInput
-                    style={styles.commentInput}
-                    placeholder="Add your comments (max 30 chars)"
-                    value={userComment}
-                    onChangeText={(text) => {
-                        if (text.length <= 30) {
-                            setUserComment(text);
-                        } else {
-                            Alert.alert('Limit exceeded', 'Comments are limited to 30 characters');
-                        }
-                    }}
-                    multiline
-                    numberOfLines={4}
-                    maxLength={30}
-                />
-                <Text style={styles.charCounter}>
-                    {userComment.length}/30
-                </Text>
-            </View>
-            
-            <View style={styles.modalButtons}>
+            {user && (
                 <TouchableOpacity 
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => {
-                        setUserComment('');
-                        setRatingModalVisible(false);
-                    }}
+                    style={styles.rateButton}
+                    onPress={hasUserRated ? handleEditRating : () => setRatingModalVisible(true)}
                 >
-                    <Text style={styles.modalButtonText}>Cancel</Text>
+                    {hasUserRated ?
+                        <Icon2 name="edit" size={20} color={highContrast ? "#FFFFFF" : '#5D4037'} solid />
+                        :
+                        <Icon3 name="add-circle" size={20} color={highContrast ? "#FFFFFF" : '#5D4037'} solid />}
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                    style={[
-                        styles.modalButton, 
-                        styles.submitButton,
-                        (!userRating || isRatingLoading) && styles.disabledButton
-                    ]}
-                    onPress={handleRateRecipe}
-                    disabled={isRatingLoading || !userRating}
-                >
-                    <Text style={styles.modalButtonText}>
-                        {isRatingLoading ? 'Submitting...' : 'Submit Rating'}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+            )}
         </View>
-    </View>
-</Modal>
-                        {recipe.comments && recipe.comments.length > 0 && (
-  <View style={styles.commentsSection}>
-    <Text style={styles.commentsTitle}>User Comments ({recipe.comments.length})</Text>
-    {recipe.comments.map((comment, index) => (
-      <TouchableOpacity 
-        key={index} 
-        style={styles.commentItem}
-        onPress={() => toggleCommentExpansion(comment.id || index)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.commentHeader}>
-          <Text style={styles.commentUser}>
-            {comment.userName}
-            {comment.userId === user?.UserId}
-          </Text>
-          {comment.rating && !isNaN(comment.rating) && (
-            <View style={styles.commentRating}>
-              <StarRating
-                rating={Number(comment.rating)}
-                onChange={() => {}}
-                starSize={16}
-                color="#FFC107"
-                enableHalfStar={true}
-                maxStars={5}
-                starStyle={{ marginHorizontal: 1 }}
-                disabled={true}
-              />
-              <Text style={styles.commentRatingText}>
-                ({Number(comment.rating).toFixed(1)})
-              </Text>
-            </View>
-          )}
-        </View>
-        <Text style={styles.commentText}>
-          {expandedComments[comment.id || index] 
-            ? comment.comment 
-            : getPreviewText(comment.comment)}
-        </Text>
-        {comment.comment.split(' ').length > 10 && (
-          <Text style={styles.readMoreText}>
-            {expandedComments[comment.id || index] ? 'Show less' : 'Read more'}
-          </Text>
-        )}
-      </TouchableOpacity>
-    ))}
-  </View>
-)}
-            <View style={styles.bottomSpacer} />
+
+        <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesContainer}
+        >
+            {(recipe.categories || []).map((category, index) => (
+                <View key={index} style={[styles.categoryPill, highContrast && styles.highContrastPill]}>
+                    <Text style={[styles.categoryText, highContrast && styles.highContrastText]}>{category}</Text>
+                </View>
+            ))}
         </ScrollView>
+    </View>
+
+    {/* User Rating Section */}
+    {checkingRating ? (
+        <View style={[styles.userRatingContainer, highContrast && styles.highContrastBorder]}>
+            <ActivityIndicator size="small" color={highContrast ? "#FFFFFF" : "#5D4037"} />
+        </View>
+    ) : hasUserRated ? (
+        <View style={[styles.userRatingContainer, highContrast && styles.highContrastBorder]}>
+            <Text style={[styles.userRatingTitle, highContrast && styles.highContrastText]}>Your Rating:</Text>
+            <View style={styles.userRatingContent}>
+                <StarRating
+                    rating={userRating}
+                    onChange={() => {}}
+                    starSize={24}
+                    color={highContrast ? "#FFFFFF" : "#FFC107"}
+                    enableHalfStar={true}
+                    maxStars={5}
+                    starStyle={{ marginHorizontal: 2 }}
+                    disabled={true}
+                />
+                {userComment && (
+                    <Text style={[styles.userComment, highContrast && styles.highContrastText]}>{userComment}</Text>
+                )}
+            </View>
+            <TouchableOpacity 
+                style={styles.deleteRatingButton}
+                onPress={handleDeleteRating}
+                disabled={isRatingLoading}
+            >
+                <Text style={styles.deleteRatingButtonText}>
+                    {isRatingLoading ? 'Removing...' : 'Remove Rating'}
+                </Text>
+            </TouchableOpacity>
+        </View>
+    ) : null}
+
+    {/* Description */}
+    {recipe.description && (
+        <View style={[styles.section, highContrast && styles.highContrastBorder]}>
+            <Text style={[styles.description, highContrast && styles.highContrastText]}>{recipe.description}</Text>
+        </View>
+    )}
+
+    {/* Nutrition Summary */}
+    {recipe.totalNutrition && (
+        <View style={[styles.nutritionCard, highContrast && styles.highContrastCard]}>
+            <Text style={[styles.sectionTitle, highContrast && styles.highContrastText]}>Nutrition Facts</Text>
+            <View style={[styles.divider, highContrast && styles.highContrastDivider]} />
+
+            <View style={styles.nutritionGrid}>
+                <View style={styles.nutritionItem}>
+                    <Text style={[styles.nutritionValue, highContrast && styles.highContrastText]}>
+                        {Math.round(recipe.totalNutrition.calories || 0)}
+                    </Text>
+                    <Text style={[styles.nutritionLabel, highContrast && styles.highContrastSecondaryText]}>Calories</Text>
+                </View>
+
+                <View style={styles.nutritionItem}>
+                    <Text style={[styles.nutritionValue, highContrast && styles.highContrastText]}>
+                        {Math.round(recipe.totalNutrition.proteins || 0)}g
+                    </Text>
+                    <Text style={[styles.nutritionLabel, highContrast && styles.highContrastSecondaryText]}>Protein</Text>
+                </View>
+
+                <View style={styles.nutritionItem}>
+                    <Text style={[styles.nutritionValue, highContrast && styles.highContrastText]}>
+                        {Math.round(recipe.totalNutrition.fats || 0)}g
+                    </Text>
+                    <Text style={[styles.nutritionLabel, highContrast && styles.highContrastSecondaryText]}>Fat</Text>
+                </View>
+
+                <View style={styles.nutritionItem}>
+                    <Text style={[styles.nutritionValue, highContrast && styles.highContrastText]}>
+                        {Math.round(recipe.totalNutrition.carbohydrates || 0)}g
+                    </Text>
+                    <Text style={[styles.nutritionLabel, highContrast && styles.highContrastSecondaryText]}>Carbs</Text>
+                </View>
+            </View>
+        </View>
+    )}
+    
+    {/* Ingredients */}
+    <View style={[styles.section, highContrast && styles.highContrastBorder]}>
+        <Text style={[styles.sectionTitle, highContrast && styles.highContrastText]}>Ingredients</Text>
+        <View style={[styles.divider, highContrast && styles.highContrastDivider]} />
+
+        <View style={styles.ingredientsList}>
+            {(recipe.products || []).map((product, index) => (
+                <View key={index} style={styles.ingredientItem}>
+                    <View style={[styles.ingredientBullet, highContrast && styles.highContrastBullet]} />
+                    <Text style={[styles.ingredientText, highContrast && styles.highContrastText]}>
+                        {product.name} <Text style={[styles.ingredientAmount, highContrast && styles.highContrastSecondaryText]}>({product.amount}g)</Text>
+                    </Text>
+                </View>
+            ))}
+        </View>
+    </View>
+
+    {/* Instructions */}
+    <View style={[styles.section, highContrast && styles.highContrastBorder]}>
+        <Text style={[styles.sectionTitle, highContrast && styles.highContrastText]}>Instructions</Text>
+        <View style={[styles.divider, highContrast && styles.highContrastDivider]} />
+
+        <View style={styles.instructionsList}>
+            {(recipe.steps || []).map((step, index) => (
+                <View key={index} style={styles.stepItem}>
+                    <View style={[styles.stepNumberContainer, highContrast && styles.highContrastStepNumber]}>
+                        <Text style={[styles.stepNumber, highContrast && styles.highContrastStepNumberText]}>{index + 1}</Text>
+                    </View>
+                    <Text style={[styles.stepText, highContrast && styles.highContrastText]}>{step}</Text>
+                </View>
+            ))}
+        </View>
+    </View>
+        
+    {/* Rating Modal */}
+    <Modal
+        animationType="slide"
+        transparent={true}
+        visible={ratingModalVisible}
+        onRequestClose={() => setRatingModalVisible(false)}
+    >
+        <View style={[styles.modalContainer, highContrast && styles.highContrastModalBackground]}>
+            <View style={[styles.modalContent, highContrast && styles.highContrastModalContent]}>
+                <Text style={[styles.modalTitle, highContrast && styles.highContrastText]}>Rate This Recipe</Text>
+                
+                <StarRating
+                    rating={userRating}
+                    onChange={setUserRating}
+                    starSize={32}
+                    color={highContrast ? "#FFFFFF" : "#FFD700"}
+                    enableHalfStar={true}
+                    maxStars={5}
+                    starStyle={{ marginHorizontal: 4 }}
+                />
+                
+                <View style={styles.commentContainer}>
+                    <TextInput
+                        style={[styles.commentInput, highContrast && styles.highContrastInput]}
+                        placeholder="Add your comments (max 30 chars)"
+                        placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
+                        value={userComment}
+                        onChangeText={(text) => {
+                            if (text.length <= 30) {
+                                setUserComment(text);
+                            } else {
+                                Alert.alert('Limit exceeded', 'Comments are limited to 30 characters');
+                            }
+                        }}
+                        multiline
+                        numberOfLines={4}
+                        maxLength={30}
+                    />
+                    <Text style={[styles.charCounter, highContrast && styles.highContrastSecondaryText]}>
+                        {userComment.length}/30
+                    </Text>
+                </View>
+                
+                <View style={styles.modalButtons}>
+                    <TouchableOpacity 
+                        style={[styles.modalButton, styles.cancelButton]}
+                        onPress={() => {
+                            setUserComment('');
+                            setRatingModalVisible(false);
+                        }}
+                    >
+                        <Text style={styles.modalButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                        style={[
+                            styles.modalButton, 
+                            styles.submitButton,
+                            (!userRating || isRatingLoading) && styles.disabledButton
+                        ]}
+                        onPress={handleRateRecipe}
+                        disabled={isRatingLoading || !userRating}
+                    >
+                        <Text style={styles.modalButtonText}>
+                            {isRatingLoading ? 'Submitting...' : 'Submit Rating'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+    </Modal>
+
+    {recipe.comments && recipe.comments.length > 0 && (
+        <View style={[styles.commentsSection, highContrast && styles.highContrastBorder]}>
+            <Text style={[styles.commentsTitle, highContrast && styles.highContrastText]}>User Comments ({recipe.comments.length})</Text>
+            {recipe.comments.map((comment, index) => (
+                <TouchableOpacity 
+                    key={index} 
+                    style={[styles.commentItem, highContrast && styles.highContrastCommentItem]}
+                    onPress={() => toggleCommentExpansion(comment.id || index)}
+                    activeOpacity={0.7}
+                >
+                    <View style={styles.commentHeader}>
+                        <Text style={[styles.commentUser, highContrast && styles.highContrastText]}>
+                            {comment.userName}
+                            {comment.userId === user?.UserId}
+                        </Text>
+                        {comment.rating && !isNaN(comment.rating) && (
+                            <View style={styles.commentRating}>
+                                <StarRating
+                                    rating={Number(comment.rating)}
+                                    onChange={() => {}}
+                                    starSize={16}
+                                    color={highContrast ? "#FFFFFF" : "#FFC107"}
+                                    enableHalfStar={true}
+                                    maxStars={5}
+                                    starStyle={{ marginHorizontal: 1 }}
+                                    disabled={true}
+                                />
+                                <Text style={[styles.commentRatingText, highContrast && styles.highContrastSecondaryText]}>
+                                    ({Number(comment.rating).toFixed(1)})
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                    <Text style={[styles.commentText, highContrast && styles.highContrastText]}>
+                        {expandedComments[comment.id || index] 
+                            ? comment.comment 
+                            : getPreviewText(comment.comment)}
+                    </Text>
+                    {comment.comment.split(' ').length > 10 && (
+                        <Text style={[styles.readMoreText, highContrast && styles.highContrastSecondaryText]}>
+                            {expandedComments[comment.id || index] ? 'Show less' : 'Read more'}
+                        </Text>
+                    )}
+                </TouchableOpacity>
+            ))}
+        </View>
+    )}
+    <View style={styles.bottomSpacer} />
+</ScrollView>
         
     );
 };
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#121212',
+    },
+    highContrastText: {
+        color: '#FFFFFF',
+    },
+    highContrastSecondaryText: {
+        color: '#CCCCCC',
+    },
+    highContrastBorder: {
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+    },
+    highContrastBorderBottom: {
+        borderBottomColor: '#FFFFFF',
+        borderBottomWidth: 1,
+    },
+    highContrastPill: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+    },
+    highContrastCard: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+    },
+    highContrastDivider: {
+        backgroundColor: '#FFFFFF',
+    },
+    highContrastBullet: {
+        backgroundColor: '#FFFFFF',
+    },
+    highContrastStepNumber: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+    },
+    highContrastStepNumberText: {
+        color: '#FFFFFF',
+    },
+    highContrastModalBackground: {
+        backgroundColor: 'rgba(0,0,0,0.9)',
+    },
+    highContrastModalContent: {
+        backgroundColor: '#121212',
+        borderColor: '#FFFFFF',
+    },
+    highContrastInput: {
+        color: '#FFFFFF',
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+    },
+    highContrastCommentItem: {
+        borderColor: '#FFFFFF',
+    },
     readMoreText: {
         color: '#5D4037',
         fontSize: 12,

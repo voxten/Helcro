@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 const ProductDetail = ({ route }) => {
+    const { highContrast } = useAccessibility();
     const { product } = route.params;
 
     const nutritionFacts = [
@@ -16,34 +17,55 @@ const ProductDetail = ({ route }) => {
     ];
 
     return (
-        <ScrollView style={styles.container}>
-            {product.image && (
-                <Image
-                    source={{ uri: product.image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
-                    style={styles.productImage}
-                />
-            )}
+        <ScrollView style={[styles.container, highContrast && styles.highContrastBackground]}>
+    {product.image && (
+        <Image
+            source={{ uri: product.image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
+            style={styles.productImage}
+        />
+    )}
 
-            <Text style={styles.productName}>{product.product_name}</Text>
+    <Text style={[styles.productName, highContrast && styles.highContrastText]}>{product.product_name}</Text>
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Nutrition Facts</Text>
-                <View style={styles.nutritionGrid}>
-                    {nutritionFacts.map((item, index) => (
-                        <View key={index} style={styles.nutritionItem}>
-                            <Text style={styles.nutritionLabel}>{item.label}</Text>
-                            <Text style={styles.nutritionValue}>
-                                {item.value || 0}{item.unit}
-                            </Text>
-                        </View>
-                    ))}
+    <View style={[styles.section, highContrast && styles.highContrastSection]}>
+        <Text style={[styles.sectionTitle, highContrast && styles.highContrastText]}>Nutrition Facts</Text>
+        <View style={[styles.nutritionGrid, highContrast && styles.highContrastNutritionGrid]}>
+            {nutritionFacts.map((item, index) => (
+                <View key={index} style={[styles.nutritionItem, highContrast && styles.highContrastNutritionItem]}>
+                    <Text style={[styles.nutritionLabel, highContrast && styles.highContrastText]}>{item.label}</Text>
+                    <Text style={[styles.nutritionValue, highContrast && styles.highContrastText]}>
+                        {item.value || 0}{item.unit}
+                    </Text>
                 </View>
-            </View>
-        </ScrollView>
+            ))}
+        </View>
+    </View>
+</ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#121212',
+    },
+    highContrastText: {
+        color: '#FFFFFF',
+    },
+    highContrastSection: {
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+        borderRadius: 4,
+        padding: 8,
+        margin: 8,
+    },
+    highContrastNutritionGrid: {
+        borderColor: '#FFFFFF',
+        borderTopWidth: 1,
+    },
+    highContrastNutritionItem: {
+        borderBottomColor: '#FFFFFF',
+        borderBottomWidth: 0.5,
+    },
     container: {
         flex: 1,
         backgroundColor: '#fff',

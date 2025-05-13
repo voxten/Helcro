@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import {API_BASE_URL} from '@env';
+import { useAccessibility } from "../../AccessibleView/AccessibleView";
 const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
+  const { highContrast } = useAccessibility();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -52,15 +54,16 @@ const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, highContrast && styles.highContrastBackground]}
     >
-      <View style={styles.innerContainer}>
+      <View style={[styles.innerContainer, highContrast && styles.highContrastBackground]}>
         <Icon name="lock-reset" size={50} color="brown" style={styles.lockIcon} />
-        <Text style={styles.title}>Reset Your Password</Text>
-        <Text style={styles.subtitle}>Enter your email to receive a reset link</Text>
+        <Text style={[styles.title, highContrast && styles.highContrastBackground]}>Reset Your Password</Text>
+        <Text style={[styles.subtitle, highContrast && styles.highContrastBackground]}>Enter your email to receive a reset link</Text>
         
         <TextInput
-          style={styles.input}
+          style={[styles.input, highContrast && styles.secondContrast]}
+          placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
           placeholder="Email address"
           value={email}
           onChangeText={setEmail}
@@ -81,13 +84,13 @@ const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.linksContainer}>
+        <View style={[styles.linksContainer, highContrast && styles.highContrastBackground]}>
           <TouchableOpacity onPress={onBackPress}>
-            <Text style={styles.linkText}>Remember your password? Sign in</Text>
+            <Text style={[styles.linkText, highContrast && styles.highContrastBackground]}>Remember your password? Sign in</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onRegisterPress}>
-            <Text style={styles.linkText}>Don't have an account? Register now</Text>
+            <Text style={[styles.linkText, highContrast && styles.highContrastBackground]}>Don't have an account? Register now</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -96,6 +99,14 @@ const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
 };
 
 const styles = StyleSheet.create({
+  highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
   container: {
     flex: 1,
   },

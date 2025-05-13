@@ -6,8 +6,9 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { API_BASE_URL } from '@env';
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 export default function WeightHistoryScreen() {
+    const { highContrast } = useAccessibility();
     const { user } = useAuth();
     const [weights, setWeights] = useState([]);
     const [weightHistory, setWeightHistory] = useState({
@@ -115,35 +116,42 @@ export default function WeightHistoryScreen() {
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.chartContainer}>
+        <View style={[styles.container, highContrast && styles.highContrastBackground]}>
+            <View style={[styles.chartContainer, highContrast && styles.secondContrast]}>
                 {weights.length > 0 && weightHistory.datasets[0].data.length > 0 ? (
                     <LineChart
                         data={weightHistory}
                         width={350}
                         height={220}
                         chartConfig={{
-                            backgroundGradientFrom: "white",
-                            backgroundGradientTo: "white",
+                            backgroundGradientFrom: highContrast ? "#000000" : "white",
+                            backgroundGradientTo: highContrast ? "#000000" : "white",
                             decimalPlaces: 1,
-                            color: (opacity = 1) => `rgba(165, 42, 42, ${opacity})`,
-                            labelColor: (opacity = 1) => `rgba(165, 42, 42, ${opacity})`,
+                            color: (opacity = 1) => highContrast 
+                            ? `rgba(255, 255, 0, ${opacity})`     // linia wykresu w żółtym kolorze
+                            : `rgba(165, 42, 42, ${opacity})`,    // standardowy brąz
+
+                            labelColor: (opacity = 1) => highContrast 
+                            ? `rgba(255, 255, 0, ${opacity})`     // kolory osi i labeli
+                            : `rgba(165, 42, 42, ${opacity})`,
+
                             propsForDots: {
-                                r: "5",
-                                strokeWidth: "2",
-                                stroke: "#8B4513"
+                            r: "5",
+                            strokeWidth: "2",
+                            stroke: highContrast ? "#FFFF00" : "#8B4513" // kropki na wykresie
                             }
                         }}
                         bezier
                         style={{
                             borderRadius: 16,
-                            paddingRight: 45
+                            paddingRight: 45,
+                            backgroundColor: highContrast ? "#000000" : "transparent"
                         }}
-                    />
+                        />
                 ) : (
-                    <View style={styles.noDataContainer}>
-                        <Icon name="exclamation-circle" size={24} color="#8B4513" />
-                        <Text style={styles.noDataText}>No weight data available</Text>
+                    <View style={[styles.noDataContainer, highContrast && styles.secondContrast]}>
+                        <Icon name="exclamation-circle" size={24} color={highContrast ? "#FFFFFF" : "#8B4513"} />
+                        <Text style={[styles.noDataText, highContrast && styles.secondContrast]}>No weight data available</Text>
                     </View>
                 )}
             </View>
@@ -170,16 +178,16 @@ export default function WeightHistoryScreen() {
 
             <Modal visible={modalVisible} transparent animationType="fade">
                 <View style={styles.overlay}>
-                    <View style={styles.modalContainer}>
-                        <Text style={styles.modalTitle}>Add Weight Record</Text>
+                    <View style={[styles.modalContainer, highContrast && styles.secondContrast]}>
+                        <Text style={[styles.modalTitle, highContrast && styles.secondContrast]}>Add Weight Record</Text>
 
-                        <View style={styles.inputContainer}>
-                            <Icon name="calendar" size={18} color="#5D4037" style={styles.inputIcon} />
+                        <View style={[styles.inputContainer, highContrast && styles.secondContrast]}>
+                            <Icon name="calendar" size={18} color="#5D4037" style={[styles.inputIcon, highContrast && styles.secondContrast]} />
                             <TouchableOpacity
                                 onPress={() => setShowDatePicker(true)}
-                                style={styles.dateInput}
+                                style={[styles.dateInput, highContrast && styles.secondContrast]}
                             >
-                                <Text style={styles.dateText}>
+                                <Text style={[styles.dateText, highContrast && styles.secondContrast]}>
                                     {selectedDate.toLocaleDateString()}
                                 </Text>
                             </TouchableOpacity>
@@ -197,10 +205,11 @@ export default function WeightHistoryScreen() {
                             />
                         )}
 
-                        <View style={styles.inputContainer}>
-                            <Icon name="balance-scale" size={18} color="#5D4037" style={styles.inputIcon} />
+                        <View style={[styles.inputContainer, highContrast && styles.secondContrast]}>
+                            <Icon name="balance-scale" size={18} color="#5D4037" style={[styles.inputIcon, highContrast && styles.secondContrast]} />
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, highContrast && styles.secondContrast]}
+                                placeholderTextColor={highContrast ? '#FFFFFF' : '#5D4037'} 
                                 value={newWeight}
                                 onChangeText={setNewWeight}
                                 placeholder="Weight in kg"
@@ -230,6 +239,15 @@ export default function WeightHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
+    
+highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
     },

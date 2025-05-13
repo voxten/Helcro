@@ -9,6 +9,10 @@ import MoreStack from "../navigation/MoreStack";
 import AuthNavigator from "../navigation/AuthNavigator";
 import RecipesStack from "../navigation/RecipesStack";
 import DietStack from "../navigation/DietStack";
+import { TouchableOpacity, Switch } from "react-native";
+import { useAccessibility } from "./AccessibleView/AccessibleView";
+import Icon1 from "react-native-vector-icons/FontAwesome6";
+import Icon2 from 'react-native-vector-icons/Feather'; // lub FontAwesome, jeśli wolisz
 
 const Tab = createBottomTabNavigator();
 
@@ -19,12 +23,30 @@ export default function BottomNav() {
         <NavigationContainer>
             <Tab.Navigator
                 screenOptions={{
-                    headerTitle: () => (
-                        <Image
-                            source={require('../assets/logo.png')}
-                            style={styles.logo}
-                        />
-                    ),
+                   headerTitle: () => (
+                    <Image
+                        source={require('../assets/logo.png')}
+                        style={styles.logo}
+                    />
+                ),
+                headerLeft: () => {
+                    const { highContrast, setHighContrast } = useAccessibility(); 
+
+                    return (
+                        <TouchableOpacity
+                            onPress={() => setHighContrast(prev => !prev)}
+                            style={{ marginLeft: 15 }}
+                        >
+                            <Icon2
+                                name={highContrast ? "sun" : "moon"}
+                                size={20}
+                                color={highContrast ? "#FFD700" : "white"}
+                            />
+                        </TouchableOpacity>
+                    );
+                },
+
+                    
                     headerTitleAlign: 'center',
                     headerStyle: styles.header,
                     tabBarStyle: styles.tabBar,

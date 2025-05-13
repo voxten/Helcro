@@ -18,10 +18,11 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { API_BASE_URL } from '@env';
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 const { height } = Dimensions.get('window');
 
 const RecipesList = ({ navigation }) => {
+    const { highContrast } = useAccessibility();
     const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -181,151 +182,170 @@ const RecipesList = ({ navigation }) => {
 
     if (loading && recipes.length === 0) {
         return (
-            <View style={styles.loadingContainer}>
+            <View style={[styles.loadingContainer, highContrast && styles.highContrastBackground]}
+>
                 <ActivityIndicator size="large" color="#5D4037" />
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            {/* Search and Filter Bar */}
-            <View style={styles.searchContainer}>
-                <View style={styles.searchInputContainer}>
-                    <Icon name="search" size={16} color="#8D6E63" style={styles.searchIcon} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search recipes..."
-                        placeholderTextColor="#A1887F"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        onSubmitEditing={handleSearch}
-                    />
-                </View>
+        <View style={[styles.container, highContrast && styles.highContrastBackground]}>
+    {/* Search and Filter Bar */}
+    <View style={[styles.searchContainer, highContrast && styles.highContrastBackground]}>
+        <View style={[styles.searchInputContainer, highContrast && styles.secondContrast]}>
+            <Icon name="search" size={16} color={highContrast ? '#FFFFFF' : '#999999'} style={styles.searchIcon} />
+            <TextInput
+                style={[styles.searchInput, highContrast && styles.highContrastTextInput]}
+                placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
+                placeholder="Search recipes..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={handleSearch}
+            />
+        </View>
 
-                <View style={styles.buttonRow}>
-                    <TouchableOpacity
-                        style={styles.filterButton}
-                        onPress={() => setModalVisible(true)}
-                    >
-                        <Icon name="filter" size={16} color="#FFF" />
-                        <Text style={styles.filterButtonText}>
-                            {selectedCategory || "Categories"}
-                        </Text>
-                    </TouchableOpacity>
+        <View style={styles.buttonRow}>
+            <TouchableOpacity
+                style={styles.filterButton}
+                onPress={() => setModalVisible(true)}
+            >
+                <Icon name="filter" size={16} color="#FFF" />
+                <Text style={styles.filterButtonText}>
+                    {selectedCategory || "Categories"}
+                </Text>
+            </TouchableOpacity>
 
-                    {user && (
-                        <TouchableOpacity
-                            style={styles.addButton}
-                            onPress={() => navigation.navigate("RecipesAdd")}
-                        >
-                            <Icon name="plus" size={16} color="#FFF" />
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </View>
-
-            {(selectedCategory || searchQuery) && (
+            {user && (
                 <TouchableOpacity
-                    style={styles.clearButton}
-                    onPress={handleClearFilters}
+                    style={styles.addButton}
+                    onPress={() => navigation.navigate("RecipesAdd")}
                 >
-                    <Text style={styles.clearButtonText}>Clear Filters</Text>
-                    <Icon name="times" size={14} color="#FFF" />
+                    <Icon name="plus" size={16} color="#FFF" />
                 </TouchableOpacity>
             )}
-
-            {/* Category Modal */}
-            <Modal visible={modalVisible} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Select Category</Text>
-                            <TouchableOpacity
-                                onPress={() => setModalVisible(false)}
-                            >
-                                <Icon name="times" size={20} color="#5D4037" />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView style={styles.modalContent}>
-                            {categories.map((category) => (
-                                <TouchableOpacity
-                                    key={category.CategoryId}
-                                    onPress={() => handleCategorySelect(category.Name)}
-                                    style={styles.categoryItem}
-                                >
-                                    <Text style={styles.categoryText}>{category.Name}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Recipe List */}
-            {viewMode === 'grid' ? (
-                <FlatList
-                    key="grid"
-                    data={recipes}
-                    renderItem={({ item }) => (
-                        <View style={styles.gridItem}>
-                            <RecipeCard recipe={item} />
-                        </View>
-                    )}
-                    keyExtractor={(item) => item.RecipeId.toString()}
-                    numColumns={2}
-                    columnWrapperStyle={styles.gridRow}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={['#5D4037']}
-                        />
-                    }
-                    contentContainerStyle={styles.listContent}
-                />
-            ) : (
-                <FlatList
-                    key="category"
-                    data={Object.entries(groupRecipesByCategory())}
-                    renderItem={({ item: [category, categoryRecipes] }) => (
-                        <View style={styles.categorySection}>
-                            <Text style={styles.categoryTitle}>{category}</Text>
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.horizontalList}
-                            >
-                                {categoryRecipes.map(recipe => (
-                                    <View key={recipe.RecipeId} style={styles.horizontalItem}>
-                                        <RecipeCard recipe={recipe} />
-                                    </View>
-                                ))}
-                            </ScrollView>
-                        </View>
-                    )}
-                    keyExtractor={([category]) => category}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={['#5D4037']}
-                        />
-                    }
-                    contentContainerStyle={styles.listContent}
-                    ListEmptyComponent={
-                        <View style={styles.emptyState}>
-                            <Icon name="bowl-food" size={40} color="#BCAAA4" />
-                            <Text style={styles.emptyText}>No recipes found</Text>
-                        </View>
-                    }
-                />
-            )}
         </View>
+    </View>
+
+    {(selectedCategory || searchQuery) && (
+        <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClearFilters}
+        >
+            <Text style={styles.clearButtonText}>Clear Filters</Text>
+            <Icon name="times" size={14} color="#FFF" />
+        </TouchableOpacity>
+    )}
+
+    {/* Category Modal */}
+    <Modal visible={modalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+            <View style={[styles.modalContainer, highContrast && styles.secondContrast]}>
+                <View style={styles.modalHeader}>
+                    <Text style={[styles.modalTitle, highContrast && styles.highContrastText]}>Select Category</Text>
+                    <TouchableOpacity
+                        onPress={() => setModalVisible(false)}
+                    >
+                        <Icon name="times" size={20} color={highContrast ? '#FFFFFF' : '#999999'} />
+                    </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.modalContent}>
+                    {categories.map((category) => (
+                        <TouchableOpacity
+                            key={category.CategoryId}
+                            onPress={() => handleCategorySelect(category.Name)}
+                            style={[styles.categoryItem, highContrast && styles.highContrastListItem]}
+                        >
+                            <Text style={[styles.categoryText, highContrast && styles.highContrastText]}>{category.Name}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+        </View>
+    </Modal>
+
+    {/* Recipe List */}
+    {viewMode === 'grid' ? (
+        <FlatList
+            key="grid"
+            data={recipes}
+            renderItem={({ item }) => (
+                <View style={[styles.gridItem, highContrast && styles.highContrastListItem]}>
+                    <RecipeCard recipe={item} highContrast={highContrast} />
+                </View>
+            )}
+            keyExtractor={(item) => item.RecipeId.toString()}
+            numColumns={2}
+            columnWrapperStyle={[styles.gridRow, highContrast && styles.highContrastBackground]}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={highContrast ? ['#FFFFFF'] : ['#5D4037']}
+                />
+            }
+            contentContainerStyle={[styles.listContent, highContrast && styles.highContrastBackground]}
+        />
+    ) : (
+        <FlatList
+            key="category"
+            data={Object.entries(groupRecipesByCategory())}
+            renderItem={({ item: [category, categoryRecipes] }) => (
+                <View style={[styles.categorySection, highContrast && styles.highContrastBackground]}>
+                    <Text style={[styles.categoryTitle, highContrast && styles.highContrastText]}>{category}</Text>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={[styles.horizontalList, highContrast && styles.highContrastBackground]}
+                    >
+                        {categoryRecipes.map(recipe => (
+                            <View key={recipe.RecipeId} style={[styles.horizontalItem, highContrast && styles.highContrastListItem]}>
+                                <RecipeCard recipe={recipe} highContrast={highContrast} />
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+            keyExtractor={([category]) => category}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={highContrast ? ['#FFFFFF'] : ['#5D4037']}
+                />
+            }
+            contentContainerStyle={[styles.listContent, highContrast && styles.highContrastBackground]}
+            ListEmptyComponent={
+                <View style={[styles.emptyState, highContrast && styles.highContrastBackground]}>
+                    <Icon name="bowl-food" size={40} color={highContrast ? '#FFFFFF' : '#BCAAA4'} />
+                    <Text style={[styles.emptyText, highContrast && styles.highContrastText]}>No recipes found</Text>
+                </View>
+            }
+        />
+    )}
+</View>
     );
 };
 
 const styles = StyleSheet.create({
+    highContrastText: {
+        color: '#FFFFFF', // Biały tekst
+    },
+    highContrastTextInput: {
+        color: '#FFFFFF', // Biały tekst w inputach
+        borderColor: '#FFFFFF', // Białe obramowania
+    },
+    highContrastListItem: {
+        borderColor: '#FFFFFF', // Białe obramowania dla elementów listy
+    },
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
     },

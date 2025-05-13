@@ -1,6 +1,15 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
+    
+highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
         padding: 15,

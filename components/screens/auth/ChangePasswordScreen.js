@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import api from "../../utils/api";
-
+import { useAccessibility } from "../../AccessibleView/AccessibleView";
 const ChangePasswordScreen = () => {
+    const { highContrast } = useAccessibility();
     const navigation = useNavigation();
     const route = useRoute();
-    
     const userId = route.params?.userId;
     const [step, setStep] = useState("verify"); // "verify" or "change"
     const [currentPassword, setCurrentPassword] = useState("");
@@ -85,22 +85,28 @@ const ChangePasswordScreen = () => {
             setIsSubmitting(false);
         }
     };
-
+    
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>
+        <View style={[styles.container, highContrast && styles.secondContrast]}>
+            <Text style={[styles.title, highContrast && styles.secondContrast]}>
                 {step === "verify" ? "Verify Your Password" : "Change Password"}
             </Text>
 
             {step === "verify" ? (
                 <>
                     <TextInput
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            highContrast && styles.secondContrast,
+                            { color: highContrast ? '#FFFFFF' : '#000000' } 
+                        ]}
+                        placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
                         placeholder="Current Password"
                         secureTextEntry
                         value={currentPassword}
                         onChangeText={setCurrentPassword}
-                    />
+                        />
+
                     <TouchableOpacity
                         style={[styles.button, isSubmitting && styles.disabledButton]}
                         onPress={handleVerify}
@@ -114,19 +120,29 @@ const ChangePasswordScreen = () => {
             ) : (
                 <>
                     <TextInput
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            highContrast && styles.secondContrast,
+                            { color: highContrast ? '#FFFFFF' : '#000000' } // dynamiczny kolor tekstu
+                        ]}
+                        placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
                         placeholder="New Password"
                         secureTextEntry
                         value={newPassword}
                         onChangeText={setNewPassword}
-                    />
+                        />
                     <TextInput
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            highContrast && styles.secondContrast,
+                            { color: highContrast ? '#FFFFFF' : '#000000' } // dynamiczny kolor tekstu
+                        ]}
+                        placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
                         placeholder="Confirm New Password"
                         secureTextEntry
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
-                    />
+                        />
                     <TouchableOpacity
                         style={[styles.button, isSubmitting && styles.disabledButton]}
                         onPress={handleChangePassword}
@@ -143,6 +159,14 @@ const ChangePasswordScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
         padding: 20,

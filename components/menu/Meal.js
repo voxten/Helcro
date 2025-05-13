@@ -7,8 +7,9 @@ const apiUrl = `${API_BASE_URL}`;
 import { useAuth } from "../context/AuthContext";
 import Icon from "react-native-vector-icons/AntDesign";
 import Icon2 from "react-native-vector-icons/FontAwesome6";
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 export default function Meal({ onClose, onSave, existingProducts = [], selectedDate, mealType, mealName }) {
+  const { highContrast } = useAccessibility();
   const { user } = useAuth();
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [products, setProducts] = useState([]);
@@ -309,279 +310,352 @@ export default function Meal({ onClose, onSave, existingProducts = [], selectedD
   };
 
   const renderProductItem = ({ item, index }) => (
-      <View style={localStyles.productCard}>
-        <TouchableOpacity
-            style={localStyles.removeButton}
-            onPress={() => {
-              const updatedProducts = [...products];
-              updatedProducts.splice(index, 1);
-              setProducts(updatedProducts);
-            }}
-        >
-          <Icon2 name="trash" size={16} color="red" />
-        </TouchableOpacity>
+  <View style={[localStyles.productCard, highContrast && styles.highContrastCard]}>
+    <TouchableOpacity
+        style={localStyles.removeButton}
+        onPress={() => {
+          const updatedProducts = [...products];
+          updatedProducts.splice(index, 1);
+          setProducts(updatedProducts);
+        }}
+    >
+      <Icon2 name="trash" size={16} color={highContrast ? "#FF0000" : "red"} />
+    </TouchableOpacity>
 
+    <View style={localStyles.productContent}>
+      {item.image && <Image source={{ uri: item.image }} style={localStyles.productImage} />}
+
+      <View style={localStyles.productMainInfo}>
+        <View style={localStyles.productNameRow}>
+          <Text style={[localStyles.productName, highContrast && styles.highContrastText]} numberOfLines={1}>{item.product_name}</Text>
+          <View style={[localStyles.gramsInputContainer, highContrast && styles.highContrastInputContainer]}>
+            <TextInput
+                style={[localStyles.gramsInput, highContrast && styles.highContrastInput]}
+                value={item.grams?.toString()}
+                onChangeText={(text) => handleGramsChange(text, index)}
+                keyboardType="numeric"
+                placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
+            />
+            <Text style={[localStyles.gramsLabel, highContrast && styles.highContrastText]}>g</Text>
+          </View>
+        </View>
+        <Text style={[localStyles.productDetails, highContrast && styles.highContrastSecondaryText]}>
+          {(item.calories?.toString() || 0)} kcal |
+          {(item.proteins?.toString() || 0)}g protein |
+          {(item.fats?.toString() || 0)}g fat |
+          {(item.carbohydrates?.toString() || 0)}g carbs
+        </Text>
+      </View>
+    </View>
+  </View>
+);
+
+const renderRecipeItem = ({ item }) => (
+  <TouchableOpacity
+    style={[localStyles.productListItem, highContrast && styles.highContrastListItem]}
+    onPress={() => handleSelectRecipe(item)}
+  >
+    <Image
+      source={{ uri: item.Image || item.photo || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
+      style={localStyles.productImage}
+    />
+    <View style={localStyles.productTextContainer}>
+      <Text style={[localStyles.productName, highContrast && styles.highContrastText]}>{item.Name || item.name}</Text>
+      <Text style={[localStyles.productDetails, highContrast && styles.highContrastSecondaryText]}>
+        {item.categories?.join(', ')}
+      </Text>
+      <Text style={[localStyles.productDetails, highContrast && styles.highContrastSecondaryText]}>
+        Rating: {item.AverageRating || item.averageRating || 0} ({item.RatingCount || item.ratingCount || 0} ratings)
+      </Text>
+    </View>
+  </TouchableOpacity>
+);
+
+const renderRecipeProducts = () => (
+  <View style={[localStyles.recipeContainer, highContrast && styles.highContrastRecipeContainer]}>
+    <View style={localStyles.recipeHeader}>
+      <Image
+        source={{ uri: selectedRecipe.Image || selectedRecipe.photo || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
+        style={localStyles.recipeImage}
+      />
+      <Text style={[localStyles.recipeName, highContrast && styles.highContrastText]}>{selectedRecipe.Name || selectedRecipe.name}</Text>
+    </View>
+    
+    <Text style={[localStyles.recipeSubtitle, highContrast && styles.highContrastText]}>Ingredients:</Text>
+    
+    {recipeProducts.map((product, index) => (
+      <View key={index} style={[localStyles.recipeProductCard, highContrast && styles.highContrastCard]}>
         <View style={localStyles.productContent}>
-          {item.image && <Image source={{ uri: item.image }} style={localStyles.productImage} />}
+          {product.image && <Image source={{ uri: product.image }} style={localStyles.productImage} />}
 
           <View style={localStyles.productMainInfo}>
             <View style={localStyles.productNameRow}>
-              <Text style={localStyles.productName} numberOfLines={1}>{item.product_name}</Text>
-              <View style={localStyles.gramsInputContainer}>
+              <Text style={[localStyles.productName, highContrast && styles.highContrastText]} numberOfLines={1}>{product.product_name}</Text>
+              <View style={[localStyles.gramsInputContainer, highContrast && styles.highContrastInputContainer]}>
                 <TextInput
-                    style={localStyles.gramsInput}
-                    value={item.grams?.toString()}
-                    onChangeText={(text) => handleGramsChange(text, index)}
-                    keyboardType="numeric"
+                  style={[localStyles.gramsInput, highContrast && styles.highContrastInput]}
+                  value={product.grams?.toString()}
+                  onChangeText={(text) => handleRecipeGramsChange(text, index)}
+                  keyboardType="numeric"
+                  placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
                 />
-                <Text style={localStyles.gramsLabel}>g</Text>
+                <Text style={[localStyles.gramsLabel, highContrast && styles.highContrastText]}>g</Text>
               </View>
             </View>
-            <Text style={localStyles.productDetails}>
-              {(item.calories?.toString() || 0)} kcal |
-              {(item.proteins?.toString() || 0)}g protein |
-              {(item.fats?.toString() || 0)}g fat |
-              {(item.carbohydrates?.toString() || 0)}g carbs
+            <Text style={[localStyles.productDetails, highContrast && styles.highContrastSecondaryText]}>
+              {(product.calories?.toString() || 0)} kcal |
+              {(product.proteins?.toString() || 0)}g protein |
+              {(product.fats?.toString() || 0)}g fat |
+              {(product.carbohydrates?.toString() || 0)}g carbs
             </Text>
           </View>
         </View>
       </View>
-  );
-  const renderRecipeItem = ({ item }) => (
-    <TouchableOpacity
-      style={localStyles.productListItem}
-      onPress={() => handleSelectRecipe(item)}
-    >
-      <Image
-        source={{ uri: item.Image || item.photo || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
-        style={localStyles.productImage}
-      />
-      <View style={localStyles.productTextContainer}>
-        <Text style={localStyles.productName}>{item.Name || item.name}</Text>
-        <Text style={localStyles.productDetails}>
-          {item.categories?.join(', ')}
-        </Text>
-        <Text style={localStyles.productDetails}>
-          Rating: {item.AverageRating || item.averageRating || 0} ({item.RatingCount || item.ratingCount || 0} ratings)
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderRecipeProducts = () => (
-    <View style={localStyles.recipeContainer}>
-      <View style={localStyles.recipeHeader}>
-        <Image
-          source={{ uri: selectedRecipe.Image || selectedRecipe.photo || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
-          style={localStyles.recipeImage}
-        />
-        <Text style={localStyles.recipeName}>{selectedRecipe.Name || selectedRecipe.name}</Text>
-      </View>
-      
-      <Text style={localStyles.recipeSubtitle}>Ingredients:</Text>
-      
-      {recipeProducts.map((product, index) => (
-        <View key={index} style={localStyles.recipeProductCard}>
-          <View style={localStyles.productContent}>
-            {product.image && <Image source={{ uri: product.image }} style={localStyles.productImage} />}
-
-            <View style={localStyles.productMainInfo}>
-              <View style={localStyles.productNameRow}>
-                <Text style={localStyles.productName} numberOfLines={1}>{product.product_name}</Text>
-                <View style={localStyles.gramsInputContainer}>
-                  <TextInput
-                    style={localStyles.gramsInput}
-                    value={product.grams?.toString()}
-                    onChangeText={(text) => handleRecipeGramsChange(text, index)}
-                    keyboardType="numeric"
-                  />
-                  <Text style={localStyles.gramsLabel}>g</Text>
-                </View>
-              </View>
-              <Text style={localStyles.productDetails}>
-                {(product.calories?.toString() || 0)} kcal |
-                {(product.proteins?.toString() || 0)}g protein |
-                {(product.fats?.toString() || 0)}g fat |
-                {(product.carbohydrates?.toString() || 0)}g carbs
-              </Text>
-            </View>
-          </View>
-        </View>
-      ))}
-      
-      <View style={localStyles.buttonContainer}>
-        <TouchableOpacity style={localStyles.closeButton} onPress={() => setSelectedRecipe(null)}>
-          <Icon name="back" size={20} color="white" style={localStyles.icon} />
-          <Text style={localStyles.closeButtonText}>Back</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={localStyles.closeButton} onPress={handleAddRecipe}>
-          <Text style={localStyles.closeButtonText}>Add Recipe</Text>
-        </TouchableOpacity>
-      </View>
+    ))}
+    
+    <View style={localStyles.buttonContainer}>
+      <TouchableOpacity style={[localStyles.closeButton, highContrast && styles.highContrastButton]} onPress={() => setSelectedRecipe(null)}>
+        <Icon name="back" size={20} color={highContrast ? "#000000" : "white"} style={localStyles.icon} />
+        <Text style={[localStyles.closeButtonText, highContrast && styles.highContrastButtonText]}>Back</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[localStyles.closeButton, highContrast && styles.highContrastButton]} onPress={handleAddRecipe}>
+        <Text style={[localStyles.closeButtonText, highContrast && styles.highContrastButtonText]}>Add Recipe</Text>
+      </TouchableOpacity>
     </View>
-  );
-  return (
-      <View style={localStyles.overlay}>
-        <View style={localStyles.mainModalContainer}>
-          <Text style={localStyles.header}>Choose a product or create your own</Text>
+  </View>
+);
 
-          {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe ? (
-              <>
-                <TouchableOpacity style={localStyles.button} onPress={handleChooseProduct}>
-                  <Text style={localStyles.buttonText}>Choose a product</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={localStyles.button} onPress= {handleChooseRecipe}> 
-                  <Text style={localStyles.buttonText}>Choose a recipe</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={localStyles.button} onPress={handleCreateProduct}>
-                  <Text style={localStyles.buttonText}>Create your own product</Text>
-                </TouchableOpacity>
-              </>
-          ) : isChoosingProduct ? (
-              <View style={localStyles.modalContainer}>
-                <View style={localStyles.searchContainer}>
-                  <TextInput
-                      style={localStyles.searchInput}
-                      placeholder="Search products..."
-                      value={searchQuery}
-                      onChangeText={handleSearch}
-                  />
-                </View>
+return (
+  <View style={[localStyles.overlay, highContrast && styles.highContrastOverlay]}>
+    <View style={[localStyles.mainModalContainer, highContrast && styles.highContrastModalContainer]}>
+      <Text style={[localStyles.header, highContrast && styles.highContrastText]}>Choose a product or create your own</Text>
 
-                <FlatList
-                    data={filteredProducts}
-                    keyExtractor={(item) => item.ProductId.toString()}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={localStyles.productListItem}
-                            onPress={() => handleSelectProduct(item)}
-                        >
-                          <Image
-                              source={{ uri: item.image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
-                              style={localStyles.productImage}
-                          />
-                          <View style={localStyles.productTextContainer}>
-                            <Text style={localStyles.productName}>{item.product_name}</Text>
-                            <Text style={localStyles.productDetails}>
-                              {item.calories} kcal | {item.proteins}g protein | {item.fats}g fat | {item.carbohydrates}g carbs
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                    )}
-                    contentContainerStyle={localStyles.productListContainer}
-                />
-              </View>
-          ) : isChoosingRecipe ? (
-            selectedRecipe ? (
-              renderRecipeProducts()
-            ): (
-              <View style={localStyles.modalContainer}>
-              <View style={localStyles.searchContainer}>
-                <TextInput
-                  style={localStyles.searchInput}
-                  placeholder="Search recipes..."
-                  value={recipeSearchQuery}
-                  onChangeText={handleRecipeSearch}
-                />
-              </View>
-
-              <FlatList
-                data={filteredRecipes}
-                keyExtractor={(item) => item.RecipeId.toString()}
-                renderItem={renderRecipeItem}
-                contentContainerStyle={localStyles.productListContainer}
+      {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe ? (
+          <>
+            <TouchableOpacity style={[localStyles.button, highContrast && styles.highContrastButton]} onPress={handleChooseProduct}>
+              <Text style={[localStyles.buttonText, highContrast && styles.highContrastButtonText]}>Choose a product</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[localStyles.button, highContrast && styles.highContrastButton]} onPress={handleChooseRecipe}> 
+              <Text style={[localStyles.buttonText, highContrast && styles.highContrastButtonText]}>Choose a recipe</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[localStyles.button, highContrast && styles.highContrastButton]} onPress={handleCreateProduct}>
+              <Text style={[localStyles.buttonText, highContrast && styles.highContrastButtonText]}>Create your own product</Text>
+            </TouchableOpacity>
+          </>
+      ) : isChoosingProduct ? (
+          <View style={[localStyles.modalContainer, highContrast && styles.highContrastModalContent]}>
+            <View style={[localStyles.searchContainer, highContrast && styles.highContrastSearchContainer]}>
+              <TextInput
+                  style={[localStyles.searchInput, highContrast && styles.highContrastSearchInput]}
+                  placeholder="Search products..."
+                  placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
+                  value={searchQuery}
+                  onChangeText={handleSearch}
               />
             </View>
-          )
-        ) : (
-              <>
-                <TextInput
-                    style={localStyles.input}
-                    placeholder="Product name"
-                    value={newProduct.product_name}
-                    onChangeText={(text) => setNewProduct({ ...newProduct, product_name: text })}
-                />
-                <TextInput
-                    style={localStyles.input}
-                    placeholder="Calories"
-                    value={newProduct.calories}
-                    onChangeText={(text) => setNewProduct({ ...newProduct, calories: text })}
-                    keyboardType="numeric"
-                />
-                <TextInput
-                    style={localStyles.input}
-                    placeholder="Proteins"
-                    value={newProduct.proteins}
-                    onChangeText={(text) => setNewProduct({ ...newProduct, proteins: text })}
-                    keyboardType="numeric"
-                />
-                <TextInput
-                    style={localStyles.input}
-                    placeholder="Fats"
-                    value={newProduct.fats}
-                    onChangeText={(text) => setNewProduct({ ...newProduct, fats: text })}
-                    keyboardType="numeric"
-                />
-                <TextInput
-                    style={localStyles.input}
-                    placeholder="Carbohydrates"
-                    value={newProduct.carbohydrates}
-                    onChangeText={(text) => setNewProduct({ ...newProduct, carbohydrates: text })}
-                    keyboardType="numeric"
-                />
-              </>
-          )}
-          
 
-          {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe && (
-              <View style={localStyles.scrollContainer}>
-                <FlatList
-                    data={products}
-                    keyExtractor={(item, index) => index.toString()}
-                    renderItem={renderProductItem}
-                    contentContainerStyle={localStyles.productListContent}
-                    style={localStyles.productList}
-                />
-              </View>
-          )}
-
-          {(isCreatingProduct || isChoosingProduct || isChoosingRecipe) && (
-              <View style={localStyles.buttonContainer}>
-                <TouchableOpacity style={localStyles.closeButton} onPress={handleCancel}>
-                  <Icon name="back" size={20} color="white" style={localStyles.icon} />
-                  <Text style={localStyles.closeButtonText}>Cancel</Text>
-                </TouchableOpacity>
-
-                {isCreatingProduct && (
-                    <TouchableOpacity style={localStyles.closeButton} onPress={handleAddProduct}>
-                      <Text style={localStyles.closeButtonText}>Add</Text>
+            <FlatList
+                data={filteredProducts}
+                keyExtractor={(item) => item.ProductId.toString()}
+                renderItem={({ item }) => (
+                    <TouchableOpacity
+                        style={[localStyles.productListItem, highContrast && styles.highContrastListItem]}
+                        onPress={() => handleSelectProduct(item)}
+                    >
+                      <Image
+                          source={{ uri: item.image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }}
+                          style={localStyles.productImage}
+                      />
+                      <View style={localStyles.productTextContainer}>
+                        <Text style={[localStyles.productName, highContrast && styles.highContrastText]}>{item.product_name}</Text>
+                        <Text style={[localStyles.productDetails, highContrast && styles.highContrastSecondaryText]}>
+                          {item.calories} kcal | {item.proteins}g protein | {item.fats}g fat | {item.carbohydrates}g carbs
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                 )}
-              </View>
-          )}
+                contentContainerStyle={[localStyles.productListContainer, highContrast && styles.highContrastListContainer]}
+            />
+          </View>
+      ) : isChoosingRecipe ? (
+        selectedRecipe ? (
+          renderRecipeProducts()
+        ): (
+          <View style={[localStyles.modalContainer, highContrast && styles.highContrastModalContent]}>
+          <View style={[localStyles.searchContainer, highContrast && styles.highContrastSearchContainer]}>
+            <TextInput
+              style={[localStyles.searchInput, highContrast && styles.highContrastSearchInput]}
+              placeholder="Search recipes..."
+              placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
+              value={recipeSearchQuery}
+              onChangeText={handleRecipeSearch}
+            />
+          </View>
 
-          {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe && (
-              <View style={localStyles.buttonContainer}>
-                <TouchableOpacity style={localStyles.closeButton} onPress={onClose} disabled={isButtonsDisabled}>
-                  <Icon name="back" size={20} color="white" style={localStyles.icon} />
-                  <Text style={localStyles.closeButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={localStyles.closeButton}
-                    onPress={handleSave}
-                    disabled={isButtonsDisabled}
-                >
-                  <Icon name="save" size={20} color="white" style={localStyles.icon} />
-                  <Text style={localStyles.closeButtonText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-          )}
+          <FlatList
+            data={filteredRecipes}
+            keyExtractor={(item) => item.RecipeId.toString()}
+            renderItem={renderRecipeItem}
+            contentContainerStyle={[localStyles.productListContainer, highContrast && styles.highContrastListContainer]}
+          />
         </View>
-      </View>
+      )
+    ) : (
+          <>
+            <TextInput
+                style={[localStyles.input, highContrast && styles.highContrastInput]}
+                placeholder="Product name"
+                placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
+                value={newProduct.product_name}
+                onChangeText={(text) => setNewProduct({ ...newProduct, product_name: text })}
+            />
+            <TextInput
+                style={[localStyles.input, highContrast && styles.highContrastInput]}
+                placeholder="Calories"
+                placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
+                value={newProduct.calories}
+                onChangeText={(text) => setNewProduct({ ...newProduct, calories: text })}
+                keyboardType="numeric"
+            />
+            <TextInput
+                style={[localStyles.input, highContrast && styles.highContrastInput]}
+                placeholder="Proteins"
+                placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
+                value={newProduct.proteins}
+                onChangeText={(text) => setNewProduct({ ...newProduct, proteins: text })}
+                keyboardType="numeric"
+            />
+            <TextInput
+                style={[localStyles.input, highContrast && styles.highContrastInput]}
+                placeholder="Fats"
+                placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
+                value={newProduct.fats}
+                onChangeText={(text) => setNewProduct({ ...newProduct, fats: text })}
+                keyboardType="numeric"
+            />
+            <TextInput
+                style={[localStyles.input, highContrast && styles.highContrastInput]}
+                placeholder="Carbohydrates"
+                placeholderTextColor={highContrast ? "#AAAAAA" : undefined}
+                value={newProduct.carbohydrates}
+                onChangeText={(text) => setNewProduct({ ...newProduct, carbohydrates: text })}
+                keyboardType="numeric"
+            />
+          </>
+      )}
+      
+
+      {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe && (
+          <View style={localStyles.scrollContainer}>
+            <FlatList
+                data={products}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={renderProductItem}
+                contentContainerStyle={[localStyles.productListContent, highContrast && styles.highContrastListContainer]}
+                style={[localStyles.productList, highContrast && styles.highContrastList]}
+            />
+          </View>
+      )}
+
+      {(isCreatingProduct || isChoosingProduct || isChoosingRecipe) && (
+          <View style={localStyles.buttonContainer}>
+            <TouchableOpacity style={[localStyles.closeButton, highContrast && styles.highContrastButton]} onPress={handleCancel}>
+              <Icon name="back" size={20} color={highContrast ? "#000000" : "white"} style={localStyles.icon} />
+              <Text style={[localStyles.closeButtonText, highContrast && styles.highContrastButtonText]}>Cancel</Text>
+            </TouchableOpacity>
+
+            {isCreatingProduct && (
+                <TouchableOpacity style={[localStyles.closeButton, highContrast && styles.highContrastButton]} onPress={handleAddProduct}>
+                  <Text style={[localStyles.closeButtonText, highContrast && styles.highContrastButtonText]}>Add</Text>
+                </TouchableOpacity>
+            )}
+          </View>
+      )}
+
+      {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe && (
+          <View style={localStyles.buttonContainer}>
+            <TouchableOpacity style={[localStyles.closeButton, highContrast && styles.highContrastButton]} onPress={onClose} disabled={isButtonsDisabled}>
+              <Icon name="back" size={20} color={highContrast ? "#000000" : "white"} style={localStyles.icon} />
+              <Text style={[localStyles.closeButtonText, highContrast && styles.highContrastButtonText]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[localStyles.closeButton, highContrast && styles.highContrastButton]}
+                onPress={handleSave}
+                disabled={isButtonsDisabled}
+            >
+              <Icon name="save" size={20} color={highContrast ? "#000000" : "white"} style={localStyles.icon} />
+              <Text style={[localStyles.closeButtonText, highContrast && styles.highContrastButtonText]}>Save</Text>
+            </TouchableOpacity>
+          </View>
+      )}
+    </View>
+  </View>
+
   );
 }
 
 const localStyles = StyleSheet.create({
+  highContrastOverlay: {
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    },
+    highContrastModalContainer: {
+        backgroundColor: '#121212',
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+    },
+    highContrastText: {
+        color: '#FFFFFF',
+    },
+    highContrastSecondaryText: {
+        color: '#CCCCCC',
+    },
+    highContrastButton: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+    },
+    highContrastButtonText: {
+        color: '#FFFFFF',
+    },
+    highContrastCard: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+    },
+    highContrastInputContainer: {
+        borderColor: '#FFFFFF',
+    },
+    highContrastInput: {
+        color: '#FFFFFF',
+        backgroundColor: '#121212',
+        borderColor: '#FFFFFF',
+    },
+    highContrastRecipeContainer: {
+        backgroundColor: '#121212',
+        borderColor: '#FFFFFF',
+    },
+    highContrastModalContent: {
+        backgroundColor: '#121212',
+        borderColor: '#FFFFFF',
+    },
+    highContrastSearchContainer: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+    },
+    highContrastSearchInput: {
+        color: '#FFFFFF',
+        backgroundColor: '#121212',
+    },
+    highContrastListItem: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+    },
+    highContrastListContainer: {
+        backgroundColor: '#121212',
+    },
+    highContrastList: {
+        backgroundColor: '#121212',
+    },
   overlay: {
     flex: 1,
     justifyContent: 'center',

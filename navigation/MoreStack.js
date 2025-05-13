@@ -9,12 +9,13 @@ import ChangePasswordScreen from "../components/screens/auth/ChangePasswordScree
 import ExportDataScreen from "../components/export/ExportDataScreen";
 import AboutUsScreen from "../components/about/AboutUsScreen";
 import HelpScreen from "../components/about/HelpScreen";
-
+import { useAccessibility } from "../components/AccessibleView/AccessibleView";
 const Stack = createStackNavigator();
 
 export default function MoreStack() {
+    const { highContrast } = useAccessibility();
     return (
-        <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "white" }, headerTintColor: "black" }}>
+        <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: highContrast ?  "#454343":'#FFFFFF' }, headerTintColor: highContrast ?  "white":'black' }}>
             <Stack.Screen name="More" component={MoreScreen} />
             <Stack.Screen name="User Profile" component={ProfileScreen} />
             <Stack.Screen name="Dietary Goals" component={DietaryGoalsScreen} />

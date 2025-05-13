@@ -13,8 +13,9 @@ import {
 import api from '../../utils/api';
 import Icon from "react-native-vector-icons/FontAwesome5";
 import DateTimePicker from '@react-native-community/datetimepicker';
-
+import { useAccessibility } from "../../AccessibleView/AccessibleView";
 const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
+  const { highContrast } = useAccessibility();
   const [form, setForm] = useState({
     UserName: '',
     Email: '',
@@ -89,7 +90,7 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, highContrast && styles.highContrastBackground]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
     >
@@ -97,10 +98,11 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Registration</Text>
+        <Text style={[styles.title, highContrast && styles.highContrastBackground]}>Registration</Text>
         
         <TextInput
-          style={styles.input}
+          style={[styles.input, highContrast && styles.secondContrast]}
+          placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
           placeholder="User name *"
           value={form.UserName}
           onChangeText={(text) => handleChange('UserName', text)}
@@ -108,7 +110,8 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         />
         
         <TextInput
-          style={styles.input}
+          style={[styles.input, highContrast && styles.secondContrast]}
+          placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
           placeholder="Email *"
           value={form.Email}
           onChangeText={(text) => handleChange('Email', text)}
@@ -117,7 +120,12 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         />
         
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            highContrast && styles.secondContrast,
+            { color: highContrast ? '#FFFFFF' : '#000000' }  // dynamicznie ustawiamy kolor tekstu
+          ]}
+          placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
           placeholder="Password *"
           value={form.Password}
           onChangeText={(text) => handleChange('Password', text)}
@@ -125,15 +133,22 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         />
         
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            highContrast && styles.secondContrast,
+            { color: highContrast ? '#FFFFFF' : '#000000' }
+          ]}
+          placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
           placeholder="Confirm password *"
           value={form.PotwierdzPassword}
           onChangeText={(text) => handleChange('PotwierdzPassword', text)}
           secureTextEntry
         />
+
         
         <TextInput
-          style={styles.input}
+          style={[styles.input, highContrast && styles.secondContrast]}
+          placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
           placeholder="Height (cm)"
           value={form.Height}
           onChangeText={(text) => handleChange('Height', text)}
@@ -141,7 +156,8 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         />
         
         <TextInput
-          style={styles.input}
+          style={[styles.input, highContrast && styles.secondContrast]}
+          placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
           placeholder="Weight (kg)"
           value={form.Weight}
           onChangeText={(text) => handleChange('Weight', text)}
@@ -149,10 +165,16 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         />
         <TouchableOpacity 
           onPress={() => setShowDatePicker(true)} 
-          style={styles.input}
+          style={[styles.input, highContrast && styles.secondContrast]}
+          
           activeOpacity={0.8}
         >
-          <Text style={[styles.birthdayText, !form.Birthday && styles.placeholderText]}>
+          <Text
+            style={[
+              (highContrast ? styles.birthdayTextContrast: styles.birthdayText),
+              !form.Birthday && (highContrast ? styles.placeholderTextHighContrast : styles.placeholderText)
+            ]}
+          >
             {form.Birthday ? form.Birthday : 'Select Birthday *'}
           </Text>
         </TouchableOpacity>
@@ -168,17 +190,19 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
         )}
         
         <View style={styles.radioGroup}>
-          <Text style={styles.radioLabel}>Gender:</Text>
+          <Text style={[styles.radioLabel, highContrast && styles.highContrastBackground]}>Gender:</Text>
           {['M', 'W'].map((gender) => (
           <TouchableOpacity
             key={gender}
-            style={[
+             style={[
               styles.radioButton,
+              highContrast && styles.secondContrast,
               form.Gender === gender && styles.radioButtonSelected,
+              form.Gender === gender && highContrast && styles.secondContrast,
             ]}
             onPress={() => handleChange('Gender', gender)}
           >
-            <Text style={styles.radioText}>
+            <Text style={[styles.radioLabel, highContrast && styles.secondContrast]}>
               {gender === 'M' ? 'Men' : 'Women'}
               </Text>
             </TouchableOpacity>
@@ -194,7 +218,7 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
           onPress={onLoginPress}
           style={styles.secondaryButton}
         >
-          <Text style={styles.secondaryButtonText}>Have an account? Log in</Text>
+          <Text style={[styles.secondaryButtonText, highContrast && styles.highContrastBackground]}>Have an account? Log in</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -202,6 +226,22 @@ const RegisterScreen = ({ onLoginPress, onRegisterSuccess }) => {
 };
 
 const styles = StyleSheet.create({
+  birthdayTextContrast:{
+    fontSize: 15,
+    color: 'white',
+    paddingVertical: 13,
+  },
+  placeholderTextHighContrast: {
+    color: '#FFFFFF',
+  },
+   highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
   container: {
     flex: 1,
   },

@@ -4,11 +4,13 @@ import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Icon from "react-native-vector-icons/MaterialIcons";
-
+import { useAccessibility } from "../AccessibleView/AccessibleView"
 import { useAuth } from "../context/AuthContext";
 import { API_BASE_URL } from '@env';
 const apiUrl = `${API_BASE_URL}`;
+
 export default function DietaryGoalsScreen() {
+    const { highContrast } = useAccessibility();
     const { user } = useAuth();
     const [goal, setGoal] = useState("weight_loss");
     const [weight, setWeight] = useState("");
@@ -171,9 +173,9 @@ export default function DietaryGoalsScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, highContrast && styles.highContrastBackground]}>
             {/* Tab Selection */}
-            <View style={styles.tabContainer}>
+            <View style={[styles.tabContainer, highContrast && styles.secondContrast]}>
                 <TouchableOpacity
                     style={[styles.tabButton, activeTab === "select" && styles.activeTabButton]}
                     onPress={() => setActiveTab("select")}
@@ -206,42 +208,68 @@ export default function DietaryGoalsScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Select Goal Tab */}
                 {activeTab === "select" && (
-                    <View style={styles.card}>
-                        <View style={styles.inputGroup}>
-                            <Icon name="height" size={20} color="#5D4037" style={styles.inputIcon} />
+                    <View style={[styles.card, highContrast && styles.secondContrast]}>
+                        <View style={[styles.inputGroup, highContrast && styles.secondContrast]}>
+                            <Icon name="height" size={20} color={highContrast ? '#FFFFFF' : "#5D4037"} style={styles.inputIcon} />
                             <TextInput
-                                style={styles.input}
+                                style={[
+                                styles.input,
+                                highContrast && styles.secondContrast,
+                                { color: highContrast ? '#FFFFFF' : '#000000' }
+                                ]}
+                                placeholderTextColor={highContrast ? '#FFFFFF' : '#A1887F'}
                                 value={height}
                                 onChangeText={setHeight}
                                 placeholder="Height (cm)"
-                                placeholderTextColor="#A1887F"
                                 keyboardType="numeric"
                             />
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <Icon name="fitness-center" size={20} color="#5D4037" style={styles.inputIcon} />
+                        <View style={[styles.inputGroup, highContrast && styles.secondContrast]}>
+                            <Icon name="fitness-center" size={20} color={highContrast ? '#FFFFFF' : "#5D4037"} style={styles.inputIcon} />
                             <TextInput
-                                style={styles.input}
+                                style={[
+                                styles.input,
+                                highContrast && styles.secondContrast,
+                                { color: highContrast ? '#FFFFFF' : '#000000' }
+                                ]}
+                                placeholderTextColor={highContrast ? '#FFFFFF' : '#A1887F'}
                                 value={weight}
                                 onChangeText={setWeight}
                                 placeholder="Weight (kg)"
-                                placeholderTextColor="#A1887F"
                                 keyboardType="numeric"
                             />
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <Icon name="cake" size={20} color="#5D4037" style={styles.inputIcon} />
+                        <View style={[styles.inputGroup, highContrast && styles.secondContrast]}>
+                            <Icon
+                                name="cake"
+                                size={20}
+                                color={highContrast ? '#FFFFFF' : '#5D4037'}
+                                style={styles.inputIcon}
+                            />
+
                             <TouchableOpacity
-                                style={styles.dateInput}
+                                style={[
+                                styles.dateInput,
+                                highContrast && styles.secondContrast
+                                ]}
                                 onPress={() => setShowPicker(true)}
                             >
-                                <Text style={[styles.dateText, !dob && { color: "#A1887F" }]}>
-                                    {dob || "Date of Birth"}
+                                <Text
+                                style={[
+                                    styles.dateText,
+                                    {
+                                    color: dob
+                                        ? (highContrast ? '#FFFFFF' : '#000000')
+                                        : (highContrast ? '#FFFFFF' : '#A1887F')
+                                    }
+                                ]}
+                                >
+                                {dob || 'Date of Birth'}
                                 </Text>
                             </TouchableOpacity>
-                        </View>
+                            </View>
 
                         {showPicker && (
                             <DateTimePicker
@@ -253,16 +281,28 @@ export default function DietaryGoalsScreen() {
                             />
                         )}
 
-                        <View style={styles.pickerContainer}>
+                        <View style={[styles.pickerContainer, highContrast && styles.secondContrast]}>
                             <Picker
                                 selectedValue={goal}
                                 onValueChange={setGoal}
                                 dropdownIconColor="#5D4037"
                                 mode="dropdown"
                             >
-                                <Picker.Item label="Weight Loss" value="weight_loss" />
-                                <Picker.Item label="Muscle Gain" value="muscle_gain" />
-                                <Picker.Item label="Maintenance" value="maintenance" />
+                                <Picker.Item
+                                    label="Weight Loss"
+                                    value="weight_loss"
+                                    color={highContrast ? 'darkgrey' : '#000000'}
+                                    />
+                                    <Picker.Item
+                                    label="Muscle Gain"
+                                    value="muscle_gain"
+                                    color={highContrast ? 'darkgrey' : '#000000'}
+                                    />
+                                    <Picker.Item
+                                    label="Maintenance"
+                                    value="maintenance"
+                                    color={highContrast ? 'darkgrey' : '#000000'}
+                                    />
                             </Picker>
                         </View>
 
@@ -277,8 +317,8 @@ export default function DietaryGoalsScreen() {
 
                 {/* Proposed Goals Tab */}
                 {activeTab === "result" && (
-                    <View style={styles.card}>
-                        <Text style={styles.sectionTitle}>Edit Daily Goals</Text>
+                    <View style={[styles.card, highContrast && styles.secondContrast]}>
+                        <Text style={[styles.sectionTitle, highContrast && styles.secondContrast]}>Edit Daily Goals</Text>
 
                         {["Calories", "Proteins", "Fats", "Carbs"].map((macro) => {
                             const key = `Daily${macro}`;
@@ -287,24 +327,25 @@ export default function DietaryGoalsScreen() {
                             const editableValue = editableGoals[key] || currentValue;
 
                             return (
-                                <View key={key} style={styles.goalCard}>
-                                    <View style={styles.macroHeader}>
-                                        <Text style={styles.macroTitle}>{macro}</Text>
-                                        <Text style={styles.currentValue}>Current: {currentValue}{unit}</Text>
+                                <View key={key} style={[styles.goalCard, highContrast && styles.secondContrast]}>
+                                    <View style={[styles.macroHeader, highContrast && styles.secondContrast]}>
+                                        <Text style={[styles.macroTitle, highContrast && styles.secondContrast]}>{macro}</Text>
+                                        <Text style={[styles.currentValue, highContrast && styles.secondContrast]}>Current: {currentValue}{unit}</Text>
                                     </View>
 
-                                    <View style={styles.inputGroup}>
+                                    <View style={[styles.inputGroup, highContrast && styles.secondContrast]}>
                                         <TextInput
-                                            style={styles.input}
+                                            style={[styles.input, highContrast && styles.secondContrast]}
+                                            placeholderTextColor={highContrast ? '#FFFFFF' : '#A1887F'}
                                             keyboardType="numeric"
                                             value={editableValue.toString()}
                                             onChangeText={(text) =>
                                                 setEditableGoals((prev) => ({ ...prev, [key]: text }))
                                             }
                                             placeholder={`Enter ${macro.toLowerCase()}`}
-                                            placeholderTextColor="#A1887F"
+                                      
                                         />
-                                        <Text style={styles.unitText}>{unit}</Text>
+                                        <Text style={[styles.unitText, highContrast && styles.secondContrast]}>{unit}</Text>
                                     </View>
                                 </View>
                             );
@@ -326,6 +367,15 @@ export default function DietaryGoalsScreen() {
 }
 
 const styles = StyleSheet.create({
+    
+highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
     },
