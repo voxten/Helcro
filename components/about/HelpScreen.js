@@ -51,20 +51,20 @@ export default function HelpScreen() {
                 <Text style={[styles.subtitle, highContrast && styles.highContrastBackground]}>Frequently Asked Questions</Text>
 
                 {faqs.map((faq, index) => (
-                    <View key={index} style={[styles.faq, highContrast && styles.highContrastBackground]}>
+                    <View key={index} style={[styles.faqContainer, highContrast && styles.secondContrast]}>
                         <TouchableOpacity
-                            style={[styles.faqQuestionContainer, highContrast && styles.highContrastBackground]}
+                            style={[styles.faqQuestionContainer, highContrast && styles.secondContrast]}
                             onPress={() => toggleItem(index)}
                             activeOpacity={0.7}
                         >
-                            <View style={[styles.faqHeader, highContrast && styles.highContrastBackground]}>
+                            <View style={[styles.faqHeader, highContrast && styles.secondContrast]}>
                                 <Icon2
                                     name={faq.icon}
                                     size={16}
                                     color="brown"
                                     style={styles.faqIcon}
                                 />
-                                <Text style={[styles.faqQuestion, highContrast && styles.highContrastBackground]}>{faq.question}</Text>
+                                <Text style={[styles.faqQuestion, highContrast && styles.secondContrast]}>{faq.question}</Text>
                             </View>
                             <Icon
                                 name={expandedItems[index] ? "chevron-up" : "chevron-down"}
@@ -74,8 +74,8 @@ export default function HelpScreen() {
                         </TouchableOpacity>
 
                         {expandedItems[index] && (
-                            <View style={[styles.faqAnswerContainer, highContrast && styles.highContrastBackground]}>
-                                <Text style={[styles.faqAnswer, highContrast && styles.highContrastBackground]}>{faq.answer}</Text>
+                            <View style={[styles.faqAnswerContainer, highContrast && styles.secondContrast]}>
+                                <Text style={[styles.faqAnswer, highContrast && styles.secondContrast]}>{faq.answer}</Text>
                             </View>
                         )}
                     </View>

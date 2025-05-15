@@ -105,7 +105,7 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
     };
 
     return (
-        <View style={[styles.container, highContrast && styles.highContrastBackground]}>
+        <View style={[styles.container, highContrast && styles.secondContrast]}>
     <Menu
         visible={visible}
         onDismiss={closeMenu}
@@ -266,6 +266,10 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
 };
 
 const styles = StyleSheet.create({
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
      highContrastBackground: {
         backgroundColor: '#121212',
     },

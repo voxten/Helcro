@@ -74,9 +74,10 @@ const RecipeCard = ({ recipe, onRatingUpdate }) => {
         });
     }}
     activeOpacity={0.8}
-    style={[styles.cardContainer, highContrast && styles.highContrastCardContainer]}
+    style={styles.cardContainer}
 >
-    <View style={[styles.card, highContrast && styles.highContrastCard]}>
+    <View style={[styles.card, highContrast && styles.secondContrast]}
+>
         <Image source={photoSource} style={styles.image} />
         <View style={styles.content}>
             <Text numberOfLines={2} style={[styles.title, highContrast && styles.highContrastText]}>
@@ -90,7 +91,7 @@ const RecipeCard = ({ recipe, onRatingUpdate }) => {
                         <Icon 
                             name="star" 
                             size={14} 
-                            color={highContrast ? "#FFFFFF" : "#FFC107"} 
+                            color="#FFC107"
                             solid 
                         />
                         <Text style={[styles.ratingText, highContrast && styles.highContrastText]}>
@@ -111,6 +112,14 @@ const RecipeCard = ({ recipe, onRatingUpdate }) => {
 };
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
      highContrastCardContainer: {
         backgroundColor: '#121212',
     },

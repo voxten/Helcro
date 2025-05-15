@@ -2179,6 +2179,7 @@ app.get('/receptury', (req, res) => {
         res.json(results);
     });
 });
+/*
 async function fetchAndInsertProducts(page) {
     try {
         const response = await axios.get(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=&page=${page}&json=true`);
@@ -2229,5 +2230,5 @@ async function fetchAndInsertMultiplePages(startPage , endPage ) {
 fetchAndInsertMultiplePages(10, 20);//Od strony do Strony
 
 fetchAndInsertProducts(1);
-
+*/
 app.listen(3000, "0.0.0.0", () => console.log('Server running on port 3000'));

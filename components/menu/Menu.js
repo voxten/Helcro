@@ -340,19 +340,19 @@ export default function Menu({ navigation }) {
                 />
             )}
 
-            <ScrollView style={localStyles.mealList}>
+            <ScrollView style={[localStyles.mealList, highContrast && localStyles.highContrastBackground]}>
                 {meals.length === 0 ? (
                     <Text style={localStyles.mealText}>No meals for this day</Text>
                 ) : (
                     meals.map((meal, index) => (
-                        <View key={index} style={localStyles.mealContainer}>
+                        <View key={index} style={[localStyles.mealContainer, highContrast && localStyles.nutritionContrast]}>
                             <TouchableOpacity
-                                style={localStyles.mealHeader}
+                                style={[localStyles.mealHeader, highContrast && localStyles.nutritionContrast]}
                                 onPress={() => toggleMeal(meal.type + index)}
                             >
-                                <View style={localStyles.mealHeaderLeft}>
-                                    <Text style={localStyles.mealName}>{meal.name}</Text>
-                                    <Text style={localStyles.mealTime}>
+                                <View style={[localStyles.mealHeaderLeft, highContrast && localStyles.nutritionContrast]}>
+                                    <Text style={[localStyles.mealName, highContrast && localStyles.nutritionContrast]}>{meal.name}</Text>
+                                    <Text style={[localStyles.mealTime, highContrast && localStyles.nutritionContrast]}>
                                         {new Date(meal.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </Text>
                                 </View>
@@ -371,7 +371,7 @@ export default function Menu({ navigation }) {
                                         hasProducts={meal.products && meal.products.length > 0}
                                     />
                                     <TouchableOpacity
-                                        style={localStyles.addButton}
+                                        style={[localStyles.addButton, highContrast && localStyles.highContrastBackground]}
                                         onPress={() => {
                                             if (expandedMeal !== meal.type + index) {
                                                 setExpandedMeal(meal.type + index);
@@ -379,12 +379,12 @@ export default function Menu({ navigation }) {
                                             setShowMeal(true);
                                         }}
                                     >
-                                        <Text style={localStyles.addButtonText}>+</Text>
+                                        <Text style={[localStyles.addButtonText, highContrast && localStyles.highContrastBackground]}>+</Text>
                                     </TouchableOpacity>
                                     <AntDesign
                                         name={expandedMeal === meal.type + index ? "up" : "down"}
                                         size={16}
-                                        color="brown"
+                                        color={highContrast ? '#FFFFFF' : 'brown'}
                                     />
                                 </View>
                             </TouchableOpacity>
@@ -489,6 +489,7 @@ const localStyles = StyleSheet.create({
     },
     highContrastBackground: {
         backgroundColor: '#2e2c2c', 
+        color:'white',
     },
     nutritionContainer:{
     },  

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Text, Alert } from 'react-native';
+import { View, ActivityIndicator, Text, Alert,StyleSheet, } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { useAccessibility } from "../../AccessibleView/AccessibleView";
@@ -52,7 +52,8 @@ export default function LogoutScreen() {
 
   if (isLoggingOut) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: highContrast ?  "#454343":'#red' }}>
+      
+      <View style={[styles.container, highContrast && styles.highContrastBackground]}>
         <ActivityIndicator size="large" />
         <Text style={{ marginTop: 10 }}>Logging out...</Text>
       </View>
@@ -61,3 +62,18 @@ export default function LogoutScreen() {
 
   return null; // Lub ekran ładowania jeśli potrzebny
 }
+const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
+    container:{
+      flex: 1, 
+      justifyContent: 'center',
+      alignItems: 'center',
+    }
+  })

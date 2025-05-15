@@ -37,10 +37,10 @@ const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
 
   if (emailSent) {
     return (
-      <View style={styles.successContainer}>
+      <View style={[styles.successContainer, highContrast && styles.highContrastBackground]}>
         <Icon name="check-circle" size={60} color="brown" />
-        <Text style={styles.successText}>Password reset email sent!</Text>
-        <Text style={styles.successSubtext}>Please check your inbox and follow the instructions.</Text>
+        <Text style={[styles.successText, highContrast && styles.highContrastBackground]}>Password reset email sent!</Text>
+        <Text style={[styles.successSubtext, highContrast && styles.highContrastBackground]}>Please check your inbox and follow the instructions.</Text>
         <TouchableOpacity 
           style={[styles.button, { backgroundColor: 'brown' }]} 
           onPress={onBackPress}
@@ -99,6 +99,7 @@ const ForgotPasswordScreen = ({ onBackPress, onRegisterPress }) => {
 };
 
 const styles = StyleSheet.create({
+  
   highContrastBackground: {
         backgroundColor: '#2e2c2c', 
         color:'white',

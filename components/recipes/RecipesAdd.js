@@ -256,7 +256,7 @@ const uploadImage = async () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, highContrast && styles.highContrastBackground]}>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );

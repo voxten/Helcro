@@ -22,7 +22,7 @@ export default function RecipesStack() {
                 component={RecipeDetail} 
                 options={{ 
                     title: "Recipe Detail",
-                    headerStyle: { bbackgroundColor: highContrast ?  "#454343":'#FFFFFF' },
+                    headerStyle: { backgroundColor: highContrast ?  "#454343":'#FFFFFF' },
                     headerTintColor: highContrast ?  "white":'black'
                 }}
             />

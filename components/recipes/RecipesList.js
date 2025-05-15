@@ -328,6 +328,14 @@ const RecipesList = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     highContrastText: {
         color: '#FFFFFF', // Biały tekst
     },

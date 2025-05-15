@@ -185,19 +185,19 @@ export default function ExportDataScreen() {
     };
 
     const renderExportItem = ({ item }) => (
-        <View style={styles.exportItem}>
-            <View style={styles.exportInfo}>
-                <Text style={styles.exportName}>{item.name}</Text>
-                <Text style={styles.exportDetails}>
+        <View style={[styles.exportItem, highContrast && styles.secondContrast]}>
+            <View style={[styles.exportInfo, highContrast && styles.secondContrast]}>
+                <Text style={[styles.exportName, highContrast && styles.secondContrast]}>{item.name}</Text>
+                <Text style={[styles.exportDetails, highContrast && styles.secondContrast]}>
                     {formatFileSize(item.size)} • {moment(item.modified * 1000).format('MMM D, YYYY h:mm A')}
                 </Text>
             </View>
-            <View style={styles.exportActions}>
+            <View style={[styles.exportActions, highContrast && styles.secondContrast]}>
                 <TouchableOpacity onPress={() => downloadExport(item.uri, item.name)}>
-                    <Icon name="download" size={20} color="green" style={styles.exportIcon} />
+                    <Icon name="download" size={20} color={ highContrast ?  "white":'green' }style={styles.exportIcon} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => shareFile(item.uri)}>
-                    <Icon name="share" size={20} color="brown" style={styles.exportIcon} />
+                    <Icon name="share" size={20} color={ highContrast ?  "white":'brown' } style={styles.exportIcon} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => deleteExport(item.uri)}>
                     <Icon name="trash" size={20} color="red" style={styles.exportIcon} />
@@ -332,7 +332,7 @@ export default function ExportDataScreen() {
                     data={exports}
                     renderItem={renderExportItem}
                     keyExtractor={(item) => item.uri}
-                    style={styles.exportsList}
+                    style={[styles.exportsList, highContrast && styles.highContrastBackground]}
                 />
             ) : (
                 <Text style={[styles.noExportsText, highContrast && styles.highContrastBackground]}>No exports saved yet</Text>
