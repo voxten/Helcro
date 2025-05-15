@@ -5,10 +5,13 @@ import Icon2 from "react-native-vector-icons/FontAwesome5";
 import Icon3 from "react-native-vector-icons/AntDesign"
 import Icon4 from "react-native-vector-icons/MaterialIcons";
 import Icon5 from "react-native-vector-icons/Feather";
+import { useAccessibility } from "../components/AccessibleView/AccessibleView";
 
 export default function MoreScreen({ navigation }) {
+    const { highContrast } = useAccessibility();
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, highContrast && styles.highContrastBackground]}>
+            <View style={[styles.secondContainer, highContrast && styles.highContrastBackground]}>
             <TouchableOpacity
                 style={styles.button}
                 onPress={() => navigation.navigate("User Profile")}
@@ -64,15 +67,26 @@ export default function MoreScreen({ navigation }) {
                 <Icon3 name="logout" size={20} color="white" style={styles.icon} />
                 <Text style={styles.buttonText}>Logout</Text>
             </TouchableOpacity>
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    secondContainer:{
+        marginTop:40,
+    },
+highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
-        justifyContent: "flex-start",
-        marginTop: 40, // Adjust the margin for top placement
+        justifyContent: "flex-start", // Adjust the margin for top placement
         paddingHorizontal: 20,
         backgroundColor: "#f4f4f4",
     },

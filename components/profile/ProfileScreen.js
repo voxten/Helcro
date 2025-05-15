@@ -6,7 +6,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from 'expo-image-picker';
 import axios from "axios";
 import { API_BASE_URL } from '@env';
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 export default function ProfileScreen({ navigation }) {
     const [profilePic, setProfilePic] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -143,10 +143,11 @@ export default function ProfileScreen({ navigation }) {
             ]
         );
     };
-
+    
+const { highContrast } = useAccessibility();
     return (
-        <View style={styles.container}>
-            <View style={styles.card}>
+        <View style={[styles.container, highContrast && styles.highContrastBackground]}>
+            <View style={[styles.card, highContrast && styles.secondContrast]}>
                 <View style={styles.profileHeader}>
                     <View style={styles.avatarContainer}>
                         <Image
@@ -170,12 +171,16 @@ export default function ProfileScreen({ navigation }) {
 
                 <View style={styles.actionsContainer}>
                     <TouchableOpacity
-                        style={[styles.actionButton, styles.shadow]}
+                        style={[
+                            styles.actionButton,
+                            styles.shadow,
+                            highContrast && styles.highContrastBackground
+                        ]}
                         onPress={() => navigation.navigate("ChangePassword", { userId: user.UserId })}
                     >
-                        <MaterialCommunityIcons name="lock-reset" size={22} color="#8D6E63" />
-                        <Text style={styles.actionButtonText}>Change Password</Text>
-                        <MaterialCommunityIcons name="chevron-right" size={22} color="#8D6E63" />
+                        <MaterialCommunityIcons name="lock-reset" size={22} color={highContrast ? '#FFFFFF' : '#8D6E63'} />
+                        <Text style={[styles.actionButtonText, highContrast && styles.highContrastBackground]}>Change Password</Text>
+                        <MaterialCommunityIcons name="chevron-right" size={22} color={highContrast ? '#FFFFFF' : '#8D6E63'} />
                     </TouchableOpacity>
                     <View style={styles.divider} />
 
@@ -193,6 +198,14 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
         backgroundColor: '#EFEBE9',

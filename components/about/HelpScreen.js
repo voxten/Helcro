@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, Linking, Animated } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
 import Icon2 from "react-native-vector-icons/FontAwesome5";
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 export default function HelpScreen() {
+    const { highContrast } = useAccessibility();
     const [subject, setSubject] = useState("");
     const [message, setMessage] = useState("");
     const [expandedItems, setExpandedItems] = useState({});
@@ -44,57 +45,58 @@ export default function HelpScreen() {
     };
 
     return (
-        <ScrollView style={styles.container}>
-            <View style={styles.content}>
-                <Text style={styles.title}>Help Center</Text>
-
-                <Text style={styles.subtitle}>Frequently Asked Questions</Text>
+        <ScrollView style={[styles.container, highContrast && styles.highContrastBackground]}>
+            <View style={[styles.content, highContrast && styles.highContrastBackground]}>
+                <Text style={[styles.title, highContrast && styles.highContrastBackground]}>Help Center</Text>
+                <Text style={[styles.subtitle, highContrast && styles.highContrastBackground]}>Frequently Asked Questions</Text>
 
                 {faqs.map((faq, index) => (
-                    <View key={index} style={styles.faqContainer}>
+                    <View key={index} style={[styles.faqContainer, highContrast && styles.secondContrast]}>
                         <TouchableOpacity
-                            style={styles.faqQuestionContainer}
+                            style={[styles.faqQuestionContainer, highContrast && styles.secondContrast]}
                             onPress={() => toggleItem(index)}
                             activeOpacity={0.7}
                         >
-                            <View style={styles.faqHeader}>
+                            <View style={[styles.faqHeader, highContrast && styles.secondContrast]}>
                                 <Icon2
                                     name={faq.icon}
                                     size={16}
                                     color="brown"
                                     style={styles.faqIcon}
                                 />
-                                <Text style={styles.faqQuestion}>{faq.question}</Text>
+                                <Text style={[styles.faqQuestion, highContrast && styles.secondContrast]}>{faq.question}</Text>
                             </View>
                             <Icon
                                 name={expandedItems[index] ? "chevron-up" : "chevron-down"}
                                 size={20}
-                                color="#666"
+                                color={highContrast ? '#FFFFFF' : '#666'}
                             />
                         </TouchableOpacity>
 
                         {expandedItems[index] && (
-                            <View style={styles.faqAnswerContainer}>
-                                <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                            <View style={[styles.faqAnswerContainer, highContrast && styles.secondContrast]}>
+                                <Text style={[styles.faqAnswer, highContrast && styles.secondContrast]}>{faq.answer}</Text>
                             </View>
                         )}
                     </View>
                 ))}
 
-                <Text style={styles.subtitle}>Contact Support</Text>
-                <Text style={styles.text}>
+                <Text style={[styles.subtitle, highContrast && styles.highContrastBackground]}>Contact Support</Text>
+                <Text style={[styles.text, highContrast && styles.highContrastBackground]}>
                     Can't find what you're looking for? Send us a message and we'll get back to you soon.
                 </Text>
 
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, highContrast && styles.secondContrast]}
+                    placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
                     placeholder="Subject"
                     value={subject}
                     onChangeText={setSubject}
                 />
 
                 <TextInput
-                    style={[styles.input, styles.messageInput]}
+                    style={[styles.input,styles.messageInput, highContrast && styles.secondContrast]}
+                    placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
                     placeholder="Your message"
                     multiline
                     numberOfLines={4}
@@ -112,6 +114,14 @@ export default function HelpScreen() {
 }
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
         backgroundColor: "#f4f4f4",

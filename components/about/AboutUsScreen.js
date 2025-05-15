@@ -2,8 +2,10 @@ import React from "react";
 import { View, Text, ScrollView, StyleSheet, Linking, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import Icon2 from "react-native-vector-icons/FontAwesome5";
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 export default function AboutUsScreen() {
+    const { highContrast } = useAccessibility();
+
     const handleContactPress = () => {
         Linking.openURL("mailto:helcro.app@gmail.com");
     };
@@ -20,48 +22,48 @@ export default function AboutUsScreen() {
     ];
 
     return (
-        <ScrollView style={styles.container}>
-            <View style={styles.content}>
-                <Text style={styles.title}>About Helcro</Text>
-                <Text style={styles.text}>
+        <ScrollView style={[styles.container, highContrast && styles.highContrastBackground]}>
+            <View style={[styles.content, highContrast && styles.highContrastBackground]}>
+                <Text style={[styles.title, highContrast && styles.highContrastBackground]}>About Helcro</Text>
+                <Text style={[styles.text, highContrast && styles.highContrastBackground]}>
                     Helcro is your personal health companion designed to help you track nutrition,
                     monitor your weight, and achieve your dietary goals.
                 </Text>
 
-                <Text style={styles.subtitle}>Version Information</Text>
+                <Text style={[styles.subtitle, highContrast && styles.highContrastBackground]}>Version Information</Text>
                 <View style={styles.infoItem}>
                     <Icon name="info" size={18} color="brown" />
-                    <Text style={styles.infoText}>Version: 1.0.0</Text>
+                    <Text style={[styles.infoText, highContrast && styles.highContrastBackground]}>Version: 1.0.0</Text>
                 </View>
-                <View style={styles.infoItem}>
+                <View style={[styles.infoItem, highContrast && styles.highContrastBackground]}>
                     <Icon name="calendar-today" size={18} color="brown" />
-                    <Text style={styles.infoText}>Release Date: May 2025</Text>
+                    <Text style={[styles.infoText, highContrast && styles.highContrastBackground]}>Release Date: May 2025</Text>
                 </View>
 
-                <Text style={styles.subtitle}>Development Team</Text>
-                <Text style={styles.text}>
+                <Text style={[styles.subtitle, highContrast && styles.highContrastBackground]}>Development Team</Text>
+                <Text style={[styles.text, highContrast && styles.highContrastBackground]}>
                     Created by a passionate team of health and technology professionals dedicated
                     to improving your wellness journey.
                 </Text>
 
-                <View style={styles.teamContainer}>
+                <View style={[styles.teamContainer, highContrast && styles.secondContrast]}>
                     {teamMembers.map((member, index) => (
-                        <View key={index} style={styles.teamMember}>
+                        <View key={index} style={[styles.teamMember, highContrast && styles.secondContrast]}>
                             <Icon2
                                 name={member.icon}
                                 size={20}
                                 color="brown"
                                 style={styles.memberIcon}
                             />
-                            <View style={styles.memberInfo}>
-                                <Text style={styles.memberName}>{member.name}</Text>
-                                <Text style={styles.memberRole}>{member.role}</Text>
+                            <View style={[styles.memberInfo, highContrast && styles.secondContrast]}>
+                                <Text style={[styles.memberName, highContrast && styles.secondContrast]}>{member.name}</Text>
+                                <Text style={[styles.memberRole, highContrast && styles.secondContrast]}>{member.role}</Text>
                             </View>
                         </View>
                     ))}
                 </View>
 
-                <Text style={styles.subtitle}>Contact Us</Text>
+                <Text style={[styles.subtitle, highContrast && styles.highContrastBackground]}>Contact Us</Text>
                 <TouchableOpacity style={styles.contactButton} onPress={handleContactPress}>
                     <Icon name="email" size={20} color="white" />
                     <Text style={styles.contactButtonText}>Email: helcro.app@gmail.com</Text>
@@ -72,6 +74,14 @@ export default function AboutUsScreen() {
 }
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
         backgroundColor: "#f4f4f4",

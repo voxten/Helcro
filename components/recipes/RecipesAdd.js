@@ -7,7 +7,7 @@ import { launchImageLibraryAsync, requestMediaLibraryPermissionsAsync } from 'ex
 import axios from "axios";
 import { API_BASE_URL } from '@env';
 import { useAuth } from "../context/AuthContext";
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 const RecipesAdd = ({ navigation }) => {
   const { user, token } = useAuth();
   const [name, setName] = useState("");
@@ -23,7 +23,7 @@ const RecipesAdd = ({ navigation }) => {
   const [newProduct, setNewProduct] = useState({ productId: "", amount: "" });
   const [isProductModalVisible, setIsProductModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const { highContrast } = useAccessibility();
   // Filter products based on search query
   const filteredProducts = availableProducts.filter(product =>
     product.product_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -256,7 +256,7 @@ const uploadImage = async () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, highContrast && styles.highContrastBackground]}>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
@@ -269,42 +269,45 @@ const uploadImage = async () => {
   
 
   return (
-    <ScrollView style={styles.container}>
-    <Text style={styles.label}>Recipe Image</Text>
-    <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+    <ScrollView style={[styles.container, highContrast && styles.highContrastBackground]}>
+    <Text style={[styles.label, highContrast && styles.highContrastBackground]}>Recipe Image</Text>
+    <TouchableOpacity style={[styles.imagePicker, highContrast && styles.highContrastBackground]} onPress={pickImage}>
     {imageUri ? (
-        <Image source={{ uri: imageUri }} style={styles.recipeImage} />
+        <Image source={{ uri: imageUri }} style={[styles.recipeImage, highContrast && styles.highContrastBackground]} />
         ) : (
-        <View style={styles.imagePlaceholder}>
+        <View style={[styles.imagePlaceholder, highContrast && styles.secondContrast]}>
             <Icon name="camera" size={40} color="#ccc" />
-            <Text style={styles.imagePlaceholderText}>Tap to add image</Text>
+            <Text style={[styles.imagePlaceholderText, highContrast && styles.secondContrast]}>Tap to add image</Text>
         </View>
         )}
     </TouchableOpacity>
 
-    <Text style={styles.label}>Recipe Name*</Text>
+    <Text style={[styles.label, highContrast && styles.highContrastBackground]}>Recipe Name*</Text>
     <TextInput
-      style={styles.input}
+      style={[styles.input, highContrast && styles.secondContrast]}
+      placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
       value={name}
       onChangeText={setName}
       placeholder="Enter recipe name"
     />
   
-      <Text style={styles.label}>Description*</Text>
+      <Text style={[styles.label, highContrast && styles.highContrastBackground]}>Description*</Text>
       <TextInput
-        style={[styles.input, styles.descriptionInput]}
+        style={[styles.input,styles.descriptionInput, highContrast && styles.secondContrast]}
+      placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
         value={description}
         onChangeText={setDescription}
         placeholder="Enter recipe description"
         multiline
       />
   
-      <Text style={styles.label}>Steps*</Text>
+      <Text style={[styles.label, highContrast && styles.highContrastBackground]}>Steps*</Text>
       {steps.map((step, index) => (
         <View key={index} style={styles.stepContainer}>
-          <Text style={styles.stepNumber}>Step {index + 1}</Text>
+          <Text style={[styles.stepNumber, highContrast && styles.highContrastBackground]}>Step {index + 1}</Text>
           <TextInput
-            style={[styles.input, styles.stepInput]}
+            style={[styles.input,,styles.stepInput, highContrast && styles.secondContrast]}
+          placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
             value={step}
             onChangeText={(text) => handleStepChange(text, index)}
             placeholder={`Describe step ${index + 1}`}
@@ -325,33 +328,45 @@ const uploadImage = async () => {
         <Text style={styles.addButtonText}>Add Step</Text>
       </TouchableOpacity>
   
-      <Text style={styles.label}>Categories</Text>
-      <Picker
-        selectedValue={""}
-        onValueChange={(itemValue) => {
-          if (itemValue && !selectedCategories.includes(itemValue)) {
-            setSelectedCategories([...selectedCategories, itemValue]);
-          }
-        }}
-        style={styles.picker}
-      >
-        <Picker.Item label="Select a category" value="" />
-        {categories.map(category => (
-          <Picker.Item 
-            key={category.CategoryId} 
-            label={category.Name} 
-            value={category.CategoryId} 
+      <Text style={[styles.label, highContrast && styles.highContrastBackground]}>Categories</Text>
+      <View style={[styles.pickerContainer, highContrast && styles.highContrastBackground]}>
+        <Picker
+          selectedValue={""}
+          onValueChange={(itemValue) => {
+            if (itemValue && !selectedCategories.includes(itemValue)) {
+              setSelectedCategories([...selectedCategories, itemValue]);
+            }
+          }}
+          style={[
+            styles.picker,
+            { color: highContrast ? 'darkgrey' : '#000000' } // kolor zaznaczonego tekstu
+          ]}
+          dropdownIconColor={highContrast ? 'darkgrey' : '#5D4037'} // kolor strzałki
+        >
+          <Picker.Item
+            label="Select a category"
+            value=""
+            color={highContrast ? 'darkgrey' : '#A1887F'} // placeholder
           />
-        ))}
-      </Picker>
+          {categories.map(category => (
+            <Picker.Item
+              key={category.CategoryId}
+              label={category.Name}
+              value={category.CategoryId}
+              color={highContrast ? 'darkgrey' : '#000000'}
+            />
+          ))}
+        </Picker>
+      </View>
+
       
       {selectedCategories.length > 0 && (
-        <View style={styles.selectedCategoriesContainer}>
+        <View style={[styles.selectedCategoriesContainer, highContrast && styles.highContrastBackground]}>
           {selectedCategories.map(catId => {
             const category = categories.find(c => c.CategoryId == catId);
             return (
-              <View key={catId} style={styles.categoryTag}>
-                <Text style={styles.categoryTagText}>{category?.Name}</Text>
+              <View key={catId} style={[styles.categoryTag, highContrast && styles.secondContrast]}>
+                <Text style={[styles.categoryTagText, highContrast && styles.secondContrast]}>{category?.Name}</Text>
                 <TouchableOpacity 
                   onPress={() => {
                     setSelectedCategories(selectedCategories.filter(id => id !== catId));
@@ -365,13 +380,15 @@ const uploadImage = async () => {
         </View>
       )}
   
-      <Text style={styles.label}>Ingredients*</Text>
-      <View style={styles.ingredientSection}>
+      <Text style={[styles.label, highContrast && styles.highContrastBackground]}>Ingredients*</Text>
+      <View style={[styles.ingredientSection, highContrast && styles.highContrastBackground]}>
+        
+        
         <TouchableOpacity 
-          style={styles.productSelector}
+          style={[styles.productSelector, highContrast && styles.secondContrast]}
           onPress={() => setIsProductModalVisible(true)}
         >
-          <Text style={styles.productSelectorText}>
+          <Text style={[styles.productSelectorText, highContrast && styles.secondContrast]}>
             {newProduct.productId 
               ? availableProducts.find(p => p.ProductId == newProduct.productId)?.product_name 
               : "Select a product"}
@@ -379,15 +396,16 @@ const uploadImage = async () => {
           <Icon name="chevron-down" size={16} color="#666" />
         </TouchableOpacity>
         
-        <View style={styles.amountRow}>
+        <View style={[styles.amountRow, highContrast && styles.highContrastBackground]}>
           <TextInput
-            style={styles.amountInput}
+            style={[styles.amountInput, highContrast && styles.secondContrast]}
+            placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
             value={newProduct.amount}
             onChangeText={(text) => setNewProduct({...newProduct, amount: text})}
             placeholder="Amount"
             keyboardType="numeric"
           />
-          <Text style={styles.gramsText}>grams</Text>
+          <Text style={[styles.gramsText, highContrast && styles.highContrastBackground]}>grams</Text>
           <TouchableOpacity 
             style={styles.addIngredientButton} 
             onPress={handleAddProduct}
@@ -402,7 +420,7 @@ const uploadImage = async () => {
         <View style={styles.productsList}>
           {products.map((product, index) => (
             <View key={index} style={styles.productItem}>
-              <Text style={styles.productText}>
+              <Text style={[styles.productText, highContrast && styles.highContrastBackground]}>
                 {product.product_name} - {product.amount}g
               </Text>
               <TouchableOpacity onPress={() => handleRemoveProduct(index)}>
@@ -420,10 +438,11 @@ const uploadImage = async () => {
         transparent={false}
         onRequestClose={() => setIsProductModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.searchContainer}>
+        <View style={[styles.modalContainer, highContrast && styles.highContrastBackground]}>
+          <View style={[styles.searchContainer, highContrast && styles.highContrastBackground]}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, highContrast && styles.secondContrast]}
+            placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
               placeholder="Search products..."
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -432,7 +451,7 @@ const uploadImage = async () => {
               style={styles.closeModalButton}
               onPress={() => setIsProductModalVisible(false)}
             >
-                <Icon2 name="times" size={20} color="#5D4037" />
+                <Icon2 name="times" size={20} color={highContrast ? '#FFFFFF' : '#5D4037'} />
             </TouchableOpacity>
           </View>
           
@@ -448,7 +467,7 @@ const uploadImage = async () => {
                   source={{ uri: item.image || "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg" }} 
                   style={styles.productImage}
                 />
-                <Text style={styles.productName}>{item.product_name}</Text>
+                <Text style={[styles.productName, highContrast && styles.highContrastBackground]}>{item.product_name}</Text>
               </TouchableOpacity>
             )}
             contentContainerStyle={styles.productListContainer}
@@ -473,6 +492,14 @@ const uploadImage = async () => {
 };
 
 const styles = StyleSheet.create({
+  highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
         padding: 20,

@@ -6,8 +6,10 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { API_BASE_URL } from '@env';
-
+import { Dimensions } from "react-native";
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 export default function WeightHistoryScreen() {
+    const { highContrast } = useAccessibility();
     const { user } = useAuth();
     const [weights, setWeights] = useState([]);
     const [weightHistory, setWeightHistory] = useState({
@@ -108,42 +110,42 @@ export default function WeightHistoryScreen() {
 
     if (isLoading) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, highContrast && styles.highContrastBackground]}>
                 <ActivityIndicator size="large" color="brown" />
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.chartContainer}>
+        <View style={[styles.container, highContrast && styles.highContrastBackground]}>
+            <View style={[styles.chartContainer, highContrast && styles.secondContrast]}>
                 {weights.length > 0 && weightHistory.datasets[0].data.length > 0 ? (
-                    <LineChart
+                   <LineChart
                         data={weightHistory}
-                        width={350}
+                        width={Dimensions.get("window").width - 65} // pełna szerokość z marginesem
                         height={220}
                         chartConfig={{
-                            backgroundGradientFrom: "white",
-                            backgroundGradientTo: "white",
+                            backgroundGradientFrom:  highContrast ?  "#454343":'white',
+                            backgroundGradientTo:  highContrast ?  "#454343":'white',
                             decimalPlaces: 1,
-                            color: (opacity = 1) => `rgba(165, 42, 42, ${opacity})`,
-                            labelColor: (opacity = 1) => `rgba(165, 42, 42, ${opacity})`,
+                            color: (opacity = 1) => highContrast ?  "white":`rgba(165, 42, 42, ${opacity})`,
+                            labelColor: (opacity = 1) => highContrast ?  "white":`rgba(165, 42, 42, ${opacity})`,
                             propsForDots: {
                                 r: "5",
                                 strokeWidth: "2",
-                                stroke: "#8B4513"
+                                stroke: highContrast ?  "white":"#8B4513"
                             }
                         }}
-                        bezier
-                        style={{
-                            borderRadius: 16,
-                            paddingRight: 45
-                        }}
-                    />
+    bezier
+    style={{
+        borderRadius: 16
+    }}
+/>
+
                 ) : (
-                    <View style={styles.noDataContainer}>
-                        <Icon name="exclamation-circle" size={24} color="#8B4513" />
-                        <Text style={styles.noDataText}>No weight data available</Text>
+                    <View style={[styles.noDataContainer, highContrast && styles.highContrastBackground]}>
+                        <Icon name="exclamation-circle" size={24} color= {highContrast ?  "white":"#8B4513"} />
+                        <Text style={[styles.noDataText, highContrast && styles.highContrastBackground]}>No weight data available</Text>
                     </View>
                 )}
             </View>
@@ -156,30 +158,30 @@ export default function WeightHistoryScreen() {
                 <Text style={styles.addButtonText}>Add New Weight</Text>
             </TouchableOpacity>
 
-            <ScrollView style={styles.scrollContainer}>
+            <ScrollView style={[styles.scrollContainer, highContrast && styles.highContrastBackground]}>
                 {weights.map((item, index) => (
-                    <View key={index} style={styles.listItem}>
-                        <Icon name="balance-scale" size={16} color="#5D4037" style={styles.listIcon} />
-                        <Text style={styles.listText}>
+                    <View key={index} style={[styles.listItem, highContrast && styles.secondContrast]}>
+                        <Icon name="balance-scale" size={16} color={highContrast ?  "white":"#5D4037"} style={[styles.listIcon, highContrast && styles.secondContrast]} />
+                        <Text style={[styles.listText, highContrast && styles.secondContrast]}>
                             {new Date(item.WeightDate).toLocaleDateString()}
                         </Text>
-                        <Text style={styles.listWeight}>{item.Weight} kg</Text>
+                        <Text style={[styles.listWeight, highContrast && styles.secondContrast]}>{item.Weight} kg</Text>
                     </View>
                 ))}
             </ScrollView>
 
             <Modal visible={modalVisible} transparent animationType="fade">
                 <View style={styles.overlay}>
-                    <View style={styles.modalContainer}>
-                        <Text style={styles.modalTitle}>Add Weight Record</Text>
+                    <View style={[styles.modalContainer, highContrast && styles.highContrastBackground]}>
+                        <Text style={[styles.modalTitle, highContrast && styles.highContrastBackground]}>Add Weight Record</Text>
 
-                        <View style={styles.inputContainer}>
-                            <Icon name="calendar" size={18} color="#5D4037" style={styles.inputIcon} />
+                        <View style={[styles.inputContainer, highContrast && styles.secondContrast]}>
+                            <Icon name="calendar" size={18} color={highContrast ?  "white":"#5D4037"}style={styles.inputIcon} />
                             <TouchableOpacity
                                 onPress={() => setShowDatePicker(true)}
-                                style={styles.dateInput}
+                                style={[styles.dateInput, highContrast && styles.secondContrast]}
                             >
-                                <Text style={styles.dateText}>
+                                <Text style={[styles.dateText, highContrast && styles.secondContrast]}>
                                     {selectedDate.toLocaleDateString()}
                                 </Text>
                             </TouchableOpacity>
@@ -197,10 +199,11 @@ export default function WeightHistoryScreen() {
                             />
                         )}
 
-                        <View style={styles.inputContainer}>
-                            <Icon name="balance-scale" size={18} color="#5D4037" style={styles.inputIcon} />
+                        <View style={[styles.inputContainer, highContrast && styles.secondContrast]}>
+                            <Icon name="balance-scale" size={18} color={highContrast ?  "white":"#5D4037"} style={styles.inputIcon} />
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, highContrast && styles.secondContrast]}
+                                placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
                                 value={newWeight}
                                 onChangeText={setNewWeight}
                                 placeholder="Weight in kg"
@@ -230,6 +233,14 @@ export default function WeightHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
     container: {
         flex: 1,
     },

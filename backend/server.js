@@ -2170,7 +2170,7 @@ app.get('/api/recipes/public/by-category', (req, res) => {
     });
 });
 
-/*
+
 app.get('/receptury', (req, res) => {
     db.query('SELECT r.Nazwa AS NazwaReceptury, p.id AS ProduktID, p.product_name AS products, rhp.Ilosc AS Ilosc FROM Receptury_has_Produkty rhp JOIN products p ON rhp.Produkty_idProduktu = p.id JOIN Receptury r ON rhp.Receptury_idReceptury = r.idReceptury  -- Corrected column name here WHERE rhp.Receptury_idReceptury = 1;', (err, results) => {
         if (err) {
@@ -2179,7 +2179,6 @@ app.get('/receptury', (req, res) => {
         res.json(results);
     });
 });
-*/
 /*
 async function fetchAndInsertProducts(page) {
     try {
@@ -2232,5 +2231,4 @@ fetchAndInsertMultiplePages(10, 20);//Od strony do Strony
 
 fetchAndInsertProducts(1);
 */
-
 app.listen(3000, "0.0.0.0", () => console.log('Server running on port 3000'));

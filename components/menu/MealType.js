@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from "@react-native-picker/picker";
 import axios from 'axios';
 import { API_BASE_URL } from '@env';
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 export default function MealType({ onClose, onSubmit, isCopyAction = false, showOverlay = true }) {
   const [mealTypes, setMealTypes] = useState([]);
   const [mealTime, setMealTime] = useState(new Date());
@@ -12,7 +12,7 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false, show
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedMealId, setSelectedMealId] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const { highContrast } = useAccessibility();
   useEffect(() => {
     const fetchMealTypes = async () => {
       try {
@@ -58,8 +58,8 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false, show
 
   if (loading) {
     return (
-        <View style={localStyles.overlay}>
-          <View style={localStyles.modalContainer}>
+        <View style={[localStyles.overlay, highContrast && localStyles.highContrastBackground]}>
+          <View style={[localStyles.modalContainer, highContrast && localStyles.highContrastBackground]}>
             <Text>Loading meal types...</Text>
           </View>
         </View>
@@ -67,49 +67,56 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false, show
   }
 
   return (
-      <View style={[localStyles.overlay, !showOverlay && { backgroundColor: 'transparent' }]}>
-        <View style={localStyles.modalContainer}>
-          <Text style={localStyles.header}>
+     <View style={localStyles.overlay}>
+    <View style={[localStyles.modalContainer, highContrast && localStyles.highContrastBackground]}>
+        <Text style={[localStyles.header, highContrast && localStyles.highContrastBackground]}>
             {isCopyAction ? 'Select Target Meal Type' : 'Select Meal Type'}
-          </Text>
+        </Text>
 
-          <View style={localStyles.pickerContainer}>
+        <View style={[localStyles.pickerContainer, highContrast && localStyles.secondContrast]}>
             <Picker
                 selectedValue={selectedMealId}
                 onValueChange={(value) => setSelectedMealId(value)}
+                style={highContrast && localStyles.secondContrast}
             >
-              <Picker.Item label="Select a meal type..." value={null} />
-              {mealTypes.map(meal => (
-                  <Picker.Item
-                      key={meal.MealId}
-                      label={meal.MealType}
-                      value={meal.MealId}
-                  />
-              ))}
+                <Picker.Item 
+                    label="Select a meal type..." 
+                    value={null} 
+                    color={highContrast ? "black" : "black"}
+                />
+                {mealTypes.map(meal => (
+                    <Picker.Item
+                        key={meal.MealId}
+                        label={meal.MealType}
+                        value={meal.MealId}
+                        color={highContrast ? "black" : "black"}
+                    />
+                ))}
             </Picker>
-          </View>
+        </View>
 
-          {!isCopyAction && selectedMeal === 'Other' && (
-              <View style={localStyles.otherMealContainer}>
+        {!isCopyAction && selectedMeal === 'Other' && (
+            <View style={[localStyles.otherMealContainer, highContrast && localStyles.highContrastBackground]}>
                 <TextInput
-                    style={localStyles.input}
+                    style={[localStyles.input, highContrast && localStyles.secondContrast]}
+                    placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
                     placeholder="Enter meal name"
                     value={mealName}
                     onChangeText={handleMealNameChange}
                 />
-              </View>
-          )}
+            </View>
+        )}
 
-          {!isCopyAction && selectedMeal && (
-              <View style={localStyles.timeBox}>
-                <Text style={localStyles.timeText}>Select Time</Text>
+        {!isCopyAction && selectedMeal && (
+            <View style={[localStyles.timeBox, highContrast && localStyles.secondContrast]}>
+                <Text style={[localStyles.timeText, highContrast && localStyles.secondContrast]}>Select Time</Text>
                 <TouchableOpacity
                     onPress={() => setShowTimePicker(true)}
-                    style={localStyles.timePickerButton}
+                    style={[localStyles.timePickerButton, highContrast && localStyles.highContrastTimeButton]}
                 >
-                  <Text style={localStyles.timePickerText}>
-                    {mealTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </Text>
+                    <Text style={[localStyles.timePickerText, highContrast && localStyles.highContrastText]}>
+                        {mealTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </Text>
                 </TouchableOpacity>
                 {showTimePicker && (
                     <DateTimePicker
@@ -119,27 +126,43 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false, show
                         onChange={handleTimeChange}
                     />
                 )}
-              </View>
-          )}
+            </View>
+        )}
 
-          <View style={localStyles.buttons}>
-            <TouchableOpacity style={localStyles.closeButton} onPress={onClose}>
-              <Text style={localStyles.closeButtonText}>Close</Text>
+        <View style={localStyles.buttons}>
+            <TouchableOpacity 
+                style={[localStyles.closeButton, highContrast && localStyles.highContrastCloseButton]} 
+                onPress={onClose}
+            >
+                <Text style={[localStyles.closeButtonText, highContrast && localStyles.highContrastButtonText]}>Close</Text>
             </TouchableOpacity>
             <TouchableOpacity
-                style={[localStyles.submitButton, isNextButtonDisabled && localStyles.disabledButton]}
+                style={[
+                    localStyles.submitButton, 
+                    isNextButtonDisabled && localStyles.disabledButton,
+                    highContrast && localStyles.highContrastSubmitButton,
+                    isNextButtonDisabled && highContrast && localStyles.highContrastDisabledButton
+                ]}
                 onPress={handleSubmit}
                 disabled={isNextButtonDisabled}
             >
-              <Text style={localStyles.submitButtonText}>Next</Text>
+                <Text style={[localStyles.submitButtonText, highContrast && localStyles.highContrastButtonText]}>Next</Text>
             </TouchableOpacity>
-          </View>
         </View>
-      </View>
+    </View>
+</View>
   );
 }
 
 const localStyles = StyleSheet.create({
+  highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
   overlay: {
     flex: 1,
     justifyContent: 'center',

@@ -7,8 +7,9 @@ import { API_BASE_URL } from '@env';
 import { useAuth } from "../context/AuthContext";
 import MealType from "./MealType";
 import DateTimePicker from '@react-native-community/datetimepicker';
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProducts }) => {
+    const { highContrast } = useAccessibility();
     const { user } = useAuth();
     const [visible, setVisible] = useState(false);
     const [renameModalVisible, setRenameModalVisible] = useState(false);
@@ -104,196 +105,223 @@ const MealActions = ({ meal, onMealDeleted, onMealRenamed, onMealCopied, hasProd
     };
 
     return (
-        <View style={styles.container}>
-            <Menu
-                visible={visible}
-                onDismiss={closeMenu}
-                anchor={
-                    <TouchableOpacity onPress={openMenu}>
-                        <Icon name="dots-vertical" size={24} color="brown" />
-                    </TouchableOpacity>
-                }
-            >{/* TODO: Make it work
-                {!hasProducts && (
-                    <>
-                        <Menu.Item
-                            onPress={() => {
-                                setCopyFromModalVisible(true);
-                                closeMenu();
-                            }}
-                            title="Copy Meal From"
-                        />
-                        <Divider />
-                    </>
-                )}
-                */}
-                {hasProducts && (
-                    <>
-                        <Menu.Item
-                            onPress={() => {
-                                setCopyToModalVisible(true);
-                                closeMenu();
-                            }}
-                            title="Copy Meal To"
-                        />
-                        <Divider />
-                    </>
-                )}
-                {/* TODO: Make rename actually save renaming to the database
-                {meal.type === 'Other' && (
-                    <>
-                        <Menu.Item
-                            onPress={() => {
-                                setRenameModalVisible(true);
-                                closeMenu();
-                            }}
-                            title="Rename"
-                        />
-                        <Divider />
-                    </>
-                )}
-                */}
+        <View style={[styles.container, highContrast && styles.secondContrast]}>
+    <Menu
+        visible={visible}
+        onDismiss={closeMenu}
+        anchor={
+            <TouchableOpacity onPress={openMenu}>
+                <Icon name="dots-vertical" size={24} color={highContrast ? "#FFFFFF" : "brown"} />
+            </TouchableOpacity>
+        }
+        contentStyle={highContrast && styles.highContrastMenuContent}
+    >
+        {hasProducts && (
+            <>
                 <Menu.Item
-                    onPress={handleDeleteMeal}
-                    title="Delete"
-                    titleStyle={{ color: 'red' }}
+                    onPress={() => {
+                        setCopyToModalVisible(true);
+                        closeMenu();
+                    }}
+                    title="Copy Meal To"
+                    titleStyle={highContrast && styles.highContrastMenuText}
                 />
-            </Menu>
+                <Divider style={highContrast && styles.highContrastDivider} />
+            </>
+        )}
+        <Menu.Item
+            onPress={handleDeleteMeal}
+            title="Delete"
+            titleStyle={[highContrast && styles.highContrastMenuText, { color: highContrast ? "#FF0000" : 'red' }]}
+        />
+    </Menu>
 
-            {/* Rename Modal */}
-            {/* Rename Modal with custom styling */}
-            <Modal
-                visible={renameModalVisible}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setRenameModalVisible(false)}
-            >
-                <View style={styles.renamingModalContainer}>
-                    <View style={styles.renamingModalContent}>
-                        <Text style={styles.renamingModalTitle}>Rename Meal</Text>
-                        <TextInput
-                            style={styles.renamingInput}
-                            value={newMealName}
-                            onChangeText={setNewMealName}
-                            placeholder="Enter new meal name"
-                            placeholderTextColor="#999"
-                            autoFocus={true}
-                        />
-                        <View style={styles.renamingModalButtons}>
-                            <TouchableOpacity
-                                style={styles.renamingCancelButton}
-                                onPress={() => setRenameModalVisible(false)}
-                            >
-                                <Text style={styles.renamingCancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.renamingSaveButton}
-                                onPress={handleRenameMeal}
-                            >
-                                <Text style={styles.renamingButtonText}>Save Changes</Text>
-                            </TouchableOpacity>
-                        </View>
+    {/* Rename Modal */}
+    <Modal
+        visible={renameModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setRenameModalVisible(false)}
+    >
+        <View style={[styles.renamingModalContainer, highContrast && styles.highContrastModalOverlay]}>
+            <View style={[styles.renamingModalContent, highContrast && styles.highContrastModalContent]}>
+                <Text style={[styles.renamingModalTitle, highContrast && styles.highContrastText]}>Rename Meal</Text>
+                <TextInput
+                    style={[styles.renamingInput, highContrast && styles.highContrastInput]}
+                    value={newMealName}
+                    onChangeText={setNewMealName}
+                    placeholder="Enter new meal name"
+                    placeholderTextColor={highContrast ? "#AAAAAA" : "#999"}
+                    autoFocus={true}
+                />
+                <View style={styles.renamingModalButtons}>
+                    <TouchableOpacity
+                        style={[styles.renamingCancelButton, highContrast && styles.highContrastCancelButton]}
+                        onPress={() => setRenameModalVisible(false)}
+                    >
+                        <Text style={[styles.renamingCancelButtonText, highContrast && styles.highContrastButtonText]}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.renamingSaveButton, highContrast && styles.highContrastSaveButton]}
+                        onPress={handleRenameMeal}
+                    >
+                        <Text style={[styles.renamingButtonText, highContrast && styles.highContrastButtonText]}>Save Changes</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+    </Modal>
+
+    {/* Copy From Modal */}
+    <Modal
+        visible={copyFromModalVisible}
+        transparent={true}
+        onRequestClose={() => setCopyFromModalVisible(false)}
+    >
+        <KeyboardAvoidingView
+            style={[styles.modalContainer, highContrast && styles.highContrastModalOverlay]}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+            <ScrollView contentContainerStyle={[styles.scrollModalContent, highContrast && styles.highContrastModalContent]}>
+                <View style={[styles.modalContent, { padding: 0 }, highContrast && styles.highContrastModalSection]}>
+                    <View style={[styles.datePickerContainer, highContrast && styles.highContrastDatePickerContainer]}>
+                        <Text style={[styles.modalTitle, highContrast && styles.highContrastText]}>Select Source Date</Text>
+                        <TouchableOpacity
+                            onPress={() => setShowDatePicker(true)}
+                            style={[styles.datePickerButton, highContrast && styles.highContrastDatePickerButton]}
+                        >
+                            <Text style={[styles.datePickerText, highContrast && styles.highContrastText]}>
+                                {selectedDate.toLocaleDateString()}
+                            </Text>
+                        </TouchableOpacity>
+                        {showDatePicker && (
+                            <DateTimePicker
+                                value={selectedDate}
+                                mode="date"
+                                display="default"
+                                onChange={handleDateChange}
+                            />
+                        )}
+                    </View>
+                    <MealType
+                        onClose={() => setCopyFromModalVisible(false)}
+                        onSubmit={handleCopyFrom}
+                        showCancel={true}
+                        isCopyAction={true}
+                        showOverlay={false}
+                        highContrast={highContrast}
+                    />
+                </View>
+                <View style={[styles.modalContent2, highContrast && styles.highContrastModalSection]} />
+            </ScrollView>
+        </KeyboardAvoidingView>
+    </Modal>
+
+    {/* Copy To Modal */}
+    <Modal
+        visible={copyToModalVisible}
+        transparent={true}
+        onRequestClose={() => setCopyToModalVisible(false)}
+    >
+        <KeyboardAvoidingView
+            style={[styles.modalContainer, highContrast && styles.highContrastModalOverlay]}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+            <ScrollView contentContainerStyle={[styles.scrollModalContent, highContrast && styles.highContrastModalContent]}>
+                <View style={[styles.modalContent, { padding: 0 }, highContrast && styles.highContrastModalSection]}>
+                    <View style={[styles.datePickerContainer, highContrast && styles.highContrastDatePickerContainer]}>
+                        <Text style={[styles.modalTitle, highContrast && styles.highContrastText]}>Select Target Date</Text>
+                        <TouchableOpacity
+                            onPress={() => setShowDatePicker(true)}
+                            style={[styles.datePickerButton, highContrast && styles.highContrastDatePickerButton]}
+                        >
+                            <Text style={[styles.datePickerText, highContrast && styles.highContrastText]}>
+                                {selectedDate.toLocaleDateString()}
+                            </Text>
+                        </TouchableOpacity>
+                        {showDatePicker && (
+                            <DateTimePicker
+                                value={selectedDate}
+                                mode="date"
+                                display="default"
+                                onChange={handleDateChange}
+                            />
+                        )}
                     </View>
                 </View>
-            </Modal>
-
-            {/* Copy From Modal */}
-            <Modal
-                visible={copyFromModalVisible}
-                transparent={true}
-                onRequestClose={() => setCopyFromModalVisible(false)}
-            >
-                <KeyboardAvoidingView
-                    style={styles.modalContainer}
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                >
-                    <ScrollView contentContainerStyle={styles.scrollModalContent}>
-                        <View style={[styles.modalContent, { padding: 0 }]}>
-                            <View style={styles.datePickerContainer}>
-                                <Text style={styles.modalTitle}>Select Source Date</Text>
-                                <TouchableOpacity
-                                    onPress={() => setShowDatePicker(true)}
-                                    style={styles.datePickerButton}
-                                >
-                                    <Text style={styles.datePickerText}>
-                                        {selectedDate.toLocaleDateString()}
-                                    </Text>
-                                </TouchableOpacity>
-                                {showDatePicker && (
-                                    <DateTimePicker
-                                        value={selectedDate}
-                                        mode="date"
-                                        display="default"
-                                        onChange={handleDateChange}
-                                    />
-                                )}
-                            </View>
-                            <MealType
-                                onClose={() => setCopyFromModalVisible(false)}
-                                onSubmit={handleCopyFrom}
-                                showCancel={true}
-                                isCopyAction={true}
-                                showOverlay={false}
-                            />
-                        </View>
-                        <View style={[styles.modalContent2]}>
-
-                        </View>
-                    </ScrollView>
-                </KeyboardAvoidingView>
-            </Modal>
-
-
-            {/* Copy To Modal */}
-            <Modal
-                visible={copyToModalVisible}
-                transparent={true}
-                onRequestClose={() => setCopyToModalVisible(false)}
-            >
-                <KeyboardAvoidingView
-                    style={styles.modalContainer}
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                >
-                    <ScrollView contentContainerStyle={styles.scrollModalContent}>
-                        <View style={[styles.modalContent, { padding: 0 }]}>
-                            <View style={styles.datePickerContainer}>
-                                <Text style={styles.modalTitle}>Select Target Date</Text>
-                                <TouchableOpacity
-                                    onPress={() => setShowDatePicker(true)}
-                                    style={styles.datePickerButton}
-                                >
-                                    <Text style={styles.datePickerText}>
-                                        {selectedDate.toLocaleDateString()}
-                                    </Text>
-                                </TouchableOpacity>
-                                {showDatePicker && (
-                                    <DateTimePicker
-                                        value={selectedDate}
-                                        mode="date"
-                                        display="default"
-                                        onChange={handleDateChange}
-                                    />
-                                )}
-                            </View>
-
-                        </View>
-                        <View style={[styles.modalContent2]}>
-                            <MealType
-                                onClose={() => setCopyToModalVisible(false)}
-                                onSubmit={handleCopyTo}
-                                isCopyAction={true}
-                                showOverlay={false}
-                            />
-                        </View>
-                    </ScrollView>
-                </KeyboardAvoidingView>
-            </Modal>
-
-        </View>
+                <View style={[styles.modalContent2, highContrast && styles.highContrastModalSection]}>
+                    <MealType
+                        onClose={() => setCopyToModalVisible(false)}
+                        onSubmit={handleCopyTo}
+                        isCopyAction={true}
+                        showOverlay={false}
+                        highContrast={highContrast}
+                    />
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
+    </Modal>
+</View>
     );
 };
 
 const styles = StyleSheet.create({
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
+     highContrastBackground: {
+        backgroundColor: '#121212',
+    },
+    highContrastText: {
+        color: '#FFFFFF',
+    },
+    highContrastMenuContent: {
+        backgroundColor: '#242424',
+    },
+    highContrastMenuText: {
+        color: '#FFFFFF',
+    },
+    highContrastDivider: {
+        backgroundColor: '#FFFFFF',
+    },
+    highContrastModalOverlay: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    },
+    highContrastModalContent: {
+        backgroundColor: '#121212',
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+    },
+    highContrastInput: {
+        color: '#FFFFFF',
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+    },
+    highContrastCancelButton: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+    },
+    highContrastSaveButton: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+    },
+    highContrastButtonText: {
+        color: '#FFFFFF',
+    },
+    highContrastModalSection: {
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+    },
+    highContrastDatePickerContainer: {
+        borderColor: '#FFFFFF',
+    },
+    highContrastDatePickerButton: {
+        backgroundColor: '#242424',
+        borderColor: '#FFFFFF',
+    },
     container: {
         marginRight: 10,
         height: '100%',

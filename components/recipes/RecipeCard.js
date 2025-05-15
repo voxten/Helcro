@@ -4,8 +4,9 @@ import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome6";
 import axios from "axios";
 import { API_BASE_URL } from '@env';
-
+import { useAccessibility } from "../AccessibleView/AccessibleView";
 const RecipeCard = ({ recipe, onRatingUpdate }) => {
+    const { highContrast } = useAccessibility();
     const navigation = useNavigation();
     const [currentRecipe, setCurrentRecipe] = useState(recipe);
     const [isLoading, setIsLoading] = useState(false);
@@ -57,53 +58,81 @@ const RecipeCard = ({ recipe, onRatingUpdate }) => {
 
     return (
         <TouchableOpacity
-            onPress={() => {
-                // Najpierw odśwież dane przed nawigacją
-                refreshRecipeData().then(() => {
-                    navigation.navigate("RecipeDetail", {
-                        recipeId: currentRecipe.RecipeId || currentRecipe.id,
-                        initialRecipe: {
-                            ...currentRecipe,
-                            Name: currentRecipe.Name || currentRecipe.name,
-                            Image: currentRecipe.Image || currentRecipe.photo,
-                            UserName: currentRecipe.UserName || currentRecipe.userName,
-                            categories: currentRecipe.categories || []
-                        }
-                    });
-                    
-                });
-            }}
-            activeOpacity={0.8}
-            style={styles.cardContainer}
-        >
-            <View style={styles.card}>
-                <Image source={photoSource} style={styles.image} />
-                <View style={styles.content}>
-                    <Text numberOfLines={2} style={styles.title}>
-                        {recipeName}
-                    </Text>
-                    <View style={styles.ratingContainer}>
-                        {isLoading ? (
-                            <ActivityIndicator size="small" color="#FFC107" />
-                        ) : (
-                            <>
-                                <Icon name="star" size={14} color="#FFC107" solid />
-                                <Text style={styles.ratingText}>
-                                    {currentRecipe.averageRating 
-                                        ? parseFloat(currentRecipe.averageRating).toFixed(1) 
-                                        : 'Brak ocen'}
-                                </Text>
-                                <Text style={styles.ratingCount}>({currentRecipe.ratingCount || 0})</Text>
-                            </>
-                        )}
-                    </View>
-                </View>
+    onPress={() => {
+        // Najpierw odśwież dane przed nawigacją
+        refreshRecipeData().then(() => {
+            navigation.navigate("RecipeDetail", {
+                recipeId: currentRecipe.RecipeId || currentRecipe.id,
+                initialRecipe: {
+                    ...currentRecipe,
+                    Name: currentRecipe.Name || currentRecipe.name,
+                    Image: currentRecipe.Image || currentRecipe.photo,
+                    UserName: currentRecipe.UserName || currentRecipe.userName,
+                    categories: currentRecipe.categories || []
+                }
+            });
+        });
+    }}
+    activeOpacity={0.8}
+    style={styles.cardContainer}
+>
+    <View style={[styles.card, highContrast && styles.secondContrast]}
+>
+        <Image source={photoSource} style={styles.image} />
+        <View style={styles.content}>
+            <Text numberOfLines={2} style={[styles.title, highContrast && styles.highContrastText]}>
+                {recipeName}
+            </Text>
+            <View style={styles.ratingContainer}>
+                {isLoading ? (
+                    <ActivityIndicator size="small" color={highContrast ? "#FFFFFF" : "#FFC107"} />
+                ) : (
+                    <>
+                        <Icon 
+                            name="star" 
+                            size={14} 
+                            color="#FFC107"
+                            solid 
+                        />
+                        <Text style={[styles.ratingText, highContrast && styles.highContrastText]}>
+                            {currentRecipe.averageRating 
+                                ? parseFloat(currentRecipe.averageRating).toFixed(1) 
+                                : 'Brak ocen'}
+                        </Text>
+                        <Text style={[styles.ratingCount, highContrast && styles.highContrastSecondaryText]}>
+                            ({currentRecipe.ratingCount || 0})
+                        </Text>
+                    </>
+                )}
             </View>
-        </TouchableOpacity>
+        </View>
+    </View>
+</TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
+    highContrastBackground: {
+        backgroundColor: '#2e2c2c', 
+        color:'white',
+    },
+    secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
+     highContrastCardContainer: {
+        backgroundColor: '#121212',
+    },
+    highContrastCard: {
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+    },
+    highContrastText: {
+        color: '#FFFFFF',
+    },
+    highContrastSecondaryText: {
+        color: '#CCCCCC',
+    },
     cardContainer: {
         width: '100%',
         marginBottom: 16,

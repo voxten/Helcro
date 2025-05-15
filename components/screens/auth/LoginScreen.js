@@ -6,11 +6,12 @@ import { useAuth } from '../../context/AuthContext';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
-
+import { useAccessibility } from "../../AccessibleView/AccessibleView";
 
 WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess }) => {
+  const { highContrast } = useAccessibility();
   const { login } = useAuth();
   const [form, setForm] = useState({
     Email: '',
@@ -113,12 +114,14 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
       setLoading(false);
     }
   };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Logging in</Text>
+    <View style={[styles.container, highContrast && styles.highContrastBackground]}>
+      <Text style={[styles.title, highContrast && styles.highContrastBackground]}>Logging in</Text>
       
       <TextInput
-        style={styles.input}
+        style={[styles.input, highContrast && styles.secondContrast]}
+        placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
         placeholder="Email *"
         value={form.Email}
         onChangeText={(text) => handleChange('Email', text)}
@@ -126,13 +129,19 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
         autoCapitalize="none"
       />
       
-      <TextInput
-        style={styles.input}
+     <TextInput
+        style={[
+          styles.input,
+          highContrast && styles.secondContrast,
+          { color: highContrast ? '#FFFFFF' : '#000000' }  // dynamicznie ustawiamy kolor tekstu
+        ]}
+        placeholderTextColor={highContrast ? '#FFFFFF' : '#999999'}
         placeholder="Password *"
         value={form.Password}
         onChangeText={(text) => handleChange('Password', text)}
         secureTextEntry
       />
+
 
       <TouchableOpacity 
         style={styles.button} 
@@ -148,13 +157,13 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
       <TouchableOpacity onPress={onRegisterPress}
         style={styles.secondaryButton}
       >
-        <Text style={styles.secondaryButtonText}>Dont have account? Register now!</Text>
+        <Text style={[styles.secondaryButtonText, highContrast && styles.highContrastBackground]}>Dont have account? Register now!</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={onForgotPasswordPress}
         style={styles.secondaryButton}
       >
-        <Text style={styles.secondaryButtonText}>Forgot Password?</Text>
+        <Text style={[styles.secondaryButtonText, highContrast && styles.highContrastBackground]}>Forgot Password?</Text>
       </TouchableOpacity>
       {/* TODO: Google Sign In
       <TouchableOpacity 
@@ -173,6 +182,13 @@ const LoginScreen = ({ onRegisterPress, onForgotPasswordPress, onLoginSuccess })
 };
 
 const styles = StyleSheet.create({
+  highContrastBackground: {
+       backgroundColor: '#2e2c2c', 
+        color:'white',
+    },secondContrast: {
+        backgroundColor: "#454343",
+        color:'white',
+    },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
