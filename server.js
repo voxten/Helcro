@@ -842,7 +842,7 @@ app.put('/api/users/:userId/avatar', authenticateToken, (req, res) => {
     }
 
     db.query(
-        'UPDATE User SET AvatarImage = ? WHERE UserId = ?',
+        'UPDATE user SET AvatarImage = ? WHERE UserId = ?',
         [avatarUrl, userId],
         (err, result) => {
             if (err) {
@@ -875,7 +875,7 @@ app.get('/api/users/:userId/avatar', authenticateToken, (req, res) => {
     const userId = req.params.userId;
 
     db.query(
-        'SELECT AvatarImage FROM User WHERE UserId = ?',
+        'SELECT AvatarImage FROM user WHERE UserId = ?',
         [userId],
         (err, results) => {
             if (err) {
