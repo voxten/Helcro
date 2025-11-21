@@ -69,6 +69,7 @@ const RecipesList = ({ navigation }) => {
                 }
             });
             setCategories(response.data);
+
         } catch (error) {
             console.error("Error fetching categories:", error);
             Alert.alert("Error", "Failed to load categories");
@@ -345,14 +346,6 @@ const styles = StyleSheet.create({
     },
     highContrastListItem: {
         borderColor: '#FFFFFF', // Białe obramowania dla elementów listy
-    },
-    highContrastBackground: {
-        backgroundColor: '#2e2c2c', 
-        color:'white',
-    },
-    secondContrast: {
-        backgroundColor: "#454343",
-        color:'white',
     },
     container: {
         flex: 1,
