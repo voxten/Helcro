@@ -122,7 +122,7 @@ export default function MealType({ onClose, onSubmit, isCopyAction = false, show
                     <DateTimePicker
                         value={mealTime}
                         mode="time"
-                        display="spinner"
+                        display="default"
                         onChange={handleTimeChange}
                     />
                 )}

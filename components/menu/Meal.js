@@ -5,7 +5,7 @@ import { API_BASE_URL } from '@env';
 const apiUrl = `${API_BASE_URL}`;
 
 import { useAuth } from "../context/AuthContext";
-import Icon from "react-native-vector-icons/AntDesign";
+import Icon from "react-native-vector-icons/Ionicons";
 import Icon2 from "react-native-vector-icons/FontAwesome6";
 import { useAccessibility } from "../AccessibleView/AccessibleView";
 export default function Meal({ onClose, onSave, existingProducts = [], selectedDate, mealType, mealName }) {
@@ -415,7 +415,7 @@ const renderRecipeProducts = () => (
     
     <View style={localStyles.buttonContainer}>
       <TouchableOpacity style={[localStyles.closeButton, highContrast && localStyles.highContrastButton]} onPress={() => setSelectedRecipe(null)}>
-        <Icon name="back" size={20} color={highContrast ? "white" : "white"} style={localStyles.icon} />
+        <Icon name="return-up-back" size={20} color={highContrast ? "white" : "white"} style={localStyles.icon} />
         <Text style={[localStyles.closeButtonText, highContrast && localStyles.highContrastButtonText]}>Back</Text>
       </TouchableOpacity>
       <TouchableOpacity style={[localStyles.closeButton, highContrast && localStyles.highContrastButton]} onPress={handleAddRecipe}>
@@ -560,7 +560,7 @@ return (
       {(isCreatingProduct || isChoosingProduct || isChoosingRecipe) && (
           <View style={localStyles.buttonContainer}>
             <TouchableOpacity style={[localStyles.closeButton, highContrast && localStyles.highContrastButton]} onPress={handleCancel}>
-              <Icon name="back"
+              <Icon name="return-up-back"
                size={20} 
                color="white"
                 style={localStyles.icon} />
@@ -578,7 +578,7 @@ return (
       {!isCreatingProduct && !isChoosingProduct && !isChoosingRecipe && (
           <View style={localStyles.buttonContainer}>
             <TouchableOpacity style={[localStyles.closeButton, highContrast && localStyles.highContrastButton]} onPress={onClose} disabled={isButtonsDisabled}>
-              <Icon name="back" size={20} color= "white" style={localStyles.icon} />
+              <Icon name="return-up-back" size={20} color= "white" style={localStyles.icon} />
               <Text style={[localStyles.closeButtonText, highContrast && localStyles.highContrastButtonText]}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity

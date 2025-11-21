@@ -13,8 +13,7 @@ import axios from "axios";
 import { API_BASE_URL } from '@env';
 
 import { useAccessibility } from "../AccessibleView/AccessibleView";
-
-
+import Svg, {Circle} from "react-native-svg";
 
 
 export default function Menu({ navigation }) {
@@ -37,7 +36,7 @@ export default function Menu({ navigation }) {
     useEffect(() => {
         const fetchUserGoals = async () => {
             if (!user?.UserId) return;
-            
+
             try {
                 const response = await axios.get(`${API_BASE_URL}/api/goal/${user.UserId}`);
                 if (response.data) {
@@ -67,7 +66,7 @@ export default function Menu({ navigation }) {
                 });
             }
         };
-    
+
         if (isFocused) {
             fetchUserGoals();
         }
@@ -258,74 +257,100 @@ export default function Menu({ navigation }) {
 
     const NutritionSlider = ({ label, current, target }) => {
         const percentage = Math.min((current / target) * 100, 100);
-        const sliderWidth = 85;
+        const radius = 30;
+        const strokeWidth = 6;
+        const circumference = 2 * Math.PI * radius;
+        const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
         return (
-            <View style={[localStyles.sliderContainer, { width: sliderWidth }]}>
+            <View style={localStyles.wheelSliderContainer}>
                 <Text
                     style={[localStyles.sliderLabel, highContrast && localStyles.nutritionContrast]}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                 >
-                    {`${label}: ${Math.round(current)}/${target}`}
+                    {label}
                 </Text>
-                <View style={localStyles.sliderTrack}>
-                    <View
-                        style={[
-                            localStyles.sliderFill,
-                            {
-                                width: `${percentage}%`,
-                                backgroundColor: percentage >= 100 ? '#ff4444' : '#4CAF50'
-                            }
-                        ]}
-                    />
+                <View style={localStyles.wheelContainer}>
+                    <Svg width={radius * 2 + strokeWidth} height={radius * 2 + strokeWidth}>
+                        {/* Background circle */}
+                        <Circle
+                            cx={radius + strokeWidth / 2}
+                            cy={radius + strokeWidth / 2}
+                            r={radius}
+                            stroke="#e0e0e0"
+                            strokeWidth={strokeWidth}
+                            fill="none"
+                        />
+                        {/* Progress circle */}
+                        <Circle
+                            cx={radius + strokeWidth / 2}
+                            cy={radius + strokeWidth / 2}
+                            r={radius}
+                            stroke={percentage >= 100 ? 'brown' : '#4CAF50'}
+                            strokeWidth={strokeWidth}
+                            fill="none"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            transform={`rotate(-90 ${radius + strokeWidth / 2} ${radius + strokeWidth / 2})`}
+                        />
+                    </Svg>
+                    <View style={localStyles.wheelTextContainer}>
+                        <Text style={[localStyles.wheelCurrent, highContrast && localStyles.nutritionContrast]}>
+                            {Math.round(current)}
+                        </Text>
+                        <Text style={[localStyles.wheelTarget, highContrast && localStyles.nutritionContrast]}>
+                            /{target}
+                        </Text>
+                    </View>
                 </View>
             </View>
         );
     };
     const { highContrast } = useAccessibility();
-    return (
-        
-        <View style={[localStyles.container, highContrast && localStyles.highContrastBackground]}>
-    <View style={[localStyles.nutritionContainer, highContrast && localStyles.highContrastBox]}>
-        <View style={[localStyles.nutritionFooter, highContrast && localStyles.nutritionContrast]}>
-            <NutritionSlider
-                label="Kcal"
-                current={totalNutrition.calories || 0}
-                target={targetNutrition.calories}
-            />
-            <NutritionSlider
-                label="Protein"
-                current={totalNutrition.proteins || 0}
-                target={targetNutrition.proteins}
-            />
-            <NutritionSlider
-                label="Fat"
-                current={totalNutrition.fats || 0}
-                target={targetNutrition.fats}
-            />
-            <NutritionSlider
-                label="Carbs"
-                current={totalNutrition.carbohydrates || 0}
-                target={targetNutrition.carbohydrates}
-            />
-        </View>
-    </View>
 
-    <View style={localStyles.dateContainer}>
-        <TouchableOpacity onPress={() => changeDay(-1)}>
-            <AntDesign name="left" size={20} color={highContrast ? "#FFF" : "brown"} />
-        </TouchableOpacity>
-        <Text style={[localStyles.dateText, highContrast && { color: '#FFF' }]}>
-            {formatDate(selectedDate)}
-        </Text>
-        <TouchableOpacity onPress={() => changeDay(1)}>
-            <AntDesign name="right" size={20} color={highContrast ? "#FFF" : "brown"} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setShowCalendar(true)}>
-            <AntDesign name="calendar" size={24} color={highContrast ? "#FFF" : "brown"} />
-        </TouchableOpacity> 
-    </View>
+    return (
+        <View style={[localStyles.container, highContrast && localStyles.highContrastBackground]}>
+            <View style={[localStyles.nutritionContainer, highContrast && localStyles.highContrastBox]}>
+                <View style={[localStyles.nutritionFooter, highContrast && localStyles.nutritionContrast]}>
+                    <NutritionSlider
+                        label="Kcal"
+                        current={totalNutrition.calories || 0}
+                        target={targetNutrition.calories}
+                    />
+                    <NutritionSlider
+                        label="Protein"
+                        current={totalNutrition.proteins || 0}
+                        target={targetNutrition.proteins}
+                    />
+                    <NutritionSlider
+                        label="Fat"
+                        current={totalNutrition.fats || 0}
+                        target={targetNutrition.fats}
+                    />
+                    <NutritionSlider
+                        label="Carbs"
+                        current={totalNutrition.carbohydrates || 0}
+                        target={targetNutrition.carbohydrates}
+                    />
+                </View>
+            </View>
+
+            <View style={localStyles.dateContainer}>
+                <TouchableOpacity onPress={() => changeDay(-1)}>
+                    <AntDesign name="left" size={20} color={highContrast ? "#FFF" : "brown"} />
+                </TouchableOpacity>
+                <Text style={[localStyles.dateText, highContrast && { color: '#FFF' }]}>
+                    {formatDate(selectedDate)}
+                </Text>
+                <TouchableOpacity onPress={() => changeDay(1)}>
+                    <AntDesign name="right" size={20} color={highContrast ? "#FFF" : "brown"} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowCalendar(true)}>
+                    <AntDesign name="calendar" size={24} color={highContrast ? "#FFF" : "brown"} />
+                </TouchableOpacity>
+            </View>
 
 
             {showCalendar && (
@@ -485,14 +510,13 @@ export default function Menu({ navigation }) {
 const localStyles = StyleSheet.create({
     nutritionContrast: {
         backgroundColor: "#454343",
-        color:'white',
+        color: 'white',
     },
     highContrastBackground: {
-        backgroundColor: '#2e2c2c', 
-        color:'white',
+        backgroundColor: '#2e2c2c',
+        color: 'white',
     },
-    nutritionContainer:{
-    },  
+    nutritionContainer: {},
     container: {
         flex: 1,
         backgroundColor: '#eee',
@@ -515,27 +539,40 @@ const localStyles = StyleSheet.create({
         borderRadius: 10,
         marginBottom: 10,
         elevation: 3,
-        
     },
-    sliderContainer: {
-        
+    // Wheel Slider Styles
+    wheelSliderContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 8,
     },
     sliderLabel: {
         fontSize: 12,
-        marginBottom: 4,
+        marginBottom: 8,
         textAlign: 'center',
-        flexShrink: 1, // Allows text to shrink if needed
-        width: '100%', // Ensures text container takes full width
+        fontWeight: '600',
+        color: '#333',
     },
-    sliderTrack: {
-        height: 6,
-        backgroundColor: '#e0e0e0',
-        borderRadius: 3,
-        overflow: 'hidden',
+    wheelContainer: {
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    sliderFill: {
-        height: '100%',
-        borderRadius: 3,
+    wheelTextContainer: {
+        position: 'absolute',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    wheelCurrent: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#333',
+        textAlign: 'center',
+    },
+    wheelTarget: {
+        fontSize: 10,
+        color: '#666',
+        textAlign: 'center',
     },
     dateContainer: {
         flexDirection: 'row',
@@ -548,7 +585,7 @@ const localStyles = StyleSheet.create({
         marginHorizontal: 10,
         color: 'brown',
         textAlign: 'center',
-        width: 220, // Fixed width to accommodate the widest expected date
+        width: 220,
     },
     mealList: {
         flex: 1,
